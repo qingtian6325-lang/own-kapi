@@ -10,7 +10,7 @@ on:
 jobs:
   test-and-package-ios:
     name: Swift Test & Package iOS IPA
-    runs-on: macos-14
+    runs-on: macos-latest
     defaults:
       run:
         working-directory: kapi-money-ios
