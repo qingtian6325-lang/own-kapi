@@ -165,7 +165,7 @@ final class StoreAndBudgetTests: XCTestCase {
         let txCountBefore = store.transactions.count
         store.executeScheduledTransactionNow(id: sched.id)
         XCTAssertEqual(store.transactions.count, txCountBefore + 1)
-        XCTAssertEqual(store.transactions.first?.amount, 199.0, accuracy: 0.001)
+        XCTAssertEqual(store.transactions.first?.amount ?? 0.0, 199.0, accuracy: 0.001)
 
         store.deleteScheduledTransaction(id: sched.id)
         XCTAssertFalse(store.scheduledTransactions.contains(where: { $0.id == sched.id }))
