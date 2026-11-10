@@ -1083,6 +1083,32 @@ public struct SettingsAndShortcutsGuideView: View {
             .padding(14)
             .background(RoundedRectangle(cornerRadius: 14).fill(Color.white))
 
+            // Account Initial Balances Quick Settings Card
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("💳 账户起始金额与开局资产")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(KapiTheme.textPrimary)
+                    Spacer()
+                    Text("净资产: \(KapiTheme.formatRM(store.netWorth))")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundColor(KapiTheme.expenseBlue)
+                }
+
+                Text("在此设定各资金账户（现金、银行卡、电子钱包）现实生活中的初始开局金额。日常记账时将在此基准上实时增减。")
+                    .font(.system(size: 11))
+                    .foregroundColor(KapiTheme.textMuted)
+
+                ForEach(store.accounts) { account in
+                    AccountInitialBalanceRow(account: account, store: store)
+                    if account.id != store.accounts.last?.id {
+                        Divider()
+                    }
+                }
+            }
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 14).fill(Color.white))
+
             // Storage mode info
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
@@ -1104,6 +1130,74 @@ public struct SettingsAndShortcutsGuideView: View {
             .background(RoundedRectangle(cornerRadius: 14).fill(Color.white))
 
             dataManagementCard
+        }
+    }
+}
+
+public struct AccountInitialBalanceRow: View {
+    public let account: AccountItem
+    @ObservedObject public var store: KapiStore
+    @State private var balanceInput: String = ""
+    @State private var isEditing: Bool = false
+
+    public init(account: AccountItem, store: KapiStore) {
+        self.account = account
+        self.store = store
+    }
+
+    public var body: some View {
+        HStack(spacing: 8) {
+            Text(account.name)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(KapiTheme.textPrimary)
+                .frame(width: 100, alignment: .leading)
+
+            Spacer()
+
+            if isEditing {
+                Text("RM")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(KapiTheme.textSecondary)
+
+                TextField("0.00", text: $balanceInput)
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .frame(width: 75)
+                    .padding(5)
+                    .background(RoundedRectangle(cornerRadius: 6).stroke(KapiTheme.expenseBlue, lineWidth: 1))
+
+                Button("保存") {
+                    if let val = Double(balanceInput) {
+                        store.updateAccountBalance(accountName: account.name, newBalance: val)
+                    }
+                    isEditing = false
+                }
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(Capsule().fill(KapiTheme.expenseBlue))
+            } else {
+                Text(KapiTheme.formatRM(account.balance))
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundColor(KapiTheme.textPrimary)
+
+                Button {
+                    balanceInput = String(format: "%.2f", account.balance)
+                    isEditing = true
+                } label: {
+                    Text("设定")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(KapiTheme.expenseBlue)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Capsule().fill(Color(hex: 0xEAF1FF)))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.vertical, 3)
+        .onAppear {
+            balanceInput = String(format: "%.2f", account.balance)
         }
     }
 }

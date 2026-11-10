@@ -8,6 +8,9 @@ public struct AssetsAndAccountDetailView: View {
     @State private var showBalanceEditSheet: Bool = false
     @State private var newBalanceInput: String = ""
     @State private var detailTabMode: String = "明细" // "明细" (audit logs) vs "账单" (bills)
+    @State private var showAddAccountSheet: Bool = false
+    @State private var newAccountName: String = ""
+    @State private var newAccountBalance: String = ""
 
     public init(store: KapiStore, onDismiss: @escaping () -> Void) {
         self.store = store
@@ -40,6 +43,70 @@ public struct AssetsAndAccountDetailView: View {
             }
             .sheet(item: $selectedAccount) { account in
                 accountDetailSheet(for: account)
+            }
+            .sheet(isPresented: $showAddAccountSheet) {
+                NavigationStack {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("新增资产账户")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(KapiTheme.textPrimary)
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("账户名称")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(KapiTheme.textSecondary)
+                            TextField("例如: Maybank / GrabPay / 备用金", text: $newAccountName)
+                                .font(.system(size: 14))
+                                .padding(10)
+                                .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                        }
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("起始开局余额 (RM)")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(KapiTheme.textSecondary)
+                            TextField("0.00", text: $newAccountBalance)
+                                .font(.system(size: 14))
+                                .padding(10)
+                                .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                        }
+
+                        Button {
+                            let trimmed = newAccountName.trimmingCharacters(in: .whitespacesAndNewlines)
+                            guard !trimmed.isEmpty else { return }
+                            let balanceVal = Double(newAccountBalance) ?? 0.0
+                            let item = AccountItem(
+                                id: "acc_\(UUID().uuidString.prefix(6))",
+                                name: trimmed,
+                                subtitle: "自定义账户",
+                                iconName: "💳",
+                                balance: balanceVal
+                            )
+                            store.addAccount(item)
+                            showAddAccountSheet = false
+                        } label: {
+                            Text("保存并创建账户")
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(RoundedRectangle(cornerRadius: 12).fill(KapiTheme.expenseBlue))
+                        }
+                        .buttonStyle(.plain)
+
+                        Spacer()
+                    }
+                    .padding(20)
+                    .navigationTitle("添加账户")
+                    #if os(iOS)
+                    .navigationBarTitleDisplayMode(.inline)
+                    #endif
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("取消") { showAddAccountSheet = false }
+                        }
+                    }
+                }
             }
         }
     }
@@ -158,6 +225,27 @@ public struct AssetsAndAccountDetailView: View {
                     Divider()
                 }
             }
+
+            Divider()
+
+            Button {
+                newAccountName = ""
+                newAccountBalance = "0.00"
+                showAddAccountSheet = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(KapiTheme.expenseBlue)
+                    Text("添加自定义资产账户 (如 Maybank, GrabPay 等)")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(KapiTheme.expenseBlue)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xEAF1FF)))
+            }
+            .buttonStyle(.plain)
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))

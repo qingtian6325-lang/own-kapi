@@ -154,6 +154,12 @@ public final class KapiStore: ObservableObject {
         saveState()
     }
 
+    public func deleteAccount(accountId: String) {
+        guard accounts.count > 1 else { return }
+        accounts.removeAll(where: { $0.id == accountId })
+        saveState()
+    }
+
     public func addPrimaryCategory(name: String, type: TransactionType, iconName: String, useFirstCharIcon: Bool) {
         let newGroup = CategoryGroup(
             id: "custom_\(UUID().uuidString.prefix(8))",

@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.0.2] - 2026-11-10
+
+### 🚀 Highlights
+- **支持在【设置】与【资产】中自定义设置各账户起始金额（期初余额）**：
+  - 【通用设置】新增“💳 账户起始金额与开局资产设置”配置卡，每个账户均可直接输入开局金额并实时保存。
+  - 【资产管理】新增“添加自定义资产账户”功能，支持创建 Maybank、GrabPay、加密钱包、备用金等自定义资金账户，并设定其初始开局余额。
+  - `KapiStore` 新增 `deleteAccount` 与账户审计全生命周期联动，日常记账、转账与改额实时平账。
+
 ## [v1.0.1] - 2026-11-10
 
 ### 🚀 Highlights
