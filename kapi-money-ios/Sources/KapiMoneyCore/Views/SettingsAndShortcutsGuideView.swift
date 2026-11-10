@@ -289,6 +289,57 @@ public struct SettingsAndShortcutsGuideView: View {
                 .font(.system(size: 12))
                 .foregroundColor(KapiTheme.textSecondary)
 
+            VStack(alignment: .leading, spacing: 6) {
+                Text("📌 3 步设置「背面轻点两下」无感记账：")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(KapiTheme.textPrimary)
+                Text("1. 打开 iPhone「设置」➔「辅助功能」➔「触控」➔「轻点背面」")
+                    .font(.system(size: 12))
+                    .foregroundColor(KapiTheme.textSecondary)
+                Text("2. 点击「轻点两下」，往下滑动到快捷指令列表")
+                    .font(.system(size: 12))
+                    .foregroundColor(KapiTheme.textSecondary)
+                Text("3. 勾选「咔皮截图记账」（App 已原生内置提供，开箱即选）")
+                    .font(.system(size: 12))
+                    .foregroundColor(KapiTheme.textSecondary)
+            }
+            .padding(12)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF5F6FA)))
+
+            HStack(spacing: 10) {
+                Link(destination: URL(string: "shortcuts://")!) {
+                    HStack {
+                        Image(systemName: "arrow.up.forward.app")
+                        Text("打开「快捷指令」App")
+                    }
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(KapiTheme.expenseBlue)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                }
+
+                Button {
+                    let demoDraft = ReceiptOCRService.parseReceiptText(
+                        "-RM5.90\nPayment - TNGD\nNear Me Voucher Eggette Lab\n08/11/2026 16:56:34"
+                    )
+                    let saved = ShortcutActionCoordinator.recordRecognizedDraft(demoDraft, in: store)
+                    simulatedSnippetTx = saved
+                    statusBannerMessage = "已模拟触发快捷指令截图识别"
+                } label: {
+                    HStack {
+                        Image(systemName: "sparkles")
+                        Text("模拟触发弹窗")
+                    }
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(KapiTheme.textPrimary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Capsule().fill(Color(hex: 0xF0F2F7)))
+                }
+                .buttonStyle(.plain)
+            }
+
             let previewTx = simulatedSnippetTx ?? TransactionItem(
                 type: .expense,
                 categoryPath: "餐饮-零食甜品",

@@ -193,9 +193,9 @@ jobs:
           git tag -f v1.0.0
           git push origin v1.0.0 --force
           if gh release view v1.0.0 >/dev/null 2>&1; then
-            gh release upload v1.0.0 build/KapiMoney-iOS.ipa --clobber
+            gh release upload v1.0.0 build/KapiMoney-iOS.ipa shortcuts/KapiScreenshotBookkeeping.shortcut --clobber
           else
-            gh release create v1.0.0 build/KapiMoney-iOS.ipa \
+            gh release create v1.0.0 build/KapiMoney-iOS.ipa shortcuts/KapiScreenshotBookkeeping.shortcut \
               --title "咔皮记账 iOS v1.0.0 (KapiMoney-iOS.ipa)" \
-              --notes "1:1 原生 SwiftUI 咔皮记账 iOS 安装包（含快捷指令自动截屏记账弹窗、一句话记多笔、动态日预算与资产审计明细）。直接下载下方 KapiMoney-iOS.ipa 并使用 Sideloadly / AltStore / 爱思助手签名安装即可。"
+              --notes "1:1 原生 SwiftUI 咔皮记账 iOS 安装包（含快捷指令自动截屏记账弹窗、一句话记多笔、动态日预算与资产审计明细）。直接下载下方 KapiMoney-iOS.ipa 并使用 Sideloadly / AltStore 签名安装即可。附带可一键导入 iOS 快捷指令的 KapiScreenshotBookkeeping.shortcut 文件。"
           fi
