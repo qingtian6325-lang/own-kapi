@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.0.6] - 2026-11-10
+
+### 🚀 Highlights
+- **品牌名称与桌面显示全新升级为「咪咪记账」**：
+  - 应用桌面显示名称（`CFBundleDisplayName`）与包配置正式更新为「咪咪记账」。
+  - 打包生成全新高分辨率超萌小猫 App 图标（包含 1024x1024、180x180、120x120、152x152 全套 iOS 规格）。
+  - 图标设计采用 3D Pixar/粘土软萌质感，头戴闪耀金色小皇冠、趴卧怀抱金币的元气小橘猫咪咪，搭配暖色背景。
+  - 全局联动更新应用内萌宠助手形象与文案为小猫咪咪（主页底部快捷栏、日历全部记录页、侧边栏头像及 AI 助手）。
+
 ## [v1.0.5] - 2026-11-10
 
 ### 🚀 Highlights

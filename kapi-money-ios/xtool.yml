@@ -1,7 +1,7 @@
 version: 1
 bundleID: com.jinghao.kapimoney
 product: KapiMoneyApp
-displayName: 咔皮记账
+displayName: 咪咪记账
 minimumOSVersion: "16.0"
 urlSchemes:
   - kapimoney

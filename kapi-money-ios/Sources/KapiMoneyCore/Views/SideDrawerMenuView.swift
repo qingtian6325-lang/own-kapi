@@ -47,7 +47,7 @@ public struct SideDrawerMenuView: View {
                             Circle()
                                 .fill(Color(hex: 0xFFE8CC))
                                 .frame(width: 48, height: 48)
-                            Text("🦫")
+                            Text("🐱")
                                 .font(.system(size: 26))
                         }
 

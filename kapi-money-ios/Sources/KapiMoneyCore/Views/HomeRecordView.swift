@@ -480,7 +480,7 @@ public struct HomeRecordView: View {
             let groups = store.groupedTransactionsByDay()
             if groups.isEmpty {
                 VStack(spacing: 8) {
-                    Text("🦫")
+                    Text("🐱")
                         .font(.system(size: 36))
                     Text("还没有账单记录，点击下方 + 或发送一句话记账吧")
                         .font(.system(size: 13))
@@ -607,7 +607,7 @@ public struct HomeRecordView: View {
                 onOpenRecordSheet(true)
             } label: {
                 HStack(spacing: 8) {
-                    Text("🦫")
+                    Text("🐱")
                         .font(.system(size: 20))
                     Text("任何事情都能问我")
                         .font(.system(size: 14, weight: .medium))

@@ -489,7 +489,7 @@ public struct AllRecordsCalendarView: View {
                         Circle()
                             .fill(Color(hex: 0xFFE0B2))
                             .frame(width: 32, height: 32)
-                        Text("🦫")
+                        Text("🐱")
                             .font(.system(size: 18))
                     }
                     Text("任何事都能问我")

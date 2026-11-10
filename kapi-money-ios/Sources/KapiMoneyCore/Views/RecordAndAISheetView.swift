@@ -602,7 +602,7 @@ public struct RecordAndAISheetView: View {
             } else {
                 ZStack {
                     Circle().fill(Color(hex: 0xFFE8CC)).frame(width: 30, height: 30)
-                    Text("🦫").font(.system(size: 16))
+                    Text("🐱").font(.system(size: 16))
                 }
             }
 
