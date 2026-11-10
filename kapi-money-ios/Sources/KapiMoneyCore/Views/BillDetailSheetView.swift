@@ -310,11 +310,19 @@ public struct BillDetailSheetView: View {
                 }
             }
             #endif
+            #if os(iOS)
             .fullScreenCover(isPresented: $isViewerPresented) {
                 FullscreenReceiptViewer(imageData: selectedViewerImageData) {
                     isViewerPresented = false
                 }
             }
+            #else
+            .sheet(isPresented: $isViewerPresented) {
+                FullscreenReceiptViewer(imageData: selectedViewerImageData) {
+                    isViewerPresented = false
+                }
+            }
+            #endif
         }
     }
 

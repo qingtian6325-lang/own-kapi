@@ -146,11 +146,19 @@ public struct RecordAndAISheetView: View {
             }
         }
         #endif
+        #if os(iOS)
         .fullScreenCover(isPresented: $isViewerPresented) {
             FullscreenReceiptViewer(imageData: selectedViewerImageData) {
                 isViewerPresented = false
             }
         }
+        #else
+        .sheet(isPresented: $isViewerPresented) {
+            FullscreenReceiptViewer(imageData: selectedViewerImageData) {
+                isViewerPresented = false
+            }
+        }
+        #endif
     }
 
     // MARK: - Top Header with ⇄ Mode Switcher (IMG_2245 & IMG_2247)
@@ -575,10 +583,10 @@ public struct RecordAndAISheetView: View {
             accountName: selectedAccountName,
             targetAccountName: selectedTab == .transfer ? targetAccountName : nil,
             note: noteText,
-            receiptImageLabels: attachedReceiptFilenames,
             discountAmount: discountVal,
             includeInStats: selectedTab == .transfer ? false : includeInStats,
             tags: selectedTags,
+            receiptImageLabels: attachedReceiptFilenames,
             date: selectedDate
         )
         store.addTransaction(tx)
