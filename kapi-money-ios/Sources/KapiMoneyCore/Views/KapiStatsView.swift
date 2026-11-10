@@ -30,12 +30,11 @@ public struct KapiStatsView: View {
     }
 
     private var totalIncome: Double {
-        let recorded = periodTransactions.filter { $0.type == .income }.reduce(0.0) { $0 + $1.amount }
-        return recorded > 0 ? recorded : 436.32
+        periodTransactions.filter { $0.type == .income }.reduce(0.0) { $0 + $1.amount }
     }
 
     private var netBalance: Double {
-        max(41.19, totalIncome - totalExpense)
+        totalIncome - totalExpense
     }
 
     private var categoryBreakdown: [(name: String, icon: String, amount: Double, percent: Double, color: Color)] {
@@ -229,22 +228,28 @@ public struct KapiStatsView: View {
             }
 
             HStack(spacing: 20) {
+                let firstShare = categoryBreakdown.first?.percent ?? 0.0
+                let secondShare = categoryBreakdown.dropFirst().first?.percent ?? 0.0
                 ZStack {
                     Circle()
                         .stroke(Color(hex: 0xEEF0F6), lineWidth: 16)
                         .frame(width: 110, height: 110)
 
-                    Circle()
-                        .trim(from: 0, to: 0.56)
-                        .stroke(KapiTheme.expenseBlue, style: StrokeStyle(lineWidth: 16, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                        .frame(width: 110, height: 110)
+                    if firstShare > 0 {
+                        Circle()
+                            .trim(from: 0, to: CGFloat(firstShare))
+                            .stroke(KapiTheme.expenseBlue, style: StrokeStyle(lineWidth: 16, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                            .frame(width: 110, height: 110)
+                    }
 
-                    Circle()
-                        .trim(from: 0.58, to: 0.88)
-                        .stroke(Color(hex: 0x5B86F7), style: StrokeStyle(lineWidth: 16, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                        .frame(width: 110, height: 110)
+                    if secondShare > 0 {
+                        Circle()
+                            .trim(from: CGFloat(min(0.98, firstShare + 0.02)), to: CGFloat(min(1.0, firstShare + secondShare)))
+                            .stroke(Color(hex: 0x5B86F7), style: StrokeStyle(lineWidth: 16, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                            .frame(width: 110, height: 110)
+                    }
 
                     VStack(spacing: 2) {
                         Text("总支出")
@@ -258,21 +263,27 @@ public struct KapiStatsView: View {
                 .padding(.leading, 8)
 
                 VStack(alignment: .leading, spacing: 8) {
-                    ForEach(Array(categoryBreakdown.enumerated()), id: \.offset) { _, row in
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(row.color)
-                                .frame(width: 8, height: 8)
-                            Text(row.name)
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(KapiTheme.textPrimary)
-                            Text(String(format: "%.1f%%", row.percent * 100))
-                                .font(.system(size: 11, design: .rounded))
-                                .foregroundColor(KapiTheme.textMuted)
-                            Spacer()
-                            Text(KapiTheme.formatRM(row.amount))
-                                .font(.system(size: 13, weight: .bold, design: .rounded))
-                                .foregroundColor(KapiTheme.textPrimary)
+                    if categoryBreakdown.isEmpty {
+                        Text("暂无支出分类数据")
+                            .font(.system(size: 13))
+                            .foregroundColor(KapiTheme.textMuted)
+                    } else {
+                        ForEach(Array(categoryBreakdown.enumerated()), id: \.offset) { _, row in
+                            HStack(spacing: 8) {
+                                Circle()
+                                    .fill(row.color)
+                                    .frame(width: 8, height: 8)
+                                Text(row.name)
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(KapiTheme.textPrimary)
+                                Text(String(format: "%.1f%%", row.percent * 100))
+                                    .font(.system(size: 11, design: .rounded))
+                                    .foregroundColor(KapiTheme.textMuted)
+                                Spacer()
+                                Text(KapiTheme.formatRM(row.amount))
+                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                                    .foregroundColor(KapiTheme.textPrimary)
+                            }
                         }
                     }
                 }
@@ -285,16 +296,18 @@ public struct KapiStatsView: View {
     // MARK: - Bar Chart: 每日支出趋势 (IMG_2255)
 
     private var dailyTrendBarCard: some View {
-        let bars: [(label: String, value: Double)] = [
-            ("周一", 0),
-            ("周二", 0),
-            ("周三", 0),
-            ("周四", 0),
-            ("周五", 0),
-            ("周六", 338.13),
-            ("周日", 57.00)
-        ]
+        let cal = Calendar(identifier: .gregorian)
+        let expenses = periodTransactions.filter { $0.type == .expense }
+        let labels = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+        let weekdayMap = [2, 3, 4, 5, 6, 7, 1] // Gregorian weekday: 2=Mon ... 7=Sat, 1=Sun
+        let bars: [(label: String, value: Double)] = zip(labels, weekdayMap).map { label, wd in
+            let sum = expenses
+                .filter { cal.component(.weekday, from: $0.date) == wd }
+                .reduce(0.0) { $0 + $1.amount }
+            return (label: label, value: sum)
+        }
         let maxVal = max(1.0, bars.map(\.value).max() ?? 1.0)
+        let dailyAvg = totalExpense / 7.0
 
         return VStack(alignment: .leading, spacing: 14) {
             HStack {
@@ -302,7 +315,7 @@ public struct KapiStatsView: View {
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(KapiTheme.textPrimary)
                 Spacer()
-                Text("日均 RM56.45")
+                Text("日均 \(KapiTheme.formatRM(dailyAvg))")
                     .font(.system(size: 11))
                     .foregroundColor(KapiTheme.textMuted)
             }
@@ -344,39 +357,46 @@ public struct KapiStatsView: View {
                 .font(.system(size: 15, weight: .bold))
                 .foregroundColor(KapiTheme.textPrimary)
 
-            ForEach(Array(topExpenses.enumerated()), id: \.element.id) { idx, item in
-                HStack(spacing: 10) {
-                    Text("\(idx + 1)")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundColor(idx < 3 ? KapiTheme.expenseBlue : KapiTheme.textMuted)
-                        .frame(width: 18)
+            if topExpenses.isEmpty {
+                Text("暂无单笔支出记录")
+                    .font(.system(size: 13))
+                    .foregroundColor(KapiTheme.textMuted)
+                    .padding(.vertical, 8)
+            } else {
+                ForEach(Array(topExpenses.enumerated()), id: \.element.id) { idx, item in
+                    HStack(spacing: 10) {
+                        Text("\(idx + 1)")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundColor(idx < 3 ? KapiTheme.expenseBlue : KapiTheme.textMuted)
+                            .frame(width: 18)
 
-                    KapiStickerIconView(
-                        iconName: item.iconName,
-                        categoryName: item.categoryPath,
-                        transactionType: .expense,
-                        size: 32
-                    )
+                        KapiStickerIconView(
+                            iconName: item.iconName,
+                            categoryName: item.categoryPath,
+                            transactionType: .expense,
+                            size: 32
+                        )
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(item.categoryPath)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(KapiTheme.textPrimary)
-                        if !item.note.isEmpty {
-                            Text(item.note)
-                                .font(.system(size: 11))
-                                .foregroundColor(KapiTheme.textMuted)
-                                .lineLimit(1)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(item.categoryPath)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(KapiTheme.textPrimary)
+                            if !item.note.isEmpty {
+                                Text(item.note)
+                                    .font(.system(size: 11))
+                                    .foregroundColor(KapiTheme.textMuted)
+                                    .lineLimit(1)
+                            }
                         }
+
+                        Spacer()
+
+                        Text("-\(KapiTheme.formatRM(item.amount))")
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundColor(KapiTheme.expenseBlue)
                     }
-
-                    Spacer()
-
-                    Text("-\(KapiTheme.formatRM(item.amount))")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .foregroundColor(KapiTheme.expenseBlue)
+                    .padding(.vertical, 4)
                 }
-                .padding(.vertical, 4)
             }
         }
         .padding(16)
@@ -386,7 +406,10 @@ public struct KapiStatsView: View {
     // MARK: - Tabular Summary: 账单汇总 (IMG_2257)
 
     private var tabularBillSummaryCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let dayGroups = store.groupedTransactionsByDay().prefix(15)
+        let cal = Calendar(identifier: .gregorian)
+
+        return VStack(alignment: .leading, spacing: 12) {
             Text("账单汇总")
                 .font(.system(size: 15, weight: .bold))
                 .foregroundColor(KapiTheme.textPrimary)
@@ -403,25 +426,38 @@ public struct KapiStatsView: View {
                 .padding(10)
                 .background(Color(hex: 0xF5F6FA))
 
-                HStack {
-                    Text("11月8日").frame(maxWidth: .infinity, alignment: .leading)
-                    Text("RM0.00").frame(maxWidth: .infinity, alignment: .trailing)
-                    Text("RM57.00").frame(maxWidth: .infinity, alignment: .trailing)
-                    Text("-RM57.00").frame(maxWidth: .infinity, alignment: .trailing)
-                }
-                .font(.system(size: 12, design: .rounded))
-                .padding(10)
+                if dayGroups.isEmpty {
+                    HStack {
+                        Text("暂无账单").frame(maxWidth: .infinity, alignment: .leading)
+                        Text("RM0.00").frame(maxWidth: .infinity, alignment: .trailing)
+                        Text("RM0.00").frame(maxWidth: .infinity, alignment: .trailing)
+                        Text("RM0.00").frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+                    .font(.system(size: 12, design: .rounded))
+                    .foregroundColor(KapiTheme.textMuted)
+                    .padding(10)
+                } else {
+                    ForEach(Array(dayGroups.enumerated()), id: \.offset) { idx, group in
+                        let inc = group.items.filter { $0.type == .income && $0.includeInStats }.reduce(0.0) { $0 + $1.amount }
+                        let exp = group.items.filter { $0.type == .expense && $0.includeInStats }.reduce(0.0) { $0 + $1.amount }
+                        let net = inc - exp
+                        let m = cal.component(.month, from: group.date)
+                        let d = cal.component(.day, from: group.date)
 
-                Divider()
+                        HStack {
+                            Text("\(m)月\(d)日").frame(maxWidth: .infinity, alignment: .leading)
+                            Text(KapiTheme.formatRM(inc)).frame(maxWidth: .infinity, alignment: .trailing)
+                            Text(KapiTheme.formatRM(exp)).frame(maxWidth: .infinity, alignment: .trailing)
+                            Text(KapiTheme.formatRM(net)).frame(maxWidth: .infinity, alignment: .trailing)
+                        }
+                        .font(.system(size: 12, design: .rounded))
+                        .padding(10)
 
-                HStack {
-                    Text("11月7日").frame(maxWidth: .infinity, alignment: .leading)
-                    Text("RM436.32").frame(maxWidth: .infinity, alignment: .trailing)
-                    Text("RM338.13").frame(maxWidth: .infinity, alignment: .trailing)
-                    Text("RM98.19").frame(maxWidth: .infinity, alignment: .trailing)
+                        if idx + 1 < dayGroups.count {
+                            Divider()
+                        }
+                    }
                 }
-                .font(.system(size: 12, design: .rounded))
-                .padding(10)
             }
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(KapiTheme.divider, lineWidth: 1))

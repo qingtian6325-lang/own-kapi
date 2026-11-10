@@ -34,6 +34,27 @@ public struct BudgetManagementView: View {
         )
     }
 
+    private var todaySpent: Double {
+        let cal = Calendar(identifier: .gregorian)
+        let now = Date()
+        let todayComps = cal.dateComponents([.year, .month, .day], from: now)
+        let targetYear = (todayComps.year == currentYear && todayComps.month == currentMonth) ? (todayComps.year ?? currentYear) : currentYear
+        let targetMonth = (todayComps.year == currentYear && todayComps.month == currentMonth) ? (todayComps.month ?? currentMonth) : currentMonth
+        let targetDay = (todayComps.year == currentYear && todayComps.month == currentMonth) ? (todayComps.day ?? 8) : 8
+
+        return store.transactions
+            .filter { tx in
+                guard tx.type == .expense && tx.includeInStats else { return false }
+                let comps = cal.dateComponents([.year, .month, .day], from: tx.date)
+                return comps.year == targetYear && comps.month == targetMonth && comps.day == targetDay
+            }
+            .reduce(0.0) { $0 + $1.amount }
+    }
+
+    private var todayRemainingAvailable: Double {
+        max(0.0, dailyAvailable - todaySpent)
+    }
+
     private var unbudgetedCategories: [CategoryGroup] {
         let budgetedNames = Set(store.categoryBudgets.map(\.categoryName))
         return store.expenseCategories.filter { !budgetedNames.contains($0.name) }
@@ -258,10 +279,10 @@ public struct BudgetManagementView: View {
                         Text("今日剩余可用")
                             .font(.system(size: 12))
                             .foregroundColor(KapiTheme.textSecondary)
-                        Text(KapiTheme.formatRM(dailyAvailable - 57.00))
+                        Text(KapiTheme.formatRM(todayRemainingAvailable))
                             .font(.system(size: 28, weight: .bold, design: .rounded))
                             .foregroundColor(KapiTheme.expenseBlue)
-                        Text("今日预算 \(KapiTheme.formatRM(dailyAvailable)) · 今日已花费 RM57.00 · 结余会滚入后续日期")
+                        Text("今日预算 \(KapiTheme.formatRM(dailyAvailable)) · 今日已花费 \(KapiTheme.formatRM(todaySpent)) · 结余会滚入后续日期")
                             .font(.system(size: 12))
                             .foregroundColor(KapiTheme.textSecondary)
                     }

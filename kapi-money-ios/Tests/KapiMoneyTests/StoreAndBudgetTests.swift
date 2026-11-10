@@ -76,4 +76,35 @@ final class StoreAndBudgetTests: XCTestCase {
         store.addTransaction(transfer)
         XCTAssertEqual(store.monthlyExpenseTotal(year: 2026, month: 11), beforeExpense, accuracy: 0.001)
     }
+
+    func testCleanEmptyAppStateAndCSVImportExport() {
+        let cleanState = KapiStore.makeCleanEmptyAppState()
+        XCTAssertTrue(cleanState.transactions.isEmpty)
+        XCTAssertTrue(cleanState.auditLogs.isEmpty)
+        XCTAssertEqual(cleanState.accounts.reduce(0.0) { $0 + $1.balance }, 0.0, accuracy: 0.001)
+
+        let store = KapiStore(inMemory: true)
+        store.resetToCleanEmpty()
+        XCTAssertEqual(store.totalRecordsCount, 0)
+        XCTAssertEqual(store.recordedDaysCount, 0)
+        XCTAssertEqual(store.streakDaysCount, 0)
+        XCTAssertEqual(store.netWorth, 0.0, accuracy: 0.001)
+
+        let parsed = KapiCSVService.parseKapiCSV(KapiCSVService.userExportedCSV)
+        XCTAssertEqual(parsed.count, 141)
+        let transfers = parsed.filter { $0.type == .transfer }
+        let expensesAndIncomes = parsed.filter { $0.type != .transfer }
+        XCTAssertEqual(transfers.count, 11)
+        XCTAssertEqual(expensesAndIncomes.count, 130)
+
+        let importedCount = store.importKapiCSV(KapiCSVService.userExportedCSV, replaceExisting: true)
+        XCTAssertEqual(importedCount, 141)
+        XCTAssertEqual(store.totalRecordsCount, 141)
+        XCTAssertGreaterThan(store.recordedDaysCount, 10)
+
+        let exported = store.exportKapiCSV()
+        XCTAssertTrue(exported.contains("日期,时间,类型,金额,一级分类,二级分类,标签,账户,计入收支,计入预算,所属账本,备注,分摊明细"))
+        XCTAssertTrue(exported.contains("日期,时间,类型,金额,转入账户,转出账户,备注"))
+        XCTAssertTrue(exported.contains("账户互转"))
+    }
 }

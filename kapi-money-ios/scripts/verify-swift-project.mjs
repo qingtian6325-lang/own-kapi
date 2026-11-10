@@ -116,6 +116,9 @@ function verifyTask2() {
     'public func monthlyExpenseTotal(',
     'public func resetToDemoData()',
     'public func clearAllDemoTransactions()',
+    'public func resetToCleanEmpty()',
+    'public func importKapiCSV(',
+    'public func exportKapiCSV()',
     '.created',
     '.updated',
     '.deleted'
@@ -123,7 +126,18 @@ function verifyTask2() {
     assertContains(store, sym, 'KapiStore.swift');
   }
 
-  console.log('Task 2 verified: KeypadCalculator, DynamicBudgetEngine, and KapiStore audit & balance logic valid');
+  const csvService = assertFileExists('Sources/KapiMoneyCore/Services/KapiCSVService.swift');
+  checkBalancedBraces(csvService, 'KapiCSVService.swift');
+  for (const sym of [
+    'public enum KapiCSVService',
+    'public static func parseKapiCSV(',
+    'public static func exportKapiCSV(',
+    'public static let userExportedCSV'
+  ]) {
+    assertContains(csvService, sym, 'KapiCSVService.swift');
+  }
+
+  console.log('Task 2 verified: KeypadCalculator, DynamicBudgetEngine, KapiCSVService, and KapiStore audit & balance logic valid');
 }
 
 function verifyTask3() {

@@ -27,7 +27,7 @@ public final class KapiStore: ObservableObject {
     @Published public var pendingEditTransactionId: UUID?
     @Published public var pendingShortcutSnippetBill: TransactionItem?
     @Published public var hideAmounts: Bool = false
-    @Published public var reimbursableAmount: Double = 1000.00
+    @Published public var reimbursableAmount: Double = 0.00
     @Published public var userNickname: String = "小金主"
 
     private let inMemory: Bool
@@ -37,7 +37,7 @@ public final class KapiStore: ObservableObject {
         self.inMemory = inMemory
         let docDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSTemporaryDirectory())
-        self.storageURL = docDir.appendingPathComponent("kapi_money_state_v1.json")
+        self.storageURL = docDir.appendingPathComponent("kapi_money_state_v2.json")
 
         if !inMemory,
            let data = try? Data(contentsOf: storageURL),
@@ -50,7 +50,8 @@ public final class KapiStore: ObservableObject {
             self.expenseCategories = decoded.expenseCategories
             self.incomeCategories = decoded.incomeCategories
             self.tags = decoded.tags
-        } else {
+        } else if inMemory {
+            // Unit test in-memory store uses deterministic test dataset
             let initial = Self.makeDemoAppState()
             self.ledgers = initial.ledgers
             self.currentLedgerId = initial.currentLedgerId
@@ -60,6 +61,19 @@ public final class KapiStore: ObservableObject {
             self.expenseCategories = initial.expenseCategories
             self.incomeCategories = initial.incomeCategories
             self.tags = initial.tags
+            self.reimbursableAmount = 1000.00
+        } else {
+            // Production App default: completely empty transactions, audit logs, and 0.00 account balances
+            let empty = Self.makeCleanEmptyAppState()
+            self.ledgers = empty.ledgers
+            self.currentLedgerId = empty.currentLedgerId
+            self.accounts = empty.accounts
+            self.transactions = empty.transactions
+            self.auditLogs = empty.auditLogs
+            self.expenseCategories = empty.expenseCategories
+            self.incomeCategories = empty.incomeCategories
+            self.tags = empty.tags
+            self.reimbursableAmount = 0.00
         }
     }
 
@@ -251,9 +265,43 @@ public final class KapiStore: ObservableObject {
 
     public var pendingReimbursementAmount: Double { reimbursableAmount }
 
-    public var recordedDaysCount: Int { 29 }
-    public var totalRecordsCount: Int { max(141, transactions.count) }
-    public var streakDaysCount: Int { 1 }
+    public var recordedDaysCount: Int {
+        let cal = Calendar(identifier: .gregorian)
+        let uniqueDays = Set(transactions.map { cal.startOfDay(for: $0.date) })
+        return uniqueDays.count
+    }
+
+    public var totalRecordsCount: Int {
+        transactions.count
+    }
+
+    public var streakDaysCount: Int {
+        transactions.isEmpty ? 0 : 1
+    }
+
+    /// Imports Kapi Money dual-table CSV text and reconciles account balances & audit logs
+    @discardableResult
+    public func importKapiCSV(_ csvText: String, replaceExisting: Bool = false) -> Int {
+        let parsed = KapiCSVService.parseKapiCSV(csvText)
+        guard !parsed.isEmpty else { return 0 }
+        if replaceExisting {
+            transactions = []
+            auditLogs = []
+            for idx in accounts.indices {
+                accounts[idx].balance = 0.0
+            }
+        }
+        // Apply chronologically so audit logs & balances accumulate accurately
+        for item in parsed.sorted(by: { $0.date < $1.date }) {
+            addTransaction(item, at: item.date)
+        }
+        saveState()
+        return parsed.count
+    }
+
+    public func exportKapiCSV() -> String {
+        KapiCSVService.exportKapiCSV(transactions: transactions)
+    }
 
     public func groupedTransactionsByDay() -> [(date: Date, items: [TransactionItem])] {
         let cal = Calendar(identifier: .gregorian)
@@ -350,9 +398,45 @@ public final class KapiStore: ObservableObject {
     }
 
     public func clearAllDemoTransactions() {
+        resetToCleanEmpty()
+    }
+
+    public func resetToCleanEmpty() {
+        let clean = Self.makeCleanEmptyAppState()
+        self.ledgers = clean.ledgers
+        self.currentLedgerId = clean.currentLedgerId
+        self.accounts = clean.accounts
         self.transactions = []
         self.auditLogs = []
+        self.reimbursableAmount = 0.0
+        self.expenseCategories = clean.expenseCategories
+        self.incomeCategories = clean.incomeCategories
+        self.tags = clean.tags
         saveState()
+    }
+
+    public static func makeCleanEmptyAppState() -> PersistedAppState {
+        let zeroAccounts = DefaultCatalog.defaultAccounts().map { acc in
+            AccountItem(
+                id: acc.id,
+                name: acc.name,
+                subtitle: acc.subtitle,
+                badgeText: acc.badgeText,
+                iconName: acc.iconName,
+                balance: 0.00,
+                isLiability: acc.isLiability
+            )
+        }
+        return PersistedAppState(
+            ledgers: [DefaultCatalog.defaultLedger()],
+            currentLedgerId: "ledger_main",
+            accounts: zeroAccounts,
+            transactions: [],
+            auditLogs: [],
+            expenseCategories: DefaultCatalog.standardExpenseCategories(),
+            incomeCategories: DefaultCatalog.standardIncomeCategories(),
+            tags: ["报销", "旅行", "固定支出", "家庭"]
+        )
     }
 
     private func applyBalanceEffect(for tx: TransactionItem, multiplier: Double) {

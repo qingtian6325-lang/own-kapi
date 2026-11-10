@@ -188,6 +188,7 @@ public struct TransactionItem: Identifiable, Codable, Equatable, Sendable {
     public var discountAmount: Double
     public var refundAmount: Double
     public var includeInStats: Bool
+    public var includeInBudget: Bool
     public var tags: [String]
     public var attachmentPaths: [String]
     public var date: Date
@@ -269,6 +270,7 @@ public struct TransactionItem: Identifiable, Codable, Equatable, Sendable {
         discountAmount: Double = 0.0,
         refundAmount: Double = 0.0,
         includeInStats: Bool = true,
+        includeInBudget: Bool = true,
         tags: [String] = [],
         attachmentPaths: [String] = [],
         date: Date = Date(),
@@ -290,6 +292,7 @@ public struct TransactionItem: Identifiable, Codable, Equatable, Sendable {
         self.discountAmount = discountAmount
         self.refundAmount = refundAmount
         self.includeInStats = includeInStats
+        self.includeInBudget = includeInBudget
         self.tags = tags
         self.attachmentPaths = attachmentPaths
         self.date = date
@@ -312,6 +315,7 @@ public struct TransactionItem: Identifiable, Codable, Equatable, Sendable {
         discountAmount: Double = 0.0,
         refundAmount: Double = 0.0,
         includeInStats: Bool = true,
+        includeInBudget: Bool = true,
         receiptImageLabels: [String] = [],
         date: Date = Date(),
         isConfirmed: Bool = true
@@ -334,6 +338,7 @@ public struct TransactionItem: Identifiable, Codable, Equatable, Sendable {
             discountAmount: discountAmount,
             refundAmount: refundAmount,
             includeInStats: includeInStats,
+            includeInBudget: includeInBudget,
             tags: [],
             attachmentPaths: receiptImageLabels,
             date: date,
