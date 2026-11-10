@@ -107,4 +107,71 @@ final class StoreAndBudgetTests: XCTestCase {
         XCTAssertTrue(exported.contains("日期,时间,类型,金额,转入账户,转出账户,备注"))
         XCTAssertTrue(exported.contains("账户互转"))
     }
+
+    func testLedgerTagAndScheduledTransactionsCRUD() {
+        let store = KapiStore(inMemory: true)
+
+        // Ledger CRUD
+        let initialLedgerCount = store.ledgers.count
+        store.addLedger(name: "旅行账本", currency: .sgd, monthlyBudget: 1500.0)
+        XCTAssertEqual(store.ledgers.count, initialLedgerCount + 1)
+        XCTAssertEqual(store.currentLedger.name, "旅行账本")
+        XCTAssertEqual(store.currentLedger.currency, .sgd)
+        XCTAssertEqual(store.currentLedger.monthlyBudget, 1500.0, accuracy: 0.001)
+
+        let newId = store.currentLedgerId
+        store.renameLedger(id: newId, newName: "新马泰之旅")
+        XCTAssertEqual(store.currentLedger.name, "新马泰之旅")
+
+        store.switchLedger(id: "ledger_main")
+        XCTAssertEqual(store.currentLedgerId, "ledger_main")
+
+        store.deleteLedger(id: newId)
+        XCTAssertEqual(store.ledgers.count, initialLedgerCount)
+
+        // Tag CRUD
+        let initialTagCount = store.tags.count
+        store.addTag("年货")
+        XCTAssertEqual(store.tags.count, initialTagCount + 1)
+        XCTAssertTrue(store.tags.contains("年货"))
+
+        let taggedTx = TransactionItem(
+            ledgerId: store.currentLedgerId,
+            type: .expense,
+            amount: 88.0,
+            primaryCategoryId: "餐饮",
+            tags: ["年货", "家庭"]
+        )
+        store.addTransaction(taggedTx)
+        XCTAssertEqual(store.transactions(forTag: "年货").count, 1)
+
+        store.deleteTag("年货")
+        XCTAssertFalse(store.tags.contains("年货"))
+
+        // Scheduled Bookkeeping
+        let sched = ScheduledTransactionItem(
+            title: "健身房月卡",
+            type: .expense,
+            amount: 199.0,
+            categoryPath: "休闲娱乐-运动健身",
+            accountName: "PBBank"
+        )
+        store.addScheduledTransaction(sched)
+        XCTAssertTrue(store.scheduledTransactions.contains(where: { $0.id == sched.id }))
+
+        store.toggleScheduledTransaction(id: sched.id)
+        XCTAssertFalse(store.scheduledTransactions.first(where: { $0.id == sched.id })!.isEnabled)
+
+        let txCountBefore = store.transactions.count
+        store.executeScheduledTransactionNow(id: sched.id)
+        XCTAssertEqual(store.transactions.count, txCountBefore + 1)
+        XCTAssertEqual(store.transactions.first?.amount, 199.0, accuracy: 0.001)
+
+        store.deleteScheduledTransaction(id: sched.id)
+        XCTAssertFalse(store.scheduledTransactions.contains(where: { $0.id == sched.id }))
+
+        // User settings
+        store.setNickname("景豪专属")
+        XCTAssertEqual(store.userNickname, "景豪专属")
+    }
 }

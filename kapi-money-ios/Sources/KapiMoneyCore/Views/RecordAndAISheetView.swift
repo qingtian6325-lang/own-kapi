@@ -21,6 +21,9 @@ public struct RecordAndAISheetView: View {
     @State private var showDiscountInput: Bool = false
     @State private var selectedCurrency: CurrencyCode = .myr
     @State private var aiInputText: String = ""
+    @State private var selectedDate: Date = Date()
+    @State private var showDatePickerSheet: Bool = false
+    @State private var selectedTags: [String] = []
 
     public init(
         store: KapiStore,
@@ -83,6 +86,26 @@ public struct RecordAndAISheetView: View {
             }
         }
         .background(Color.white.ignoresSafeArea())
+        .sheet(isPresented: $showDatePickerSheet) {
+            NavigationStack {
+                VStack {
+                    DatePicker("选择账单时间", selection: $selectedDate, displayedComponents: [.date, .hourAndMinute])
+                        .datePickerStyle(.graphical)
+                        .padding()
+                    Spacer()
+                }
+                .navigationTitle("选择账单时间")
+                #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+                #endif
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("完成") { showDatePickerSheet = false }
+                    }
+                }
+            }
+            .presentationDetents([.medium])
+        }
     }
 
     // MARK: - Top Header with ⇄ Mode Switcher (IMG_2245 & IMG_2247)
@@ -271,7 +294,14 @@ public struct RecordAndAISheetView: View {
                         }
                     }
 
-                    pillLabel(icon: "calendar", text: "11/08 16:59")
+                    Button {
+                        showDatePickerSheet = true
+                    } label: {
+                        let f = DateFormatter()
+                        let _ = { f.dateFormat = "MM/dd HH:mm" }()
+                        pillLabel(icon: "calendar", text: f.string(from: selectedDate))
+                    }
+                    .buttonStyle(.plain)
 
                     Button {
                         showDiscountInput.toggle()
@@ -290,7 +320,25 @@ public struct RecordAndAISheetView: View {
                     }
                     .buttonStyle(.plain)
 
-                    pillLabel(icon: "number", text: "选标签")
+                    Menu {
+                        ForEach(store.tags, id: \.self) { tag in
+                            Button {
+                                if selectedTags.contains(tag) {
+                                    selectedTags.removeAll(where: { $0 == tag })
+                                } else {
+                                    selectedTags.append(tag)
+                                }
+                            } label: {
+                                if selectedTags.contains(tag) {
+                                    Label(tag, systemImage: "checkmark")
+                                } else {
+                                    Text(tag)
+                                }
+                            }
+                        }
+                    } label: {
+                        pillLabel(icon: "number", text: selectedTags.isEmpty ? "选标签" : selectedTags.joined(separator: ","))
+                    }
 
                     Menu {
                         ForEach(CurrencyCode.allCases, id: \.self) { code in
@@ -436,12 +484,14 @@ public struct RecordAndAISheetView: View {
             note: noteText,
             discountAmount: discountVal,
             includeInStats: selectedTab == .transfer ? false : includeInStats,
-            date: Date()
+            tags: selectedTags,
+            date: selectedDate
         )
         store.addTransaction(tx)
         expression = ""
         noteText = ""
         discountAmountText = ""
+        selectedTags = []
         if dismissAfter {
             onDismiss()
         }

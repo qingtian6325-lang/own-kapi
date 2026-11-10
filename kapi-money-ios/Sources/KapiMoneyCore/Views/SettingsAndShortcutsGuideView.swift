@@ -18,6 +18,30 @@ public struct SettingsAndShortcutsGuideView: View {
     @State private var replaceExistingOnImport: Bool = false
     @State private var showResetCleanAlert: Bool = false
 
+    // Ledger management states
+    @State private var newLedgerName: String = ""
+    @State private var newLedgerCurrency: CurrencyCode = .myr
+    @State private var newLedgerBudget: String = "3000"
+    @State private var showCreateLedgerSheet: Bool = false
+    @State private var editingLedgerForBudget: LedgerItem?
+    @State private var editBudgetInput: String = ""
+
+    // Tag management states
+    @State private var newTagName: String = ""
+    @State private var selectedFilterTag: String? = nil
+
+    // Scheduled bookkeeping states
+    @State private var showCreateScheduledSheet: Bool = false
+    @State private var newScheduledTitle: String = ""
+    @State private var newScheduledType: TransactionType = .expense
+    @State private var newScheduledAmount: String = ""
+    @State private var newScheduledAccount: String = "PBBank"
+    @State private var newScheduledFreq: RecurringFrequency = .monthly
+    @State private var newScheduledDay: Int = 1
+
+    // General settings
+    @State private var editingNickname: String = ""
+
     public init(
         store: KapiStore,
         aiEngine: KapiAIEngine,
@@ -49,16 +73,24 @@ public struct SettingsAndShortcutsGuideView: View {
                         .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xE8F5E9)))
                     }
 
-                    // If user tapped "导入导出" in the drawer, show CSV card first
-                    if initialSectionTitle == "导入导出" {
+                    switch initialSectionTitle {
+                    case "账本管理":
+                        ledgerManagementSection
+                    case "标签管理":
+                        tagManagementSection
+                    case "定时记账":
+                        scheduledBookkeepingSection
+                    case "小组件":
+                        widgetsShowcaseSection
+                    case "设置":
+                        generalSettingsSection
+                    case "导入导出":
                         csvImportExportCard
-                        shortcutsCard
-                        aiEngineCard
                         dataManagementCard
-                    } else {
+                    default: // 自动记账
                         shortcutsCard
-                        csvImportExportCard
                         aiEngineCard
+                        csvImportExportCard
                         dataManagementCard
                     }
                 }
@@ -443,5 +475,635 @@ public struct SettingsAndShortcutsGuideView: View {
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
+    }
+
+    // MARK: - 1. 账本管理 (Ledger Management Section)
+
+    private var ledgerManagementSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("📒 全部账本 (\(store.ledgers.count))")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(KapiTheme.textPrimary)
+                Spacer()
+                Button {
+                    showCreateLedgerSheet = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus.circle.fill")
+                        Text("新建账本")
+                    }
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(KapiTheme.expenseBlue)
+                }
+            }
+
+            ForEach(store.ledgers) { ledger in
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text("📒")
+                            .font(.system(size: 20))
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack {
+                                Text(ledger.name)
+                                    .font(.system(size: 15, weight: .bold))
+                                    .foregroundColor(KapiTheme.textPrimary)
+                                if ledger.id == store.currentLedgerId {
+                                    Text("当前使用")
+                                        .font(.system(size: 10, weight: .semibold))
+                                        .foregroundColor(KapiTheme.balanceGreen)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Capsule().fill(Color(hex: 0xE8F5E9)))
+                                }
+                            }
+                            Text("主币种: \(ledger.currency.rawValue) · 月预算: \(KapiTheme.formatRM(ledger.monthlyBudget))")
+                                .font(.system(size: 11))
+                                .foregroundColor(KapiTheme.textSecondary)
+                        }
+                        Spacer()
+
+                        if ledger.id != store.currentLedgerId {
+                            Button("切换") {
+                                store.switchLedger(id: ledger.id)
+                                statusBannerMessage = "已切换到账本: \(ledger.name)"
+                            }
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(KapiTheme.expenseBlue)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                        }
+                    }
+
+                    HStack(spacing: 12) {
+                        Button {
+                            editingLedgerForBudget = ledger
+                            editBudgetInput = String(format: "%.0f", ledger.monthlyBudget)
+                        } label: {
+                            Text("修改月预算")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(KapiTheme.expenseBlue)
+                        }
+
+                        Spacer()
+
+                        if store.ledgers.count > 1 {
+                            Button {
+                                store.deleteLedger(id: ledger.id)
+                                statusBannerMessage = "已删除账本: \(ledger.name)"
+                            } label: {
+                                Text("删除")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(KapiTheme.dangerRed)
+                            }
+                        }
+                    }
+                    .padding(.top, 2)
+                }
+                .padding(14)
+                .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+            }
+        }
+        .sheet(item: $editingLedgerForBudget) { ledger in
+            NavigationStack {
+                VStack(spacing: 16) {
+                    Text("调整「\(ledger.name)」的每月预算金额")
+                        .font(.system(size: 13))
+                        .foregroundColor(KapiTheme.textSecondary)
+                        .padding(.top, 16)
+                    TextField("输入预算金额", text: $editBudgetInput)
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .multilineTextAlignment(.center)
+                        .padding(12)
+                        .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF5F6FA)))
+                        .padding(.horizontal, 32)
+                    Button {
+                        if let val = Double(editBudgetInput), val >= 0 {
+                            store.updateLedgerBudget(id: ledger.id, newBudget: val)
+                            statusBannerMessage = "已更新账本预算为 \(KapiTheme.formatRM(val))"
+                        }
+                        editingLedgerForBudget = nil
+                    } label: {
+                        Text("保存预算")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(Capsule().fill(KapiTheme.expenseBlue))
+                    }
+                    .padding(.horizontal, 32)
+                    Spacer()
+                }
+                .navigationTitle("修改月预算")
+                #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+                #endif
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("取消") { editingLedgerForBudget = nil }
+                    }
+                }
+            }
+            .presentationDetents([.height(260)])
+        }
+        .sheet(isPresented: $showCreateLedgerSheet) {
+            NavigationStack {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("账本名称")
+                        .font(.system(size: 13, weight: .semibold))
+                    TextField("如：生意账本 / 旅行账本 / 装修账本", text: $newLedgerName)
+                        .font(.system(size: 14))
+                        .padding(10)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+
+                    Text("每月预算 (RM)")
+                        .font(.system(size: 13, weight: .semibold))
+                    TextField("3000", text: $newLedgerBudget)
+                        .font(.system(size: 14))
+                        .padding(10)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+
+                    Button {
+                        let trimmed = newLedgerName.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !trimmed.isEmpty else { return }
+                        let budget = Double(newLedgerBudget) ?? 3000.0
+                        store.addLedger(name: trimmed, currency: newLedgerCurrency, monthlyBudget: budget)
+                        newLedgerName = ""
+                        showCreateLedgerSheet = false
+                        statusBannerMessage = "已创建并切换到新账本: \(trimmed)"
+                    } label: {
+                        Text("确认创建账本")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(Capsule().fill(KapiTheme.expenseBlue))
+                    }
+                    .padding(.top, 10)
+
+                    Spacer()
+                }
+                .padding(16)
+                .navigationTitle("新建账本")
+                #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+                #endif
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("取消") { showCreateLedgerSheet = false }
+                    }
+                }
+            }
+            .presentationDetents([.height(320)])
+        }
+    }
+
+    // MARK: - 2. 标签管理 (Tag Management Section)
+
+    private var tagManagementSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("🏷️ 标签管理 (\(store.tags.count))")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(KapiTheme.textPrimary)
+
+            Text("为账单打上标签（如：报销、旅行、人情），可以在此统一统计与筛选。")
+                .font(.system(size: 12))
+                .foregroundColor(KapiTheme.textSecondary)
+
+            // Add tag input
+            HStack(spacing: 8) {
+                TextField("输入新标签名称 (如：兼职/自驾游)", text: $newTagName)
+                    .font(.system(size: 13))
+                    .padding(9)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color.white))
+                Button("添加") {
+                    let trimmed = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmed.isEmpty else { return }
+                    store.addTag(trimmed)
+                    newTagName = ""
+                    statusBannerMessage = "已添加新标签: #\(trimmed)"
+                }
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
+                .background(Capsule().fill(KapiTheme.expenseBlue))
+            }
+
+            // Tag chips
+            VStack(alignment: .leading, spacing: 10) {
+                Text("现有标签列表（点击标签可筛选关联账单）：")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(KapiTheme.textSecondary)
+
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 95), spacing: 8)], spacing: 8) {
+                    ForEach(store.tags, id: \.self) { tag in
+                        let count = store.transactions(forTag: tag).count
+                        let isSelected = selectedFilterTag == tag
+                        HStack(spacing: 4) {
+                            Button {
+                                selectedFilterTag = (selectedFilterTag == tag) ? nil : tag
+                            } label: {
+                                Text("#\(tag) (\(count))")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(isSelected ? .white : KapiTheme.textPrimary)
+                                    .lineLimit(1)
+                            }
+                            Button {
+                                store.deleteTag(tag)
+                                if selectedFilterTag == tag { selectedFilterTag = nil }
+                                statusBannerMessage = "已删除标签: #\(tag)"
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(isSelected ? .white.opacity(0.8) : KapiTheme.textMuted)
+                            }
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 6)
+                        .background(Capsule().fill(isSelected ? KapiTheme.expenseBlue : Color.white))
+                    }
+                }
+            }
+
+            if let activeTag = selectedFilterTag {
+                let taggedBills = store.transactions(forTag: activeTag)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("🏷️ 标签「#\(activeTag)」下的全部账单 (\(taggedBills.count) 笔)：")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(KapiTheme.textPrimary)
+
+                    if taggedBills.isEmpty {
+                        Text("该标签下暂无账单记录")
+                            .font(.system(size: 12))
+                            .foregroundColor(KapiTheme.textMuted)
+                            .padding(.vertical, 12)
+                    } else {
+                        ForEach(taggedBills) { item in
+                            HStack {
+                                Text(item.categoryPath)
+                                    .font(.system(size: 13, weight: .semibold))
+                                Text(item.note)
+                                    .font(.system(size: 11))
+                                    .foregroundColor(KapiTheme.textMuted)
+                                    .lineLimit(1)
+                                Spacer()
+                                Text(item.type == .expense ? "-\(KapiTheme.formatRM(item.amount))" : "+\(KapiTheme.formatRM(item.amount))")
+                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                                    .foregroundColor(item.type == .expense ? KapiTheme.expenseBlue : KapiTheme.incomeOrange)
+                            }
+                            .padding(10)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(Color.white))
+                        }
+                    }
+                }
+                .padding(.top, 4)
+            }
+        }
+    }
+
+    // MARK: - 3. 定时记账 (Scheduled Bookkeeping Section)
+
+    private var scheduledBookkeepingSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("⏰ 定时记账与周期固定收支")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(KapiTheme.textPrimary)
+                Spacer()
+                Button {
+                    showCreateScheduledSheet = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus.circle.fill")
+                        Text("新增计划")
+                    }
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(KapiTheme.expenseBlue)
+                }
+            }
+
+            Text("针对房租、宽带、月薪、订阅会员等固定周期收支，到期自动入账或一键执行，告别重复手工输入。")
+                .font(.system(size: 12))
+                .foregroundColor(KapiTheme.textSecondary)
+
+            ForEach(store.scheduledTransactions) { item in
+                VStack(spacing: 10) {
+                    HStack(spacing: 10) {
+                        Text(item.iconName)
+                            .font(.system(size: 24))
+                            .frame(width: 36, height: 36)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(item.title)
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(KapiTheme.textPrimary)
+                            Text("\(item.frequency.rawValue) \(item.dayOfMonth)日 · \(item.accountName) · \(item.categoryPath)")
+                                .font(.system(size: 11))
+                                .foregroundColor(KapiTheme.textSecondary)
+                        }
+
+                        Spacer()
+
+                        Text(item.type == .expense ? "-\(KapiTheme.formatRM(item.amount))" : "+\(KapiTheme.formatRM(item.amount))")
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .foregroundColor(item.type == .expense ? KapiTheme.expenseBlue : KapiTheme.incomeOrange)
+                    }
+
+                    Divider()
+
+                    HStack {
+                        Toggle(isOn: Binding(
+                            get: { item.isEnabled },
+                            set: { _ in store.toggleScheduledTransaction(id: item.id) }
+                        )) {
+                            Text(item.isEnabled ? "计划启用中" : "已暂停")
+                                .font(.system(size: 12))
+                                .foregroundColor(item.isEnabled ? KapiTheme.balanceGreen : KapiTheme.textMuted)
+                        }
+
+                        Spacer()
+
+                        Button {
+                            store.executeScheduledTransactionNow(id: item.id)
+                            statusBannerMessage = "已立即执行并记入账本: \(item.title) \(KapiTheme.formatRM(item.amount))"
+                        } label: {
+                            Text("⚡ 立即入账一次")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(KapiTheme.expenseBlue)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                        }
+
+                        Button {
+                            store.deleteScheduledTransaction(id: item.id)
+                            statusBannerMessage = "已删除定时计划: \(item.title)"
+                        } label: {
+                            Image(systemName: "trash")
+                                .font(.system(size: 12))
+                                .foregroundColor(KapiTheme.dangerRed)
+                        }
+                    }
+                }
+                .padding(14)
+                .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+            }
+        }
+        .sheet(isPresented: $showCreateScheduledSheet) {
+            NavigationStack {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("计划名称")
+                        .font(.system(size: 13, weight: .semibold))
+                    TextField("如：每月房贷 / Netflix 会员", text: $newScheduledTitle)
+                        .font(.system(size: 14))
+                        .padding(10)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("类型")
+                                .font(.system(size: 13, weight: .semibold))
+                            Picker("", selection: $newScheduledType) {
+                                Text("支出").tag(TransactionType.expense)
+                                Text("收入").tag(TransactionType.income)
+                            }
+                            .pickerStyle(.segmented)
+                        }
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("金额 (RM)")
+                                .font(.system(size: 13, weight: .semibold))
+                            TextField("100.00", text: $newScheduledAmount)
+                                .font(.system(size: 14))
+                                .padding(7)
+                                .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                        }
+                    }
+
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("扣款/入账账户")
+                                .font(.system(size: 13, weight: .semibold))
+                            Picker("", selection: $newScheduledAccount) {
+                                ForEach(store.accounts) { acc in
+                                    Text(acc.name).tag(acc.name)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                        }
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("执行周期")
+                                .font(.system(size: 13, weight: .semibold))
+                            Picker("", selection: $newScheduledFreq) {
+                                ForEach(RecurringFrequency.allCases, id: \.self) { freq in
+                                    Text(freq.rawValue).tag(freq)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                        }
+                    }
+
+                    Button {
+                        let trimmed = newScheduledTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !trimmed.isEmpty, let amt = Double(newScheduledAmount), amt > 0 else { return }
+                        let newItem = ScheduledTransactionItem(
+                            title: trimmed,
+                            type: newScheduledType,
+                            amount: amt,
+                            categoryPath: newScheduledType == .expense ? "住房-房租房贷" : "职业收入-绩效奖金",
+                            iconName: newScheduledType == .expense ? "🏠" : "💼",
+                            accountName: newScheduledAccount,
+                            frequency: newScheduledFreq,
+                            dayOfMonth: 1,
+                            isEnabled: true
+                        )
+                        store.addScheduledTransaction(newItem)
+                        newScheduledTitle = ""
+                        newScheduledAmount = ""
+                        showCreateScheduledSheet = false
+                        statusBannerMessage = "已创建定时入账计划: \(trimmed)"
+                    } label: {
+                        Text("保存定时计划")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(Capsule().fill(KapiTheme.expenseBlue))
+                    }
+                    .padding(.top, 10)
+
+                    Spacer()
+                }
+                .padding(16)
+                .navigationTitle("新增定时记账")
+                #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+                #endif
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("取消") { showCreateScheduledSheet = false }
+                    }
+                }
+            }
+            .presentationDetents([.height(380)])
+        }
+    }
+
+    // MARK: - 4. 小组件展示与配置 (Widgets Showcase Section)
+
+    private var widgetsShowcaseSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("🧩 iOS 桌面与锁屏小组件")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(KapiTheme.textPrimary)
+
+            Text("在 iPhone 桌面长按进入编辑状态 ➔ 点击左上角「+」➔ 搜索「咔皮记账」，即可添加以下官方设计小组件：")
+                .font(.system(size: 12))
+                .foregroundColor(KapiTheme.textSecondary)
+
+            // 1. Small Widget Preview (今日可用)
+            VStack(alignment: .leading, spacing: 10) {
+                Text("小号小组件 · 今日动态预算")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(KapiTheme.textPrimary)
+
+                HStack {
+                    ZStack {
+                        Circle()
+                            .stroke(Color(hex: 0xEEF0F6), lineWidth: 8)
+                            .frame(width: 80, height: 80)
+                        Circle()
+                            .trim(from: 0, to: 0.65)
+                            .stroke(KapiTheme.expenseBlue, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                            .frame(width: 80, height: 80)
+                        VStack(spacing: 2) {
+                            Text("今日可用")
+                                .font(.system(size: 9))
+                                .foregroundColor(KapiTheme.textSecondary)
+                            Text("RM92.26")
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                                .foregroundColor(KapiTheme.textPrimary)
+                        }
+                    }
+                    Spacer()
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("🦫 动态结余滚入")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(KapiTheme.expenseBlue)
+                        Text("今日已花费 RM0.00")
+                            .font(.system(size: 10))
+                            .foregroundColor(KapiTheme.textMuted)
+                        Text("实时同步当前账本")
+                            .font(.system(size: 10))
+                            .foregroundColor(KapiTheme.textMuted)
+                    }
+                }
+                .padding(14)
+                .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+            }
+
+            // 2. Medium Widget Preview (7日趋势与本周收支)
+            VStack(alignment: .leading, spacing: 10) {
+                Text("中号小组件 · 7日收支趋势")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(KapiTheme.textPrimary)
+
+                HStack(alignment: .bottom, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("本周结余")
+                            .font(.system(size: 10))
+                            .foregroundColor(KapiTheme.textSecondary)
+                        Text(KapiTheme.formatRM(store.netWorth))
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                            .foregroundColor(KapiTheme.balanceGreen)
+                    }
+                    Spacer()
+                    HStack(alignment: .bottom, spacing: 6) {
+                        ForEach([0.2, 0.45, 0.3, 0.65, 0.85, 0.4, 0.95], id: \.self) { level in
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(KapiTheme.expenseBlue.opacity(0.8))
+                                .frame(width: 12, height: CGFloat(level * 42))
+                        }
+                    }
+                }
+                .padding(14)
+                .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+            }
+        }
+    }
+
+    // MARK: - 5. 通用设置 (General Settings Section)
+
+    private var generalSettingsSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("⚙️ 通用与偏好设置")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(KapiTheme.textPrimary)
+
+            // Nickname
+            VStack(alignment: .leading, spacing: 8) {
+                Text("用户昵称")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(KapiTheme.textSecondary)
+                HStack {
+                    TextField("输入您的昵称", text: $editingNickname)
+                        .font(.system(size: 14))
+                    Button("保存") {
+                        store.setNickname(editingNickname)
+                        statusBannerMessage = "已更新昵称为: \(store.userNickname)"
+                    }
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Capsule().fill(KapiTheme.expenseBlue))
+                }
+                .padding(10)
+                .background(RoundedRectangle(cornerRadius: 12).fill(Color.white))
+            }
+            .onAppear {
+                editingNickname = store.userNickname
+            }
+
+            // Haptics Toggle
+            Toggle(isOn: $store.hapticsEnabled) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("触觉震动反馈")
+                        .font(.system(size: 14, weight: .medium))
+                    Text("在点击按键与确认记账时提供清脆震动反馈")
+                        .font(.system(size: 11))
+                        .foregroundColor(KapiTheme.textMuted)
+                }
+            }
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 14).fill(Color.white))
+
+            // Storage mode info
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("数据存储模式")
+                        .font(.system(size: 14, weight: .medium))
+                    Text("本地安全独立沙盒存储，无需联网即可完整离线使用")
+                        .font(.system(size: 11))
+                        .foregroundColor(KapiTheme.textMuted)
+                }
+                Spacer()
+                Text("离线安全")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(KapiTheme.balanceGreen)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Capsule().fill(Color(hex: 0xE8F5E9)))
+            }
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 14).fill(Color.white))
+
+            dataManagementCard
+        }
     }
 }

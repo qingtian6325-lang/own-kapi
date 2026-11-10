@@ -28,7 +28,13 @@ public final class KapiStore: ObservableObject {
     @Published public var pendingShortcutSnippetBill: TransactionItem?
     @Published public var hideAmounts: Bool = false
     @Published public var reimbursableAmount: Double = 0.00
-    @Published public var userNickname: String = "小金主"
+    @Published public var userNickname: String = "景豪"
+    @Published public var hapticsEnabled: Bool = true
+    @Published public var scheduledTransactions: [ScheduledTransactionItem] = [
+        ScheduledTransactionItem(title: "每月房租", type: .expense, amount: 1500.0, categoryPath: "住房-房租房贷", iconName: "🏠", accountName: "PBBank", frequency: .monthly, dayOfMonth: 1, isEnabled: true),
+        ScheduledTransactionItem(title: "宽带与电话费", type: .expense, amount: 139.0, categoryPath: "住房-话费网费", iconName: "📶", accountName: "TNGewallet", frequency: .monthly, dayOfMonth: 15, isEnabled: true),
+        ScheduledTransactionItem(title: "月度固定薪资", type: .income, amount: 6500.0, categoryPath: "职业收入-绩效奖金", iconName: "💼", accountName: "PBBank", frequency: .monthly, dayOfMonth: 28, isEnabled: true)
+    ]
 
     private let inMemory: Bool
     private let storageURL: URL
@@ -211,6 +217,105 @@ public final class KapiStore: ObservableObject {
             var ledger = currentLedger
             ledger.monthlyBudget = newValue
             currentLedger = ledger
+        }
+    }
+
+    // MARK: - Ledger Management Functions
+    public func addLedger(name: String, currency: CurrencyCode = .myr, monthlyBudget: Double = 3000.0) {
+        let newLedger = LedgerItem(
+            id: "ledger_\(UUID().uuidString.prefix(8))",
+            name: name,
+            currency: currency,
+            monthlyBudget: monthlyBudget,
+            categoryBudgets: DefaultCatalog.defaultLedger().categoryBudgets
+        )
+        ledgers.append(newLedger)
+        currentLedgerId = newLedger.id
+        saveState()
+    }
+
+    public func renameLedger(id: String, newName: String) {
+        guard let idx = ledgers.firstIndex(where: { $0.id == id }) else { return }
+        ledgers[idx].name = newName
+        saveState()
+    }
+
+    public func updateLedgerBudget(id: String, newBudget: Double) {
+        guard let idx = ledgers.firstIndex(where: { $0.id == id }) else { return }
+        ledgers[idx].monthlyBudget = max(0.0, newBudget)
+        saveState()
+    }
+
+    public func deleteLedger(id: String) {
+        guard ledgers.count > 1 else { return }
+        ledgers.removeAll(where: { $0.id == id })
+        if currentLedgerId == id {
+            currentLedgerId = ledgers.first?.id ?? "ledger_main"
+        }
+        saveState()
+    }
+
+    public func switchLedger(id: String) {
+        if ledgers.contains(where: { $0.id == id }) {
+            currentLedgerId = id
+            saveState()
+        }
+    }
+
+    // MARK: - Tag Management Functions
+    public func addTag(_ name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty && !tags.contains(trimmed) else { return }
+        tags.append(trimmed)
+        saveState()
+    }
+
+    public func deleteTag(_ name: String) {
+        tags.removeAll(where: { $0 == name })
+        saveState()
+    }
+
+    public func transactions(forTag tag: String) -> [TransactionItem] {
+        transactions.filter { $0.tags.contains(tag) }
+    }
+
+    // MARK: - Scheduled Bookkeeping Functions
+    public func addScheduledTransaction(_ item: ScheduledTransactionItem) {
+        scheduledTransactions.append(item)
+        saveState()
+    }
+
+    public func deleteScheduledTransaction(id: UUID) {
+        scheduledTransactions.removeAll(where: { $0.id == id })
+        saveState()
+    }
+
+    public func toggleScheduledTransaction(id: UUID) {
+        guard let idx = scheduledTransactions.firstIndex(where: { $0.id == id }) else { return }
+        scheduledTransactions[idx].isEnabled.toggle()
+        saveState()
+    }
+
+    public func executeScheduledTransactionNow(id: UUID) {
+        guard let item = scheduledTransactions.first(where: { $0.id == id }) else { return }
+        let tx = TransactionItem(
+            ledgerId: currentLedgerId,
+            type: item.type,
+            amount: item.amount,
+            currency: currentLedger.currency,
+            primaryCategoryId: item.categoryPath,
+            accountId: DefaultCatalog.resolveAccountId(from: item.accountName),
+            note: "【定时入账】\(item.title)"
+        )
+        addTransaction(tx)
+    }
+
+    // MARK: - User Settings
+    public func setNickname(_ newName: String) {
+        let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            userNickname = trimmed
+            saveState()
         }
     }
 

@@ -401,3 +401,46 @@ public struct LedgerItem: Identifiable, Codable, Equatable, Sendable {
         self.customDailyBudgets = customDailyBudgets
     }
 }
+
+public enum RecurringFrequency: String, Codable, CaseIterable, Sendable {
+    case daily = "每天"
+    case weekly = "每周"
+    case monthly = "每月"
+}
+
+public struct ScheduledTransactionItem: Identifiable, Codable, Equatable, Sendable {
+    public var id: UUID
+    public var title: String
+    public var type: TransactionType
+    public var amount: Double
+    public var categoryPath: String
+    public var iconName: String
+    public var accountName: String
+    public var frequency: RecurringFrequency
+    public var dayOfMonth: Int // 1..31
+    public var isEnabled: Bool
+
+    public init(
+        id: UUID = UUID(),
+        title: String,
+        type: TransactionType = .expense,
+        amount: Double,
+        categoryPath: String,
+        iconName: String = "🍜",
+        accountName: String = "TNGewallet",
+        frequency: RecurringFrequency = .monthly,
+        dayOfMonth: Int = 1,
+        isEnabled: Bool = true
+    ) {
+        self.id = id
+        self.title = title
+        self.type = type
+        self.amount = amount
+        self.categoryPath = categoryPath
+        self.iconName = iconName
+        self.accountName = accountName
+        self.frequency = frequency
+        self.dayOfMonth = dayOfMonth
+        self.isEnabled = isEnabled
+    }
+}

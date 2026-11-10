@@ -8,6 +8,8 @@ public struct KapiStatsView: View {
 
     @State private var selectedPeriod: String = "周" // 周 | 月 | 年 | 自定义
     @State private var selectedChartType: TransactionType = .expense
+    @State private var selectedLedgerFilterId: String? = nil // nil = current ledger
+    @State private var selectedFilterType: String = "全部" // 全部 | 仅支出 | 仅收入
 
     public init(
         store: KapiStore,
@@ -22,7 +24,53 @@ public struct KapiStatsView: View {
     }
 
     private var periodTransactions: [TransactionItem] {
-        store.transactions.filter { $0.ledgerId == store.currentLedgerId && $0.includeInStats }
+        let cal = Calendar(identifier: .gregorian)
+        let now = Date()
+        let targetLedgerId = selectedLedgerFilterId ?? store.currentLedgerId
+
+        return store.transactions.filter { tx in
+            if selectedLedgerFilterId != "all" && tx.ledgerId != targetLedgerId {
+                return false
+            }
+            guard tx.includeInStats else { return false }
+
+            if selectedFilterType == "仅支出" && tx.type != .expense { return false }
+            if selectedFilterType == "仅收入" && tx.type != .income { return false }
+
+            switch selectedPeriod {
+            case "周":
+                guard let weekAgo = cal.date(byAdding: .day, value: -7, to: now) else { return true }
+                return tx.date >= weekAgo
+            case "月":
+                let nowComps = cal.dateComponents([.year, .month], from: now)
+                let txComps = cal.dateComponents([.year, .month], from: tx.date)
+                return txComps.year == nowComps.year && txComps.month == nowComps.month
+            case "年":
+                let nowYear = cal.component(.year, from: now)
+                let txYear = cal.component(.year, from: tx.date)
+                return txYear == nowYear
+            default:
+                return true
+            }
+        }
+    }
+
+    private var periodLabelText: String {
+        switch selectedPeriod {
+        case "周": return "最近 7 天收支趋势"
+        case "月": return "2026年 11月"
+        case "年": return "2026年 全年"
+        default: return "全部历史账单"
+        }
+    }
+
+    private var balanceCardTitle: String {
+        switch selectedPeriod {
+        case "周": return "本周结余"
+        case "月": return "本月结余"
+        case "年": return "年度结余"
+        default: return "累计结余"
+        }
     }
 
     private var totalExpense: Double {
@@ -113,19 +161,44 @@ public struct KapiStatsView: View {
 
             Spacer()
 
-            Text("全部账本 ⌄")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(KapiTheme.textPrimary)
+            Menu {
+                Button("当前账本 (\(store.currentLedgerName))") { selectedLedgerFilterId = store.currentLedgerId }
+                Button("全部账本合并") { selectedLedgerFilterId = "all" }
+                Divider()
+                ForEach(store.ledgers) { l in
+                    Button(l.name) { selectedLedgerFilterId = l.id }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(selectedLedgerFilterId == "all" ? "全部账本" : (store.ledgers.first(where: { $0.id == selectedLedgerFilterId })?.name ?? store.currentLedgerName))
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(KapiTheme.textPrimary)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(KapiTheme.textSecondary)
+                }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(Capsule().fill(Color.white))
+            }
 
-            Text("筛选")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(KapiTheme.textPrimary)
+            Menu {
+                Button("全部类型") { selectedFilterType = "全部" }
+                Button("仅看支出") { selectedFilterType = "仅支出" }
+                Button("仅看收入") { selectedFilterType = "仅收入" }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(selectedFilterType == "全部" ? "筛选" : selectedFilterType)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(KapiTheme.textPrimary)
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                        .font(.system(size: 11))
+                        .foregroundColor(KapiTheme.expenseBlue)
+                }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(Capsule().fill(Color.white))
+            }
         }
     }
 
@@ -155,16 +228,20 @@ public struct KapiStatsView: View {
             .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xE9ECF4)))
 
             HStack {
-                Text("2026年 11.2 - 11.8")
+                Text(periodLabelText)
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
                     .foregroundColor(KapiTheme.textPrimary)
                 Spacer()
-                Text("回本周")
+                if selectedPeriod != "周" {
+                    Button("回本周") {
+                        selectedPeriod = "周"
+                    }
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(KapiTheme.expenseBlue)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                }
             }
         }
     }
@@ -175,12 +252,12 @@ public struct KapiStatsView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("本周结余")
+                    Text(balanceCardTitle)
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(KapiTheme.textSecondary)
                     Text(KapiTheme.formatRM(netBalance))
                         .font(.system(size: 26, weight: .bold, design: .rounded))
-                        .foregroundColor(KapiTheme.balanceGreen)
+                        .foregroundColor(netBalance >= 0 ? KapiTheme.balanceGreen : KapiTheme.dangerRed)
                 }
 
                 Spacer()
