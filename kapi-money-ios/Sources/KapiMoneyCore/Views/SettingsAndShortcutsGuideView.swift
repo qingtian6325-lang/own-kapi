@@ -164,19 +164,19 @@ public struct SettingsAndShortcutsGuideView: View {
             }
             .buttonStyle(.plain)
 
-            // Button 3: Convenience one-click import user exported 141 records
+            // Button 3: Convenience one-click import user exported 151 records
             Button {
                 let count = store.importKapiCSV(KapiCSVService.userExportedCSV, replaceExisting: replaceExistingOnImport)
-                statusBannerMessage = "已成功导入 \(count) 笔咔皮账单（含 130 笔收支 + 11 笔账户互转）"
+                statusBannerMessage = "已成功导入 \(count) 笔咔皮账单（含 140 笔收支 + 11 笔账户互转）"
             } label: {
                 HStack {
                     Image(systemName: "arrow.down.doc.fill")
                         .foregroundColor(Color(hex: 0x2E7D32))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("一键导入我的 141 笔账单备份")
+                        Text("一键导入我的 151 笔账单备份")
                             .font(.system(size: 13, weight: .bold))
                             .foregroundColor(Color(hex: 0x2E7D32))
-                        Text("包含 2026.09 - 2026.11 真实导出的 130 笔收支及 11 笔互转")
+                        Text("包含 2026.09 - 2026.11 真实导出的 140 笔收支及 11 笔互转")
                             .font(.system(size: 11))
                             .foregroundColor(Color(hex: 0x2E7D32).opacity(0.8))
                     }

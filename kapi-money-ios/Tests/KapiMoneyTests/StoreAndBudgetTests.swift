@@ -91,15 +91,15 @@ final class StoreAndBudgetTests: XCTestCase {
         XCTAssertEqual(store.netWorth, 0.0, accuracy: 0.001)
 
         let parsed = KapiCSVService.parseKapiCSV(KapiCSVService.userExportedCSV)
-        XCTAssertEqual(parsed.count, 141)
+        XCTAssertEqual(parsed.count, 151)
         let transfers = parsed.filter { $0.type == .transfer }
         let expensesAndIncomes = parsed.filter { $0.type != .transfer }
         XCTAssertEqual(transfers.count, 11)
-        XCTAssertEqual(expensesAndIncomes.count, 130)
+        XCTAssertEqual(expensesAndIncomes.count, 140)
 
         let importedCount = store.importKapiCSV(KapiCSVService.userExportedCSV, replaceExisting: true)
-        XCTAssertEqual(importedCount, 141)
-        XCTAssertEqual(store.totalRecordsCount, 141)
+        XCTAssertEqual(importedCount, 151)
+        XCTAssertEqual(store.totalRecordsCount, 151)
         XCTAssertGreaterThan(store.recordedDaysCount, 10)
 
         let exported = store.exportKapiCSV()
