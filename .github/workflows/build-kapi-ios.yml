@@ -56,31 +56,11 @@ jobs:
           printf "APPL????" > build/Payload/KapiMoneyApp.app/PkgInfo
 
           # Copy real Mimi Money PNG App Icons
-          if [ -f Resources/AppIcon60x60@2x.png ]; then
-            echo "Copying custom Mimi Money AppIcon assets..."
-            cp Resources/AppIcon60x60@2x.png build/Payload/KapiMoneyApp.app/AppIcon60x60@2x.png
-            cp Resources/AppIcon60x60@3x.png build/Payload/KapiMoneyApp.app/AppIcon60x60@3x.png
-            cp Resources/AppIcon76x76@2x.png build/Payload/KapiMoneyApp.app/AppIcon76x76@2x.png
-            cp Resources/AppIcon1024.png build/Payload/KapiMoneyApp.app/AppIcon1024.png
-          else
-            python3 - << 'PYEOF'
-            import struct, zlib
-
-            def make_png(width, height, rgb=(45, 90, 240)):
-                raw = b""
-                for y in range(height):
-                    raw += b"\x00" + bytes(rgb) * width
-                def chunk(tag, data):
-                    return struct.pack("!I", len(data)) + tag + data + struct.pack("!I", zlib.crc32(tag + data) & 0xffffffff)
-                ihdr = struct.pack("!IIBBBBB", width, height, 8, 2, 0, 0, 0)
-                return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b"")
-
-            with open("build/Payload/KapiMoneyApp.app/AppIcon60x60@2x.png", "wb") as f:
-                f.write(make_png(120, 120))
-            with open("build/Payload/KapiMoneyApp.app/AppIcon60x60@3x.png", "wb") as f:
-                f.write(make_png(180, 180))
-            PYEOF
-          fi
+          echo "Copying custom Mimi Money AppIcon assets..."
+          cp Resources/AppIcon60x60@2x.png build/Payload/KapiMoneyApp.app/AppIcon60x60@2x.png
+          cp Resources/AppIcon60x60@3x.png build/Payload/KapiMoneyApp.app/AppIcon60x60@3x.png
+          cp Resources/AppIcon76x76@2x.png build/Payload/KapiMoneyApp.app/AppIcon76x76@2x.png
+          cp Resources/AppIcon1024.png build/Payload/KapiMoneyApp.app/AppIcon1024.png
 
           cat > build/Payload/KapiMoneyApp.app/Info.plist << EOF
           <?xml version="1.0" encoding="UTF-8"?>
