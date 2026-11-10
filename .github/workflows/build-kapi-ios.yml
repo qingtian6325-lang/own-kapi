@@ -193,7 +193,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           APP_VERSION="$(cat VERSION 2>/dev/null || echo "1.0.1")"
-          RELEASE_TAG="v${APP_VERSION}"
+          export RELEASE_TAG="v${APP_VERSION}"
           echo "Publishing release for ${RELEASE_TAG}..."
 
           git config user.name "github-actions[bot]"
