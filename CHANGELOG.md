@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v1.0.4] - 2026-11-10
 
 ### 🚀 Highlights
+- **支持浮窗交互式 Dialog：停留在当前 App，按确认静默记账不跳转，按修改才跳转**：
+  - 重构 `ScreenshotResultSnippetView` 与 `AppIntents` 交互体系：在 iOS 系统级浮窗卡片中，按「确认 (Got it)」由 `ConfirmBillIntent` 执行，完全停留在当前银行/支付 App 静默平账入库，绝不跳转；只有用户点击「修改 (View)」才由 `OpenBillForEditIntent` 唤起 App 进行编辑。
+  - 提供了快捷指令原生「从菜单中选取 (Choose from Menu)」对话框配置指南，解决苹果阻止导入未签名 `.shortcut` 文件的限制。
 - **修复负数余额被绝对值吞没的重大 Bug**：修复 `KapiTheme.formatRM` 错误调用 `abs(value)` 导致账户透支或负数金额（如 `-RM700.00`）错误显示为正数 `RM700.00` 的问题。若透支不够钱，严格显示 `-RM700.00` 并高亮红字警示。
 - **重构并理清【期初起始资金 (Initial Capital)】全生命周期**：
   - 每个账户底层独立引入 `initialBalance`（全部记账前的初始资金）与 `balance`（当前实际余额）。

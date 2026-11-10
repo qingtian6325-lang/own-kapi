@@ -234,35 +234,39 @@ public struct ScreenshotResultSnippetView: View {
             }
 
             // Two-Button Action Row: 修改 (View) & 确认 (Got it)
-            HStack(spacing: 12) {
-                Button {
-                    onModifyTapped?()
-                } label: {
-                    Text("修改 (View)")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(KapiTheme.textPrimary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .background(
-                            Capsule().fill(Color(hex: 0xEDEFF5))
-                        )
-                }
-                .buttonStyle(.plain)
+            #if canImport(AppIntents)
+            if #available(iOS 16.0, *) {
+                HStack(spacing: 12) {
+                    Button(intent: OpenBillForEditIntent(transactionId: transaction.id)) {
+                        Text("修改 (View)")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(KapiTheme.textPrimary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 11)
+                            .background(
+                                Capsule().fill(Color(hex: 0xEDEFF5))
+                            )
+                    }
+                    .buttonStyle(.plain)
 
-                Button {
-                    onConfirmTapped?()
-                } label: {
-                    Text("确认 (Got it)")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .background(
-                            Capsule().fill(KapiTheme.expenseBlue)
-                        )
+                    Button(intent: ConfirmBillIntent(transactionId: transaction.id)) {
+                        Text("确认 (Got it)")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 11)
+                            .background(
+                                Capsule().fill(KapiTheme.expenseBlue)
+                            )
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
+            } else {
+                fallbackTwoButtons
             }
+            #else
+            fallbackTwoButtons
+            #endif
         }
         .padding(16)
         .background(
@@ -274,6 +278,38 @@ public struct ScreenshotResultSnippetView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .shadow(color: Color.black.opacity(0.10), radius: 16, x: 0, y: 6)
+    }
+
+    private var fallbackTwoButtons: some View {
+        HStack(spacing: 12) {
+            Button {
+                onModifyTapped?()
+            } label: {
+                Text("修改 (View)")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(KapiTheme.textPrimary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 11)
+                    .background(
+                        Capsule().fill(Color(hex: 0xEDEFF5))
+                    )
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                onConfirmTapped?()
+            } label: {
+                Text("确认 (Got it)")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 11)
+                    .background(
+                        Capsule().fill(KapiTheme.expenseBlue)
+                    )
+            }
+            .buttonStyle(.plain)
+        }
     }
 }
 
