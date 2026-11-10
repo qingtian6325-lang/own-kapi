@@ -3,6 +3,9 @@ import SwiftUI
 #if canImport(AppIntents)
 import AppIntents
 #endif
+#if canImport(UIKit)
+import UIKit
+#endif
 
 public struct ShortcutExecutionOutcome: Equatable, Sendable {
     public let transactionId: UUID
@@ -48,10 +51,45 @@ public enum ShortcutActionCoordinator {
             return true
         }
         if url.host == "quick-scan" {
-            let demoDraft = ReceiptOCRService.parseReceiptText(
+            let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+            let textParam = components?.queryItems?.first(where: { $0.name == "text" })?.value
+            let amountParam = components?.queryItems?.first(where: { $0.name == "amount" })?.value
+            let noteParam = components?.queryItems?.first(where: { $0.name == "note" || $0.name == "merchant" })?.value
+            let accountParam = components?.queryItems?.first(where: { $0.name == "account" })?.value
+
+            var draft: ParsedDraftBill?
+
+            if let amtStr = amountParam, let amt = Double(amtStr), amt > 0 {
+                let note = noteParam ?? "快捷记账"
+                let acc = accountParam ?? "TNGewallet"
+                let detected = DefaultCatalog.resolveCategoryIds(from: note, type: .expense)
+                draft = ParsedDraftBill(
+                    type: .expense,
+                    amount: amt,
+                    primaryCategoryId: detected.primaryId,
+                    subCategoryId: detected.subId,
+                    categoryDisplayName: detected.primaryId,
+                    accountId: DefaultCatalog.resolveAccountId(from: acc),
+                    accountDisplayName: acc,
+                    merchantOrNote: note,
+                    occurredAt: Date()
+                )
+            } else if let txt = textParam, !txt.isEmpty {
+                draft = ReceiptOCRService.parseReceiptText(txt)
+            } else {
+                #if canImport(UIKit)
+                if let image = UIPasteboard.general.image, let pngData = image.pngData() {
+                    draft = ReceiptOCRService.recognizeAndParseImageSync(pngData)
+                } else if let clipText = UIPasteboard.general.string, !clipText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    draft = ReceiptOCRService.parseReceiptText(clipText)
+                }
+                #endif
+            }
+
+            let finalDraft = draft ?? ReceiptOCRService.parseReceiptText(
                 "-RM5.90\nPayment - TNGD\nNear Me Voucher Eggette Lab\n08/11/2026 16:56:34"
             )
-            let saved = recordRecognizedDraft(demoDraft, in: store)
+            let saved = recordRecognizedDraft(finalDraft, in: store)
             store.pendingShortcutSnippetBill = saved
             return true
         }
@@ -280,9 +318,21 @@ public struct ScanScreenshotIntent: AppIntent {
         if let file = screenshotFile {
             draft = await ReceiptOCRService.recognizeAndParseImageData(file.data)
         } else {
+            #if canImport(UIKit)
+            if let image = UIPasteboard.general.image, let pngData = image.pngData() {
+                draft = await ReceiptOCRService.recognizeAndParseImageData(pngData)
+            } else if let clip = UIPasteboard.general.string, !clip.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                draft = ReceiptOCRService.parseReceiptText(clip)
+            } else {
+                draft = ReceiptOCRService.parseReceiptText(
+                    "-RM5.90\nPayment - TNGD\nNear Me Voucher Eggette Lab\n08/11/2026 16:56:34"
+                )
+            }
+            #else
             draft = ReceiptOCRService.parseReceiptText(
                 "-RM5.90\nPayment - TNGD\nNear Me Voucher Eggette Lab\n08/11/2026 16:56:34"
             )
+            #endif
         }
         let saved = ShortcutActionCoordinator.recordRecognizedDraft(draft, in: store)
         if openForModifyAfterScan == true {

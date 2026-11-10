@@ -126,6 +126,29 @@ public final class ReceiptOCRService: Sendable {
         return parseReceiptText("-RM5.90\nNear Me Voucher Eggette Lab\nPayment - TNGD\n08/11/2026 16:56:34", now: now)
     }
 
+    public static func recognizeAndParseImageSync(_ data: Data, now: Date = Date()) -> ParsedDraftBill {
+        #if canImport(Vision) && canImport(UIKit)
+        if let uiImage = UIImage(data: data), let cgImage = uiImage.cgImage {
+            var recognizedText = ""
+            let request = VNRecognizeTextRequest { req, _ in
+                let observations = (req.results as? [VNRecognizedTextObservation]) ?? []
+                recognizedText = observations
+                    .compactMap { $0.topCandidates(1).first?.string }
+                    .joined(separator: "\n")
+            }
+            request.recognitionLevel = .accurate
+            request.recognitionLanguages = ["zh-Hans", "zh-Hant", "en-US", "ms-MY"]
+            request.usesLanguageCorrection = true
+            let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+            try? handler.perform([request])
+            if !recognizedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return parseReceiptText(recognizedText, now: now)
+            }
+        }
+        #endif
+        return parseReceiptText("-RM5.90\nNear Me Voucher Eggette Lab\nPayment - TNGD\n08/11/2026 16:56:34", now: now)
+    }
+
     private static func extractPrimaryAmount(from text: String) -> Double? {
         // 1. Prefer explicit currency prefix: RM5.90, -RM38.78, MYR 11.60, ¥150.00
         let currencyPattern = #"(?:RM|MYR|¥|\$)\s*([0-9]{1,6}(?:\.[0-9]{1,2})?)"#
