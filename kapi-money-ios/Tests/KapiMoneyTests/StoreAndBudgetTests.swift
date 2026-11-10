@@ -222,7 +222,7 @@ final class StoreAndBudgetTests: XCTestCase {
         XCTAssertEqual(store.monthlyBudgetTotal, initialBudget + 500.0, accuracy: 0.001)
 
         store.setCategoryBudget(categoryName: "餐饮", monthlyLimit: 750.0, iconName: "food")
-        XCTAssertEqual(store.categoryBudgets.first(where: { $0.categoryName == "餐饮" })?.monthlyLimit, 750.0, accuracy: 0.001)
+        XCTAssertEqual(store.categoryBudgets.first(where: { $0.categoryName == "餐饮" })?.monthlyLimit ?? 0.0, 750.0, accuracy: 0.001)
 
         store.removeCategoryBudget(categoryName: "餐饮")
         XCTAssertNil(store.categoryBudgets.first(where: { $0.categoryName == "餐饮" }))
