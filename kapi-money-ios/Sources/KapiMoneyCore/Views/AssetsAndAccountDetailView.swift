@@ -1,0 +1,353 @@
+import SwiftUI
+
+public struct AssetsAndAccountDetailView: View {
+    @ObservedObject public var store: KapiStore
+    public var onDismiss: () -> Void
+
+    @State private var selectedAccount: AccountItem?
+    @State private var showBalanceEditSheet: Bool = false
+    @State private var newBalanceInput: String = ""
+    @State private var detailTabMode: String = "明细" // "明细" (audit logs) vs "账单" (bills)
+
+    public init(store: KapiStore, onDismiss: @escaping () -> Void) {
+        self.store = store
+        self.onDismiss = onDismiss
+    }
+
+    public var body: some View {
+        NavigationStack {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 14) {
+                    netWorthTopBanner
+                    reimbursementAndLendingRow
+                    accountGroupCard
+                }
+                .padding(16)
+            }
+            .background(KapiTheme.background.ignoresSafeArea())
+            .navigationTitle("资产管理")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(action: onDismiss) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(KapiTheme.textPrimary)
+                    }
+                }
+            }
+            .sheet(item: $selectedAccount) { account in
+                accountDetailSheet(for: account)
+            }
+        }
+    }
+
+    // MARK: - Net Worth Overview Banner (IMG_2258)
+
+    private var netWorthTopBanner: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("净资产")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(KapiTheme.textSecondary)
+
+            Text(KapiTheme.formatRM(store.netWorth))
+                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .foregroundColor(KapiTheme.textPrimary)
+
+            HStack(spacing: 24) {
+                Text("总资产 \(KapiTheme.formatRM(store.totalAssets))")
+                    .font(.system(size: 12))
+                    .foregroundColor(KapiTheme.textSecondary)
+                Text("总负债 \(KapiTheme.formatRM(store.totalLiabilities))")
+                    .font(.system(size: 12))
+                    .foregroundColor(KapiTheme.textSecondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(hex: 0xEAF1FF))
+        )
+    }
+
+    // MARK: - Reimbursement & Lending Row (IMG_2258)
+
+    private var reimbursementAndLendingRow: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("借出/借入")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(KapiTheme.textSecondary)
+                Text("RM0.00")
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .foregroundColor(KapiTheme.textPrimary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("待报销")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(KapiTheme.textSecondary)
+                Text(KapiTheme.formatRM(store.pendingReimbursementAmount))
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .foregroundColor(KapiTheme.incomeOrange)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+        }
+    }
+
+    // MARK: - Account List Card (现金, CIMB, TNGewallet, PBBank)
+
+    private var accountGroupCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("资金账户 (\(store.accounts.count))")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(KapiTheme.textPrimary)
+                Spacer()
+                Text(KapiTheme.formatRM(store.totalAssets))
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundColor(KapiTheme.textSecondary)
+            }
+
+            ForEach(store.accounts) { account in
+                Button {
+                    newBalanceInput = String(format: "%.2f", account.balance)
+                    selectedAccount = account
+                } label: {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color(hex: 0xF2F4F8))
+                                .frame(width: 40, height: 40)
+                            Text("💳")
+                                .font(.system(size: 18))
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(account.name)
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(KapiTheme.textPrimary)
+                            Text(account.subtitle)
+                                .font(.system(size: 11))
+                                .foregroundColor(KapiTheme.textMuted)
+                        }
+
+                        Spacer()
+
+                        Text(KapiTheme.formatRM(account.balance))
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .foregroundColor(KapiTheme.textPrimary)
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11))
+                            .foregroundColor(KapiTheme.textMuted)
+                    }
+                    .padding(.vertical, 8)
+                }
+                .buttonStyle(.plain)
+
+                if account.id != store.accounts.last?.id {
+                    Divider()
+                }
+            }
+        }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
+    }
+
+    // MARK: - Account Detail Sheet (IMG_2261 & IMG_2262: 明细 [记/改/删] vs 账单)
+
+    private func accountDetailSheet(for initialAccount: AccountItem) -> some View {
+        let liveAccount = store.accounts.first(where: { $0.id == initialAccount.id }) ?? initialAccount
+        let auditLogs = store.auditLogs(for: liveAccount.name)
+        let bills = store.transactions.filter { $0.accountName == liveAccount.name }
+
+        return NavigationStack {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 14) {
+                    // Top Blue Account Balance Card
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text(liveAccount.name)
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(KapiTheme.textPrimary)
+                            Spacer()
+                            Button {
+                                showBalanceEditSheet.toggle()
+                            } label: {
+                                Text("修改账户余额")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(KapiTheme.expenseBlue)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(Capsule().fill(Color.white))
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        Text(KapiTheme.formatRM(liveAccount.balance))
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .foregroundColor(KapiTheme.expenseBlue)
+
+                        if showBalanceEditSheet {
+                            HStack(spacing: 8) {
+                                TextField("输入新余额", text: $newBalanceInput)
+                                    .font(.system(size: 14))
+                                    .padding(8)
+                                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.white))
+
+                                Button("确定") {
+                                    if let val = Double(newBalanceInput) {
+                                        store.updateAccountBalance(accountName: liveAccount.name, newBalance: val)
+                                    }
+                                    showBalanceEditSheet = false
+                                }
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(RoundedRectangle(cornerRadius: 8).fill(KapiTheme.expenseBlue))
+                            }
+                        }
+                    }
+                    .padding(16)
+                    .background(RoundedRectangle(cornerRadius: 20).fill(Color(hex: 0xEAF1FF)))
+
+                    // Toggle Header: 明细 (Audit Log) vs 账单 (Clean Bills)
+                    HStack {
+                        Text(detailTabMode == "明细" ? "账户操作审计明细" : "入账账单记录")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(KapiTheme.textPrimary)
+
+                        Spacer()
+
+                        HStack(spacing: 4) {
+                            ForEach(["明细", "账单"], id: \.self) { tab in
+                                Button {
+                                    detailTabMode = tab
+                                } label: {
+                                    Text(tab)
+                                        .font(.system(size: 12, weight: detailTabMode == tab ? .bold : .medium))
+                                        .foregroundColor(detailTabMode == tab ? .white : KapiTheme.textSecondary)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 5)
+                                        .background(
+                                            Capsule().fill(detailTabMode == tab ? KapiTheme.expenseBlue : Color.white)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+
+                    if detailTabMode == "明细" {
+                        VStack(spacing: 0) {
+                            ForEach(auditLogs) { log in
+                                HStack(spacing: 10) {
+                                    // 记 / 改 / 删 Badge (IMG_2261)
+                                    Text(log.action.rawValue)
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .frame(width: 24, height: 24)
+                                        .background(
+                                            Circle().fill(badgeColor(for: log.action))
+                                        )
+
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(log.title)
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(KapiTheme.textPrimary)
+                                        Text(log.subtitle)
+                                            .font(.system(size: 11))
+                                            .foregroundColor(KapiTheme.textMuted)
+                                    }
+
+                                    Spacer()
+
+                                    VStack(alignment: .trailing, spacing: 3) {
+                                        Text(
+                                            log.deltaAmount >= 0
+                                                ? "+\(KapiTheme.formatRM(log.deltaAmount))"
+                                                : "-\(KapiTheme.formatRM(abs(log.deltaAmount)))"
+                                        )
+                                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                                        .strikethrough(log.action == .deleted, color: KapiTheme.textMuted)
+                                        .foregroundColor(
+                                            log.action == .deleted
+                                                ? KapiTheme.textMuted
+                                                : (log.deltaAmount >= 0 ? KapiTheme.incomeOrange : KapiTheme.expenseBlue)
+                                        )
+
+                                        Text("余额: \(KapiTheme.formatRM(log.balanceAfter))")
+                                            .font(.system(size: 11, design: .rounded))
+                                            .foregroundColor(KapiTheme.textMuted)
+                                    }
+                                }
+                                .padding(14)
+                                Divider()
+                            }
+                        }
+                        .background(RoundedRectangle(cornerRadius: 18).fill(Color.white))
+                    } else {
+                        VStack(spacing: 0) {
+                            ForEach(bills) { tx in
+                                HStack(spacing: 12) {
+                                    KapiStickerIconView(
+                                        iconName: tx.iconName,
+                                        categoryName: tx.categoryPath,
+                                        transactionType: tx.type,
+                                        size: 34
+                                    )
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(tx.categoryPath)
+                                            .font(.system(size: 14, weight: .semibold))
+                                        Text(tx.note)
+                                            .font(.system(size: 11))
+                                            .foregroundColor(KapiTheme.textMuted)
+                                    }
+                                    Spacer()
+                                    Text(tx.type == .expense ? "-\(KapiTheme.formatRM(tx.amount))" : "+\(KapiTheme.formatRM(tx.amount))")
+                                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                                        .foregroundColor(tx.type == .expense ? KapiTheme.expenseBlue : KapiTheme.incomeOrange)
+                                }
+                                .padding(14)
+                                Divider()
+                            }
+                        }
+                        .background(RoundedRectangle(cornerRadius: 18).fill(Color.white))
+                    }
+                }
+                .padding(16)
+            }
+            .background(KapiTheme.background.ignoresSafeArea())
+            .navigationTitle("账户详情")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("关闭") { selectedAccount = nil }
+                }
+            }
+        }
+    }
+
+    private func badgeColor(for action: AuditActionType) -> Color {
+        switch action {
+        case .created:
+            return KapiTheme.expenseBlue
+        case .updated:
+            return KapiTheme.incomeOrange
+        case .deleted:
+            return KapiTheme.dangerRed
+        }
+    }
+}

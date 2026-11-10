@@ -1,0 +1,103 @@
+name: Build Kapi Money iOS (.ipa)
+
+on:
+  push:
+    branches: [ main, "feat/**" ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-and-package-ios:
+    name: Swift Test & Package iOS IPA
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: kapi-money-ios
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show Swift & Xcode Version
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Run Structural & Spec Verification
+        run: node scripts/verify-swift-project.mjs --all
+
+      - name: Run KapiMoneyTests (macOS host unit tests)
+        run: swift test
+
+      - name: Build iOS App Bundle & IPA via iOS SDK
+        run: |
+          mkdir -p build/Payload/KapiMoneyApp.app
+          IOS_SDK_PATH="$(xcrun --sdk iphoneos --show-sdk-path)"
+          swift build -c release --product KapiMoneyApp --triple arm64-apple-ios17.0 -Xswiftc -sdk -Xswiftc "${IOS_SDK_PATH}" -Xcc -isysroot -Xcc "${IOS_SDK_PATH}"
+          BIN_PATH="$(find .build -path "*/release/KapiMoneyApp" -type f | head -n 1)"
+          cp "${BIN_PATH}" build/Payload/KapiMoneyApp.app/KapiMoneyApp
+          chmod +x build/Payload/KapiMoneyApp.app/KapiMoneyApp
+          cat > build/Payload/KapiMoneyApp.app/Info.plist << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleExecutable</key>
+            <string>KapiMoneyApp</string>
+            <key>CFBundleIdentifier</key>
+            <string>com.jinghao.kapimoney</string>
+            <key>CFBundleName</key>
+            <string>咔皮记账</string>
+            <key>CFBundleDisplayName</key>
+            <string>咔皮记账</string>
+            <key>CFBundlePackageType</key>
+            <string>APPL</string>
+            <key>CFBundleShortVersionString</key>
+            <string>1.0.0</string>
+            <key>CFBundleVersion</key>
+            <string>1</string>
+            <key>LSRequiresIPhoneOS</key>
+            <true/>
+            <key>MinimumOSVersion</key>
+            <string>17.0</string>
+            <key>UIDeviceFamily</key>
+            <array>
+              <integer>1</integer>
+              <integer>2</integer>
+            </array>
+            <key>UILaunchScreen</key>
+            <dict/>
+            <key>UISupportedInterfaceOrientations</key>
+            <array>
+              <string>UIInterfaceOrientationPortrait</string>
+            </array>
+            <key>NSMicrophoneUsageDescription</key>
+            <string>用于语音一句话记多笔账单</string>
+            <key>NSSpeechRecognitionUsageDescription</key>
+            <string>用于识别您的记账语音内容</string>
+            <key>NSCameraUsageDescription</key>
+            <string>用于拍摄小票与收据自动记账</string>
+            <key>NSPhotoLibraryUsageDescription</key>
+            <string>用于读取付款截图与添加账单图片附件</string>
+            <key>CFBundleURLTypes</key>
+            <array>
+              <dict>
+                <key>CFBundleURLName</key>
+                <string>com.jinghao.kapimoney.deeplink</string>
+                <key>CFBundleURLSchemes</key>
+                <array>
+                  <string>kapimoney</string>
+                </array>
+              </dict>
+            </array>
+          </dict>
+          </plist>
+          EOF
+          cd build && zip -qry KapiMoney-iOS.ipa Payload
+
+      - name: Upload KapiMoney-iOS.ipa Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KapiMoney-iOS-IPA
+          path: kapi-money-ios/build/KapiMoney-iOS.ipa

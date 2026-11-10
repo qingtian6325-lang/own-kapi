@@ -1,0 +1,12 @@
+version: 1
+bundleID: com.jinghao.kapimoney
+product: KapiMoneyApp
+displayName: 咔皮记账
+minimumOSVersion: "16.0"
+urlSchemes:
+  - kapimoney
+permissions:
+  NSMicrophoneUsageDescription: "使用麦克风进行一句话语音记账与查账"
+  NSSpeechRecognitionUsageDescription: "将您的语音识别为记账金额与分类"
+  NSCameraUsageDescription: "拍摄购物小票或账单进行自动识图记账"
+  NSPhotoLibraryUsageDescription: "从相册选择账单截图或小票附件"
