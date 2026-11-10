@@ -31,11 +31,7 @@ public final class KapiStore: ObservableObject {
     @Published public var reimbursableAmount: Double = 0.00
     @Published public var userNickname: String = "景豪"
     @Published public var hapticsEnabled: Bool = true
-    @Published public var scheduledTransactions: [ScheduledTransactionItem] = [
-        ScheduledTransactionItem(title: "每月房租", type: .expense, amount: 1500.0, categoryPath: "住房-房租房贷", iconName: "🏠", accountName: "PBBank", frequency: .monthly, dayOfMonth: 1, isEnabled: true),
-        ScheduledTransactionItem(title: "宽带与电话费", type: .expense, amount: 139.0, categoryPath: "住房-话费网费", iconName: "📶", accountName: "TNGewallet", frequency: .monthly, dayOfMonth: 15, isEnabled: true),
-        ScheduledTransactionItem(title: "月度固定薪资", type: .income, amount: 6500.0, categoryPath: "职业收入-绩效奖金", iconName: "💼", accountName: "PBBank", frequency: .monthly, dayOfMonth: 28, isEnabled: true)
-    ]
+    @Published public var scheduledTransactions: [ScheduledTransactionItem] = []
 
     private let inMemory: Bool
     private let storageURL: URL
@@ -100,6 +96,7 @@ public final class KapiStore: ObservableObject {
         transactions.insert(item, at: 0)
         transactions.sort(by: { $0.date > $1.date })
         applyBalanceEffect(for: item, multiplier: 1.0)
+        recalculateAllAccountBalances()
         appendAuditLog(for: item, action: .created, loggedAt: loggedAt)
         saveState()
     }
@@ -111,6 +108,7 @@ public final class KapiStore: ObservableObject {
         transactions[idx] = updated
         transactions.sort(by: { $0.date > $1.date })
         applyBalanceEffect(for: updated, multiplier: 1.0)
+        recalculateAllAccountBalances()
         appendAuditLog(for: updated, action: .updated, loggedAt: loggedAt)
         saveState()
     }
@@ -119,8 +117,16 @@ public final class KapiStore: ObservableObject {
         guard let idx = transactions.firstIndex(where: { $0.id == id }) else { return }
         let removed = transactions.remove(at: idx)
         applyBalanceEffect(for: removed, multiplier: -1.0)
+        recalculateAllAccountBalances()
         appendAuditLog(for: removed, action: .deleted, loggedAt: loggedAt)
         saveState()
+    }
+
+    public func recalculateAllAccountBalances() {
+        for idx in accounts.indices {
+            let delta = accountTransactionDelta(accountId: accounts[idx].id)
+            accounts[idx].balance = ((accounts[idx].initialBalance + delta) * 100.0).rounded() / 100.0
+        }
     }
 
     public func accountTransactionDelta(accountId: String) -> Double {
@@ -129,15 +135,20 @@ public final class KapiStore: ObservableObject {
         var delta: Double = 0.0
         for tx in transactions {
             let net = max(0.0, tx.amount - tx.discountAmount - tx.refundAmount)
-            if tx.type == .expense && (tx.accountId == accountId || tx.accountName == accName) {
+            let txSrcId = tx.accountId ?? DefaultCatalog.resolveAccountId(from: tx.accountName)
+            let isSrc = txSrcId == accountId || tx.accountId == accountId || tx.accountName == accName
+            let txDstId = tx.targetAccountId ?? (tx.targetAccountName.map { DefaultCatalog.resolveAccountId(from: $0) } ?? nil)
+            let isDst = txDstId == accountId || tx.targetAccountId == accountId || tx.targetAccountName == accName
+
+            if tx.type == .expense && isSrc {
                 delta -= net
-            } else if tx.type == .income && (tx.accountId == accountId || tx.accountName == accName) {
+            } else if tx.type == .income && isSrc {
                 delta += net
             } else if tx.type == .transfer {
-                if tx.accountId == accountId || tx.accountName == accName {
+                if isSrc {
                     delta -= net
                 }
-                if tx.targetAccountId == accountId || tx.targetAccountName == accName {
+                if isDst {
                     delta += net
                 }
             }
@@ -416,6 +427,41 @@ public final class KapiStore: ObservableObject {
         var ledger = currentLedger
         ledger.customDailyBudgets[dateKey] = max(0.0, amount)
         currentLedger = ledger
+        saveState()
+    }
+
+    public func updateMonthlyBudget(_ newBudget: Double) {
+        var ledger = currentLedger
+        ledger.monthlyBudget = max(0.0, newBudget)
+        currentLedger = ledger
+        saveState()
+    }
+
+    public func setCategoryBudget(categoryName: String, monthlyLimit: Double, iconName: String = "🏷️") {
+        var ledger = currentLedger
+        if let idx = ledger.categoryBudgets.firstIndex(where: { $0.categoryName == categoryName }) {
+            ledger.categoryBudgets[idx].monthlyLimit = max(0.0, monthlyLimit)
+        } else {
+            let newId = "cb_\(UUID().uuidString.prefix(6))"
+            let newItem = CategoryBudgetItem(
+                id: newId,
+                categoryId: "exp_\(categoryName)",
+                categoryName: categoryName,
+                iconName: iconName,
+                monthlyLimit: max(0.0, monthlyLimit),
+                sortOrder: ledger.categoryBudgets.count
+            )
+            ledger.categoryBudgets.append(newItem)
+        }
+        currentLedger = ledger
+        saveState()
+    }
+
+    public func removeCategoryBudget(categoryName: String) {
+        var ledger = currentLedger
+        ledger.categoryBudgets.removeAll(where: { $0.categoryName == categoryName })
+        currentLedger = ledger
+        saveState()
     }
 
     public var netWorth: Double { netWorthTotal() }
@@ -464,8 +510,22 @@ public final class KapiStore: ObservableObject {
         return parsed.count
     }
 
+    public func exportKapiCSV(startDate: Date? = nil, endDate: Date? = nil) -> String {
+        let filtered: [TransactionItem]
+        if let start = startDate, let end = endDate {
+            filtered = transactions.filter { $0.date >= start && $0.date <= end }
+        } else if let start = startDate {
+            filtered = transactions.filter { $0.date >= start }
+        } else if let end = endDate {
+            filtered = transactions.filter { $0.date <= end }
+        } else {
+            filtered = transactions
+        }
+        return KapiCSVService.exportKapiCSV(transactions: filtered)
+    }
+
     public func exportKapiCSV() -> String {
-        KapiCSVService.exportKapiCSV(transactions: transactions)
+        exportKapiCSV(startDate: nil, endDate: nil)
     }
 
     public func groupedTransactionsByDay() -> [(date: Date, items: [TransactionItem])] {
@@ -606,20 +666,23 @@ public final class KapiStore: ObservableObject {
 
     private func applyBalanceEffect(for tx: TransactionItem, multiplier: Double) {
         let netAmount = max(0.0, tx.amount - tx.discountAmount - tx.refundAmount)
+        let resolvedSrcId = tx.accountId ?? DefaultCatalog.resolveAccountId(from: tx.accountName)
+        let resolvedDstId = tx.targetAccountId ?? (tx.targetAccountName.map { DefaultCatalog.resolveAccountId(from: $0) } ?? nil)
+
         switch tx.type {
         case .expense:
-            if let accId = tx.accountId, let idx = accounts.firstIndex(where: { $0.id == accId }) {
+            if let accId = resolvedSrcId, let idx = accounts.firstIndex(where: { $0.id == accId || $0.name == tx.accountName }) {
                 accounts[idx].balance = ((accounts[idx].balance - netAmount * multiplier) * 100.0).rounded() / 100.0
             }
         case .income:
-            if let accId = tx.accountId, let idx = accounts.firstIndex(where: { $0.id == accId }) {
+            if let accId = resolvedSrcId, let idx = accounts.firstIndex(where: { $0.id == accId || $0.name == tx.accountName }) {
                 accounts[idx].balance = ((accounts[idx].balance + netAmount * multiplier) * 100.0).rounded() / 100.0
             }
         case .transfer:
-            if let fromId = tx.accountId, let fromIdx = accounts.firstIndex(where: { $0.id == fromId }) {
-                accounts[idx: fromIdx].balance = ((accounts[fromIdx].balance - netAmount * multiplier) * 100.0).rounded() / 100.0
+            if let fromId = resolvedSrcId, let fromIdx = accounts.firstIndex(where: { $0.id == fromId || $0.name == tx.accountName }) {
+                accounts[fromIdx].balance = ((accounts[fromIdx].balance - netAmount * multiplier) * 100.0).rounded() / 100.0
             }
-            if let toId = tx.targetAccountId, let toIdx = accounts.firstIndex(where: { $0.id == toId }) {
+            if let toId = resolvedDstId, let toIdx = accounts.firstIndex(where: { $0.id == toId || $0.name == tx.targetAccountName }) {
                 accounts[toIdx].balance = ((accounts[toIdx].balance + netAmount * multiplier) * 100.0).rounded() / 100.0
             }
         }

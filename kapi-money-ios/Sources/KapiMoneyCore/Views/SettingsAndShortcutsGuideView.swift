@@ -13,8 +13,12 @@ public struct SettingsAndShortcutsGuideView: View {
     @State private var simulatedSnippetTx: TransactionItem?
     @State private var statusBannerMessage: String?
     @State private var showFileImporter: Bool = false
-    @State private var showPasteSheet: Bool = false
-    @State private var pastedCSVText: String = ""
+    @State private var showImportModal: Bool = false
+    @State private var showExportModal: Bool = false
+    @State private var exportPeriodOption: String = "全部"
+    @State private var exportStartDate: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
+    @State private var exportEndDate: Date = Date()
+    @State private var importInputText: String = ""
     @State private var replaceExistingOnImport: Bool = false
     @State private var showResetCleanAlert: Bool = false
 
@@ -113,8 +117,11 @@ public struct SettingsAndShortcutsGuideView: View {
             ) { result in
                 handleFileImport(result)
             }
-            .sheet(isPresented: $showPasteSheet) {
-                pasteCSVSheet
+            .sheet(isPresented: $showImportModal) {
+                importModalSheet
+            }
+            .sheet(isPresented: $showExportModal) {
+                exportModalSheet
             }
             .alert("确认清空全部账单？", isPresented: $showResetCleanAlert) {
                 Button("取消", role: .cancel) {}
@@ -128,163 +135,359 @@ public struct SettingsAndShortcutsGuideView: View {
         }
     }
 
-    // MARK: - CSV Import & Export Card
+    // MARK: - CSV Import & Export Card (极简两个按钮：导入 或 导出)
 
     private var csvImportExportCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("📥 导入导出 · 咔皮双表 CSV 账单")
+                Text("📁 账单导入与导出")
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(KapiTheme.textPrimary)
                 Spacer()
             }
 
-            Text("完美支持咔皮记账导出的双表 CSV 结构（包括上表13个字段的收支明细与下表7个字段的账户互转，自动处理多行带引号备注）。")
+            Text("导入支持查看标准模版并直接输入或粘贴数据；导出支持灵活选择时间段（全部/本月/上月/本年/自定义）。")
                 .font(.system(size: 12))
                 .foregroundColor(KapiTheme.textSecondary)
 
-            Toggle(isOn: $replaceExistingOnImport) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("导入时清空覆盖现有账单")
-                        .font(.system(size: 13, weight: .medium))
-                    Text("开启后将从零载入新 CSV，关闭则累加追加至现有账单")
-                        .font(.system(size: 11))
-                        .foregroundColor(KapiTheme.textMuted)
-                }
-            }
-            .padding(.vertical, 4)
-
-            Divider()
-
-            // Button 1: From Files App
-            Button {
-                showFileImporter = true
-            } label: {
-                HStack {
-                    Image(systemName: "folder.badge.gearshape")
-                        .foregroundColor(KapiTheme.expenseBlue)
-                    Text("从「文件」App 选择 CSV 文件导入")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(KapiTheme.expenseBlue)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 11))
-                        .foregroundColor(KapiTheme.expenseBlue)
-                }
-                .padding(12)
-                .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xE8F0FE)))
-            }
-            .buttonStyle(.plain)
-
-            // Button 2: Paste CSV Text
-            Button {
-                showPasteSheet = true
-            } label: {
-                HStack {
-                    Image(systemName: "doc.on.clipboard")
-                        .foregroundColor(KapiTheme.expenseBlue)
-                    Text("粘贴 CSV 文本快速导入")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(KapiTheme.expenseBlue)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 11))
-                        .foregroundColor(KapiTheme.expenseBlue)
-                }
-                .padding(12)
-                .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xE8F0FE)))
-            }
-            .buttonStyle(.plain)
-
-            // Button 3: Convenience one-click import user exported 151 records
-            Button {
-                let count = store.importKapiCSV(KapiCSVService.userExportedCSV, replaceExisting: replaceExistingOnImport)
-                statusBannerMessage = "已成功导入 \(count) 笔咔皮账单（含 140 笔收支 + 11 笔账户互转）"
-            } label: {
-                HStack {
-                    Image(systemName: "arrow.down.doc.fill")
-                        .foregroundColor(Color(hex: 0x2E7D32))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("一键导入我的 151 笔账单备份")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(Color(hex: 0x2E7D32))
-                        Text("包含 2026.09 - 2026.11 真实导出的 140 笔收支及 11 笔互转")
-                            .font(.system(size: 11))
-                            .foregroundColor(Color(hex: 0x2E7D32).opacity(0.8))
+            HStack(spacing: 12) {
+                // Button 1: 导入账单
+                Button {
+                    importInputText = ""
+                    showImportModal = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "square.and.arrow.down.fill")
+                            .font(.system(size: 15))
+                        Text("📥 导入账单")
+                            .font(.system(size: 14, weight: .bold))
                     }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 11))
-                        .foregroundColor(Color(hex: 0x2E7D32))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 13)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(KapiTheme.expenseBlue))
                 }
-                .padding(12)
-                .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xE8F5E9)))
-            }
-            .buttonStyle(.plain)
+                .buttonStyle(.plain)
 
-            // Button 4: Export CSV via ShareLink
-            ShareLink(
-                item: store.exportKapiCSV(),
-                preview: SharePreview("KapiMoney_Export.csv", image: Image(systemName: "tablecells"))
-            ) {
-                HStack {
-                    Image(systemName: "square.and.arrow.up")
-                        .foregroundColor(KapiTheme.textPrimary)
-                    Text("导出当前全部账单为 CSV 文件")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(KapiTheme.textPrimary)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 11))
-                        .foregroundColor(KapiTheme.textSecondary)
+                // Button 2: 导出账单
+                Button {
+                    showExportModal = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "square.and.arrow.up.fill")
+                            .font(.system(size: 15))
+                        Text("📤 导出账单")
+                            .font(.system(size: 14, weight: .bold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 13)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(KapiTheme.incomeOrange))
                 }
-                .padding(12)
-                .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF5F6FA)))
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
     }
 
-    private var pasteCSVSheet: some View {
+    // MARK: - Import Modal Sheet
+
+    private var importModalSheet: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("在此处粘贴咔皮记账的 CSV 文本内容：")
-                    .font(.system(size: 13))
-                    .foregroundColor(KapiTheme.textSecondary)
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: "doc.text")
+                                .foregroundColor(KapiTheme.expenseBlue)
+                            Text("标准 CSV 格式模版")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(KapiTheme.textPrimary)
+                            Spacer()
+                            Button {
+                                #if canImport(UIKit)
+                                UIPasteboard.general.string = standardCSVTemplate
+                                statusBannerMessage = "已复制标准 CSV 模版到剪贴板"
+                                #endif
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "doc.on.doc")
+                                    Text("复制模版")
+                                }
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(KapiTheme.expenseBlue)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                            }
+                            .buttonStyle(.plain)
+                        }
 
-                TextEditor(text: $pastedCSVText)
-                    .font(.system(size: 12, design: .monospaced))
-                    .padding(8)
-                    .background(RoundedRectangle(cornerRadius: 10).stroke(KapiTheme.divider, lineWidth: 1))
+                        Text("日期,时间,类型,金额,一级分类,二级分类,账户,备注\n2026-11-08,21:59:00,支出,38.78,交通,加油充电,PBBank,加油\n2026-11-08,16:56:34,支出,5.90,餐饮,餐厅,TNG eWallet,买egglab的东西\n2026-11-06,10:00:00,收入,1148.31,职业收入,工资,CIMB,月度薪资")
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundColor(KapiTheme.textSecondary)
+                            .padding(10)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                    }
 
-                Button {
-                    let count = store.importKapiCSV(pastedCSVText, replaceExisting: replaceExistingOnImport)
-                    showPasteSheet = false
-                    pastedCSVText = ""
-                    statusBannerMessage = "已通过文本导入 \(count) 笔账单记录"
-                } label: {
-                    Text("确认解析并导入")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Capsule().fill(KapiTheme.expenseBlue))
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text("用户输入区域 (粘贴或输入 CSV 数据)：")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(KapiTheme.textPrimary)
+                            Spacer()
+                            Button("从剪贴板粘贴") {
+                                #if canImport(UIKit)
+                                if let str = UIPasteboard.general.string, !str.isEmpty {
+                                    importInputText = str
+                                }
+                                #endif
+                            }
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(KapiTheme.expenseBlue)
+                        }
+
+                        TextEditor(text: $importInputText)
+                            .font(.system(size: 12, design: .monospaced))
+                            .frame(minHeight: 150)
+                            .padding(8)
+                            .background(RoundedRectangle(cornerRadius: 10).stroke(Color.gray.opacity(0.25), lineWidth: 1))
+
+                        HStack(spacing: 10) {
+                            Button {
+                                showFileImporter = true
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "folder")
+                                    Text("选择 CSV 文件")
+                                }
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(KapiTheme.textPrimary)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 7)
+                                .background(RoundedRectangle(cornerRadius: 8).fill(Color(hex: 0xF0F2F6)))
+                            }
+                            .buttonStyle(.plain)
+
+                            Button {
+                                importInputText = KapiCSVService.userExportedCSV
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "sparkles")
+                                    Text("填入 151 笔真实备份样例")
+                                }
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(Color(hex: 0x2E7D32))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 7)
+                                .background(RoundedRectangle(cornerRadius: 8).fill(Color(hex: 0xE8F5E9)))
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        Toggle("覆盖清空现有账单（若关闭则追加合并）", isOn: $replaceExistingOnImport)
+                            .font(.system(size: 12))
+                            .foregroundColor(KapiTheme.textSecondary)
+                            .padding(.top, 4)
+                    }
+
+                    Button {
+                        let trimmed = importInputText.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !trimmed.isEmpty else { return }
+                        let count = store.importKapiCSV(trimmed, replaceExisting: replaceExistingOnImport)
+                        showImportModal = false
+                        statusBannerMessage = "已成功导入 \(count) 笔账单记录"
+                    } label: {
+                        Text("🚀 确认导入")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 13)
+                            .background(RoundedRectangle(cornerRadius: 12).fill(KapiTheme.expenseBlue))
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
+                .padding(16)
             }
-            .padding(16)
-            .navigationTitle("粘贴 CSV 导入")
+            .navigationTitle("导入账单")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { showPasteSheet = false }
+                    Button("取消") { showImportModal = false }
                 }
             }
         }
+    }
+
+    private var standardCSVTemplate: String {
+        """
+        日期,时间,类型,金额,一级分类,二级分类,账户,备注
+        2026-11-08,21:59:00,支出,38.78,交通,加油充电,PBBank,加油
+        2026-11-08,16:56:34,支出,5.90,餐饮,餐厅,TNG eWallet,买egglab的东西
+        2026-11-06,10:00:00,收入,1148.31,职业收入,工资,CIMB,月度薪资
+        """
+    }
+
+    // MARK: - Export Modal Sheet (支持选择时间段导出)
+
+    private var exportModalSheet: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("选择要导出的时间段：")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(KapiTheme.textPrimary)
+
+                HStack(spacing: 8) {
+                    ForEach(["全部", "本月", "上月", "本年", "自定义"], id: \.self) { opt in
+                        Button {
+                            exportPeriodOption = opt
+                        } label: {
+                            Text(opt)
+                                .font(.system(size: 12, weight: exportPeriodOption == opt ? .bold : .medium))
+                                .foregroundColor(exportPeriodOption == opt ? .white : KapiTheme.textPrimary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 7)
+                                .background(
+                                    Capsule().fill(exportPeriodOption == opt ? KapiTheme.incomeOrange : Color(hex: 0xF0F2F6))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                if exportPeriodOption == "自定义" {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text("开始日期:")
+                                .font(.system(size: 13, weight: .medium))
+                            Spacer()
+                            DatePicker("", selection: $exportStartDate, displayedComponents: .date)
+                                .labelsHidden()
+                        }
+                        HStack {
+                            Text("结束日期:")
+                                .font(.system(size: 13, weight: .medium))
+                            Spacer()
+                            DatePicker("", selection: $exportEndDate, displayedComponents: .date)
+                                .labelsHidden()
+                        }
+                    }
+                    .padding(12)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF7F8FA)))
+                }
+
+                let filtered = filteredTransactionsForExport()
+                let exp = filtered.filter { $0.type == .expense }.reduce(0.0) { $0 + $1.amount }
+                let inc = filtered.filter { $0.type == .income }.reduce(0.0) { $0 + $1.amount }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("当前所选时间段统计：")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(KapiTheme.textSecondary)
+                    HStack(spacing: 12) {
+                        Text("共 \(filtered.count) 笔账单")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(KapiTheme.textPrimary)
+                        Text("支 \(KapiTheme.formatRM(exp))")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(KapiTheme.expenseBlue)
+                        Text("收 \(KapiTheme.formatRM(inc))")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(KapiTheme.incomeOrange)
+                    }
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF5F6FA)))
+
+                Spacer()
+
+                let csvData = store.exportKapiCSV(startDate: exportDateRange.start, endDate: exportDateRange.end)
+
+                ShareLink(
+                    item: csvData,
+                    preview: SharePreview("KapiMoney_Export_\(exportPeriodOption).csv", image: Image(systemName: "tablecells"))
+                ) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "square.and.arrow.up.fill")
+                        Text("📤 导出并分享 CSV 文件")
+                            .font(.system(size: 15, weight: .bold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(RoundedRectangle(cornerRadius: 14).fill(KapiTheme.incomeOrange))
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(16)
+            .navigationTitle("导出账单")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("关闭") { showExportModal = false }
+                }
+            }
+        }
+    }
+
+    private var exportDateRange: (start: Date?, end: Date?) {
+        let cal = Calendar(identifier: .gregorian)
+        let now = Date()
+        switch exportPeriodOption {
+        case "本月":
+            var comps = cal.dateComponents([.year, .month], from: now)
+            comps.day = 1
+            let start = cal.date(from: comps)
+            comps.month = (comps.month ?? 1) + 1
+            comps.day = 0
+            comps.hour = 23
+            comps.minute = 59
+            comps.second = 59
+            let end = cal.date(from: comps)
+            return (start, end)
+        case "上月":
+            var comps = cal.dateComponents([.year, .month], from: now)
+            comps.month = (comps.month ?? 1) - 1
+            comps.day = 1
+            let start = cal.date(from: comps)
+            comps.month = (comps.month ?? 1) + 1
+            comps.day = 0
+            comps.hour = 23
+            comps.minute = 59
+            comps.second = 59
+            let end = cal.date(from: comps)
+            return (start, end)
+        case "本年":
+            let y = cal.component(.year, from: now)
+            let start = cal.date(from: DateComponents(year: y, month: 1, day: 1))
+            let end = cal.date(from: DateComponents(year: y, month: 12, day: 31, hour: 23, minute: 59, second: 59))
+            return (start, end)
+        case "自定义":
+            return (exportStartDate, exportEndDate)
+        default:
+            return (nil, nil)
+        }
+    }
+
+    private func filteredTransactionsForExport() -> [TransactionItem] {
+        let range = exportDateRange
+        if let s = range.start, let e = range.end {
+            return store.transactions.filter { $0.date >= s && $0.date <= e }
+        } else if let s = range.start {
+            return store.transactions.filter { $0.date >= s }
+        } else if let e = range.end {
+            return store.transactions.filter { $0.date <= e }
+        }
+        return store.transactions
     }
 
     private func handleFileImport(_ result: Result<[URL], Error>) {
@@ -299,8 +502,9 @@ public struct SettingsAndShortcutsGuideView: View {
                 statusBannerMessage = "CSV 文件编码未能识别为 UTF-8"
                 return
             }
+            importInputText = content
             let count = store.importKapiCSV(content, replaceExisting: replaceExistingOnImport)
-            statusBannerMessage = "已从文件导入 \(count) 笔账单记录"
+            statusBannerMessage = "已从文件成功导入 \(count) 笔账单记录"
         } catch {
             statusBannerMessage = "读取 CSV 文件失败：\(error.localizedDescription)"
         }
@@ -421,14 +625,14 @@ public struct SettingsAndShortcutsGuideView: View {
             .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xFFF9E6)))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.orange.opacity(0.35), lineWidth: 1))
 
-            // 1. One-click Jump Button requested by user
+            // 1. One-click open apple shortcuts app
             Button {
-                ShortcutActionCoordinator.openOnlineShortcutInstallURL()
+                ShortcutActionCoordinator.openShortcutsApp()
             } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "bolt.fill")
+                    Image(systemName: "arrow.up.forward.app.fill")
                         .font(.system(size: 16))
-                    Text("⚡ 一键跳转导入「咔皮截屏自动记账」快捷指令")
+                    Text("⚡ 打开「快捷指令」App 配置「识别账单」")
                         .font(.system(size: 14, weight: .bold))
                 }
                 .foregroundColor(.white)
@@ -438,41 +642,21 @@ public struct SettingsAndShortcutsGuideView: View {
             }
             .buttonStyle(.plain)
 
-            // 2. Action row: Open shortcuts app, or Share local offline shortcut file
-            HStack(spacing: 8) {
-                Button {
-                    ShortcutActionCoordinator.openShortcutsApp()
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "arrow.up.forward.app")
-                        Text("打开「快捷指令」App")
-                    }
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(KapiTheme.expenseBlue)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xE8F0FE)))
-                }
-                .buttonStyle(.plain)
-
-                if let localFile = ShortcutActionCoordinator.getLocalShortcutFileURL() {
-                    ShareLink(
-                        item: localFile,
-                        preview: SharePreview("咔皮截屏自动记账.shortcut", icon: Image(systemName: "bolt.circle.fill"))
-                    ) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "square.and.arrow.up")
-                            Text("离线发送到快捷指令")
-                        }
-                        .font(.system(size: 12, weight: .semibold))
+            // 2. Unsigned shortcut warning note
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 4) {
+                    Image(systemName: "info.circle.fill")
+                        .foregroundColor(Color.orange)
+                    Text("为什么提示「不支持导入未签名的快捷指令」？")
+                        .font(.system(size: 12, weight: .bold))
                         .foregroundColor(KapiTheme.textPrimary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF0F2F7)))
-                    }
-                    .buttonStyle(.plain)
                 }
+                Text("因为 iOS 限制从网页直接下载 .shortcut 文件。你完全不需要下载任何外部文件！本 App 安装后，系统已内置原生动作【识别账单】。请直接在自带「快捷指令」App 中搜索并添加【识别账单】即可（100% 官方支持，永不失效）！")
+                    .font(.system(size: 11))
+                    .foregroundColor(KapiTheme.textSecondary)
             }
+            .padding(10)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xFFF9E6)))
 
             // 3. Direct In-App Instant Recognition (No shortcut needed at all!)
             Button {
@@ -925,6 +1109,23 @@ public struct SettingsAndShortcutsGuideView: View {
             Text("针对房租、宽带、月薪、订阅会员等固定周期收支，到期自动入账或一键执行，告别重复手工输入。")
                 .font(.system(size: 12))
                 .foregroundColor(KapiTheme.textSecondary)
+
+            if store.scheduledTransactions.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.system(size: 28))
+                        .foregroundColor(KapiTheme.textMuted)
+                    Text("暂无定时记账计划")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(KapiTheme.textSecondary)
+                    Text("点击右上角「+ 新增计划」添加房租、月薪、话费等固定周期账单")
+                        .font(.system(size: 11))
+                        .foregroundColor(KapiTheme.textMuted)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+                .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF7F8FA)))
+            }
 
             ForEach(store.scheduledTransactions) { item in
                 VStack(spacing: 10) {

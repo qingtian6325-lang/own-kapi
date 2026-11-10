@@ -129,6 +129,24 @@ public struct HomeRecordView: View {
                 }
             }
 
+            Button(action: onOpenSearchOrCalendar) {
+                HStack(spacing: 3) {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(KapiTheme.expenseBlue)
+                    Text("2026年11月")
+                        .font(.system(size: 12, weight: .bold))
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(KapiTheme.textMuted)
+                }
+                .foregroundColor(KapiTheme.textPrimary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(Capsule().fill(Color.white))
+            }
+            .buttonStyle(.plain)
+
             Spacer()
 
             Button(action: onOpenSearchOrCalendar) {
@@ -331,6 +349,35 @@ public struct HomeRecordView: View {
                     .padding(.top, 4)
                 }
             }
+
+            Divider()
+                .background(KapiTheme.divider)
+
+            Button(action: onOpenSearchOrCalendar) {
+                HStack(spacing: 8) {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(KapiTheme.expenseBlue)
+                    Text("全部记录 · 日历收支热力图 (IMG_2250)")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(KapiTheme.textPrimary)
+                    Spacer()
+                    HStack(spacing: 3) {
+                        RoundedRectangle(cornerRadius: 2).fill(Color(hex: 0xFFD8B5)).frame(width: 8, height: 8)
+                        RoundedRectangle(cornerRadius: 2).fill(Color(hex: 0xC3D7FD)).frame(width: 8, height: 8)
+                        Text("进入")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(KapiTheme.textSecondary)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(KapiTheme.textMuted)
+                    }
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F7FB)))
+            }
+            .buttonStyle(.plain)
         }
         .padding(16)
         .background(

@@ -371,12 +371,21 @@ public struct ConfirmBillIntent: AppIntent {
 
 @available(iOS 16.0, macOS 13.0, *)
 public struct ScanScreenshotIntent: AppIntent {
-    public static var title: LocalizedStringResource = "咔皮截图记账"
-    public static var description = IntentDescription("自动截取当前付款页面并识别金额、商户与账户，弹出确认与修改卡片")
+    public static var title: LocalizedStringResource = "识别账单"
+    public static var description = IntentDescription("识别账单截图并录入金额、商户或转账收款人与扣款账户，弹出确认与修改卡片")
     public static var openAppWhenRun: Bool = false
+
+    @Parameter(title: "内容")
+    public var content: IntentFile?
 
     @Parameter(title: "截图文件")
     public var screenshotFile: IntentFile?
+
+    @Parameter(title: "类型", default: 2)
+    public var type: Int?
+
+    @Parameter(title: "版本", default: "0.8.62")
+    public var version: String?
 
     @Parameter(title: "识别后跳转修改")
     public var openForModifyAfterScan: Bool?
@@ -387,7 +396,7 @@ public struct ScanScreenshotIntent: AppIntent {
     public func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
         let store = KapiStore.shared
         let draft: ParsedDraftBill
-        if let file = screenshotFile {
+        if let file = content ?? screenshotFile {
             draft = await ReceiptOCRService.recognizeAndParseImageData(file.data)
         } else {
             #if canImport(UIKit)
@@ -424,10 +433,11 @@ public struct KapiAppShortcutsProvider: AppShortcutsProvider {
         AppShortcut(
             intent: ScanScreenshotIntent(),
             phrases: [
-                "用\(.applicationName)截图记账",
-                "在\(.applicationName)识别付款截图"
+                "用\(.applicationName)识别账单",
+                "在\(.applicationName)识别账单",
+                "用\(.applicationName)截图记账"
             ],
-            shortTitle: "咔皮截图记账",
+            shortTitle: "识别账单",
             systemImageName: "camera.viewfinder"
         )
     }

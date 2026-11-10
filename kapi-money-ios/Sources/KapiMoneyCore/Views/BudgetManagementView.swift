@@ -5,8 +5,12 @@ public struct BudgetManagementView: View {
     public var onDismiss: () -> Void
 
     @State private var showDynamicDailySheet: Bool = false
-    @State private var showEditBudgetAlert: Bool = false
-    @State private var budgetInputString: String = ""
+    @State private var showEditTotalBudgetSheet: Bool = false
+    @State private var totalBudgetInput: String = ""
+    @State private var editingCategoryBudget: CategoryBudgetItem? = nil
+    @State private var categoryBudgetInput: String = ""
+    @State private var addingCategoryForBudget: CategoryGroup? = nil
+    @State private var newCategoryBudgetInput: String = ""
     @State private var selectedDayKeyForCustomBudget: String?
     @State private var customDayBudgetInput: String = ""
 
@@ -95,6 +99,50 @@ public struct BudgetManagementView: View {
             .sheet(isPresented: $showDynamicDailySheet) {
                 dynamicDailyBudgetCalendarSheet
             }
+            .alert("修改月度总预算", isPresented: $showEditTotalBudgetSheet) {
+                TextField("输入总预算金额", text: $totalBudgetInput)
+                Button("取消", role: .cancel) {}
+                Button("保存") {
+                    if let val = Double(totalBudgetInput), val >= 0 {
+                        store.updateMonthlyBudget(val)
+                    }
+                }
+            } message: {
+                Text("当前月度总预算为 \(KapiTheme.formatRM(store.monthlyBudgetTotal))。设置后将实时影响当月结余与日预算。")
+            }
+            .alert("修改分类预算", isPresented: Binding(
+                get: { editingCategoryBudget != nil },
+                set: { if !$0 { editingCategoryBudget = nil } }
+            )) {
+                TextField("输入月度分类预算限额", text: $categoryBudgetInput)
+                Button("取消", role: .cancel) {}
+                Button("删除此分类预算", role: .destructive) {
+                    if let item = editingCategoryBudget {
+                        store.removeCategoryBudget(categoryName: item.categoryName)
+                    }
+                }
+                Button("保存") {
+                    if let item = editingCategoryBudget, let val = Double(categoryBudgetInput), val >= 0 {
+                        store.setCategoryBudget(categoryName: item.categoryName, monthlyLimit: val, iconName: item.iconName)
+                    }
+                }
+            } message: {
+                Text("设置「\(editingCategoryBudget?.categoryName ?? "")」的月度支出限额。")
+            }
+            .alert("添加分类预算", isPresented: Binding(
+                get: { addingCategoryForBudget != nil },
+                set: { if !$0 { addingCategoryForBudget = nil } }
+            )) {
+                TextField("输入该分类月度预算", text: $newCategoryBudgetInput)
+                Button("取消", role: .cancel) {}
+                Button("确定添加") {
+                    if let grp = addingCategoryForBudget, let val = Double(newCategoryBudgetInput), val > 0 {
+                        store.setCategoryBudget(categoryName: grp.name, monthlyLimit: val, iconName: grp.displayBadgeToken)
+                    }
+                }
+            } message: {
+                Text("为「\(addingCategoryForBudget?.name ?? "")」设定月度预算。")
+            }
         }
     }
 
@@ -115,6 +163,22 @@ public struct BudgetManagementView: View {
                     Text("总预算 \(KapiTheme.formatRM(store.monthlyBudgetTotal)) · 已用 \(KapiTheme.formatRM(monthlySpent))")
                         .font(.system(size: 12))
                         .foregroundColor(KapiTheme.textSecondary)
+
+                    Button {
+                        totalBudgetInput = String(format: "%.2f", store.monthlyBudgetTotal)
+                        showEditTotalBudgetSheet = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "slider.horizontal.3")
+                            Text("修改总预算")
+                        }
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(KapiTheme.expenseBlue)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                    }
+                    .buttonStyle(.plain)
                 }
 
                 Spacer()
@@ -184,45 +248,56 @@ public struct BudgetManagementView: View {
                 let rem = item.monthlyLimit - spent
                 let ratio = item.monthlyLimit > 0 ? min(1.0, spent / item.monthlyLimit) : 0
 
-                VStack(spacing: 8) {
-                    HStack(spacing: 10) {
-                        KapiStickerIconView(
-                            iconName: item.iconName,
-                            categoryName: item.categoryName,
-                            transactionType: .expense,
-                            useFirstCharIcon: item.useFirstCharIcon,
-                            size: 34
-                        )
+                Button {
+                    editingCategoryBudget = item
+                    categoryBudgetInput = String(format: "%.2f", item.monthlyLimit)
+                } label: {
+                    VStack(spacing: 8) {
+                        HStack(spacing: 10) {
+                            KapiStickerIconView(
+                                iconName: item.iconName,
+                                categoryName: item.categoryName,
+                                transactionType: .expense,
+                                useFirstCharIcon: item.useFirstCharIcon,
+                                size: 34
+                            )
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(item.categoryName)
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(KapiTheme.textPrimary)
-                            Text("预算 \(KapiTheme.formatRM(item.monthlyLimit)) · 已支 \(KapiTheme.formatRM(spent))")
-                                .font(.system(size: 11))
-                                .foregroundColor(KapiTheme.textMuted)
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 4) {
+                                    Text(item.categoryName)
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(KapiTheme.textPrimary)
+                                    Image(systemName: "pencil.circle.fill")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(KapiTheme.expenseBlue)
+                                }
+                                Text("预算 \(KapiTheme.formatRM(item.monthlyLimit)) · 已支 \(KapiTheme.formatRM(spent)) (点击调整)")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(KapiTheme.textMuted)
+                            }
+
+                            Spacer()
+
+                            Text(rem >= 0 ? "剩余 \(KapiTheme.formatRM(rem))" : "超支 \(KapiTheme.formatRM(abs(rem)))")
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                                .foregroundColor(rem >= 0 ? KapiTheme.textPrimary : KapiTheme.dangerRed)
                         }
 
-                        Spacer()
-
-                        Text(rem >= 0 ? "剩余 \(KapiTheme.formatRM(rem))" : "超支 \(KapiTheme.formatRM(abs(rem)))")
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
-                            .foregroundColor(rem >= 0 ? KapiTheme.textPrimary : KapiTheme.dangerRed)
-                    }
-
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            Capsule()
-                                .fill(Color(hex: 0xEEF0F6))
-                                .frame(height: 8)
-                            Capsule()
-                                .fill(rem >= 0 ? KapiTheme.expenseBlue : KapiTheme.dangerRed)
-                                .frame(width: geo.size.width * CGFloat(ratio), height: 8)
+                        GeometryReader { geo in
+                            ZStack(alignment: .leading) {
+                                Capsule()
+                                    .fill(Color(hex: 0xEEF0F6))
+                                    .frame(height: 8)
+                                Capsule()
+                                    .fill(rem >= 0 ? KapiTheme.expenseBlue : KapiTheme.dangerRed)
+                                    .frame(width: geo.size.width * CGFloat(ratio), height: 8)
+                            }
                         }
+                        .frame(height: 8)
                     }
-                    .frame(height: 8)
+                    .padding(.vertical, 4)
                 }
-                .padding(.vertical, 4)
+                .buttonStyle(.plain)
             }
         }
         .padding(16)
@@ -254,6 +329,22 @@ public struct BudgetManagementView: View {
                     Text("已用 \(KapiTheme.formatRM(spent))")
                         .font(.system(size: 12, design: .rounded))
                         .foregroundColor(KapiTheme.textSecondary)
+
+                    Button {
+                        addingCategoryForBudget = group
+                        newCategoryBudgetInput = "200.00"
+                    } label: {
+                        HStack(spacing: 2) {
+                            Image(systemName: "plus.circle.fill")
+                            Text("设预算")
+                        }
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(KapiTheme.expenseBlue)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                    }
+                    .buttonStyle(.plain)
                 }
                 .padding(.vertical, 4)
             }

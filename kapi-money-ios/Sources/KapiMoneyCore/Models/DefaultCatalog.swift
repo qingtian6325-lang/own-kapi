@@ -222,10 +222,10 @@ public enum DefaultCatalog {
     // Exact 4 accounts from IMG_2258 summing to RM368.42
     public static func defaultAccounts() -> [AccountItem] {
         [
-            AccountItem(id: "acc_cash", name: "现金", subtitle: "现金余额", badgeText: nil, iconName: "💰", balance: 72.10),
-            AccountItem(id: "acc_cimb", name: "CIMB", subtitle: "其他银行储蓄卡余额", badgeText: "储蓄卡", iconName: "🏦", balance: 23.45),
-            AccountItem(id: "acc_tng", name: "TNGewallet", subtitle: "自定义余额", badgeText: nil, iconName: "💬", balance: 68.62),
-            AccountItem(id: "acc_pbb", name: "PBBank", subtitle: "其他银行储蓄卡余额", badgeText: "储蓄卡", iconName: "🏦", balance: 204.25)
+            AccountItem(id: "acc_cash", name: "现金", subtitle: "现金余额", badgeText: nil, iconName: "💰", balance: 0.00, initialBalance: 0.00),
+            AccountItem(id: "acc_cimb", name: "CIMB", subtitle: "其他银行储蓄卡余额", badgeText: "储蓄卡", iconName: "🏦", balance: 0.00, initialBalance: 0.00),
+            AccountItem(id: "acc_tng", name: "TNG eWallet", subtitle: "电子钱包", badgeText: nil, iconName: "💬", balance: 0.00, initialBalance: 0.00),
+            AccountItem(id: "acc_pbb", name: "PBBank", subtitle: "其他银行储蓄卡余额", badgeText: "储蓄卡", iconName: "🏦", balance: 0.00, initialBalance: 0.00)
         ]
     }
 
@@ -273,6 +273,22 @@ public enum DefaultCatalog {
         if trimmed.isEmpty || trimmed == "不选账户" || trimmed == "无账户" {
             return nil
         }
+        let lower = trimmed.lowercased()
+        if lower.contains("tng") || lower.contains("touch") || lower.contains("ewallet") {
+            return "acc_tng"
+        }
+        if lower.contains("cimb") {
+            return "acc_cimb"
+        }
+        if lower.contains("pbb") || lower.contains("public") {
+            return "acc_pbb"
+        }
+        if lower.contains("cash") || lower.contains("现金") {
+            return "acc_cash"
+        }
+        if lower.contains("maybank") || lower.contains("mbb") {
+            return "acc_maybank"
+        }
         if let match = defaultAccounts().first(where: { $0.name.caseInsensitiveCompare(trimmed) == .orderedSame || $0.id == trimmed }) {
             return match.id
         }
@@ -281,6 +297,10 @@ public enum DefaultCatalog {
 
     public static func resolveAccountName(from accountId: String?) -> String {
         guard let accountId, !accountId.isEmpty else { return "不选账户" }
+        if accountId == "acc_tng" { return "TNG eWallet" }
+        if accountId == "acc_cimb" { return "CIMB" }
+        if accountId == "acc_pbb" { return "PBBank" }
+        if accountId == "acc_cash" { return "现金" }
         if let match = defaultAccounts().first(where: { $0.id == accountId || $0.name == accountId }) {
             return match.name
         }

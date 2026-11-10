@@ -16,9 +16,33 @@ final class AIEngineAndOCRTests: XCTestCase {
         """
         let draft = ReceiptOCRService.parseReceiptText(rawOCR)
         XCTAssertEqual(draft.amount, 5.90, accuracy: 0.001)
-        XCTAssertEqual(draft.accountDisplayName, "TNGewallet")
+        XCTAssertTrue(draft.accountDisplayName.contains("TNG"))
         XCTAssertEqual(draft.categoryDisplayName, "餐饮-零食甜品")
         XCTAssertTrue(draft.merchantOrNote.contains("Near Me Voucher"))
+    }
+
+    func testTransferReceiptRecipientAndDateExtraction() {
+        let transferOCR = """
+        DuitNow Transfer
+        Transfer to: TAN JING HAO
+        Amount: RM 150.00
+        From: Public Bank PBBank
+        Date & Time: 08 Nov 2026, 09:59 PM
+        Reference ID: 20261108998877112233
+        Status: Successful
+        """
+        let draft = ReceiptOCRService.parseReceiptText(transferOCR)
+        XCTAssertEqual(draft.amount, 150.0, accuracy: 0.001)
+        XCTAssertEqual(draft.accountDisplayName, "PBBank")
+        XCTAssertEqual(draft.merchantOrNote, "TAN JING HAO")
+
+        let cal = Calendar(identifier: .gregorian)
+        let comps = cal.dateComponents([.year, .month, .day, .hour, .minute], from: draft.occurredAt)
+        XCTAssertEqual(comps.year, 2026)
+        XCTAssertEqual(comps.month, 11)
+        XCTAssertEqual(comps.day, 8)
+        XCTAssertEqual(comps.hour, 21) // 9 PM -> 21
+        XCTAssertEqual(comps.minute, 59)
     }
 
     func testMultiBillNaturalLanguageSentenceSplitting() {

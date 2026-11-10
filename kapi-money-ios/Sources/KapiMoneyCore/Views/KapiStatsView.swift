@@ -6,10 +6,16 @@ public struct KapiStatsView: View {
     public var onSwitchToHome: () -> Void
     public var onOpenAssets: () -> Void
 
-    @State private var selectedPeriod: String = "周" // 周 | 月 | 年 | 自定义
+    @State private var selectedPeriod: String = "月" // 周 | 月 | 年 | 自定义
     @State private var selectedChartType: TransactionType = .expense
     @State private var selectedLedgerFilterId: String? = nil // nil = current ledger
     @State private var selectedFilterType: String = "全部" // 全部 | 仅支出 | 仅收入
+
+    @State private var statsYear: Int = 2026
+    @State private var statsMonth: Int = 11
+    @State private var statsWeekOffset: Int = 0
+    @State private var customStartDate: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
+    @State private var customEndDate: Date = Date()
 
     public init(
         store: KapiStore,
@@ -25,7 +31,6 @@ public struct KapiStatsView: View {
 
     private var periodTransactions: [TransactionItem] {
         let cal = Calendar(identifier: .gregorian)
-        let now = Date()
         let targetLedgerId = selectedLedgerFilterId ?? store.currentLedgerId
 
         return store.transactions.filter { tx in
@@ -39,16 +44,18 @@ public struct KapiStatsView: View {
 
             switch selectedPeriod {
             case "周":
-                guard let weekAgo = cal.date(byAdding: .day, value: -7, to: now) else { return true }
-                return tx.date >= weekAgo
+                let now = Date()
+                guard let baseDate = cal.date(byAdding: .day, value: statsWeekOffset * 7, to: now) else { return true }
+                guard let weekStart = cal.date(byAdding: .day, value: -6, to: baseDate) else { return true }
+                return tx.date >= weekStart && tx.date <= baseDate
             case "月":
-                let nowComps = cal.dateComponents([.year, .month], from: now)
                 let txComps = cal.dateComponents([.year, .month], from: tx.date)
-                return txComps.year == nowComps.year && txComps.month == nowComps.month
+                return txComps.year == statsYear && txComps.month == statsMonth
             case "年":
-                let nowYear = cal.component(.year, from: now)
                 let txYear = cal.component(.year, from: tx.date)
-                return txYear == nowYear
+                return txYear == statsYear
+            case "自定义":
+                return tx.date >= customStartDate && tx.date <= customEndDate
             default:
                 return true
             }
@@ -57,10 +64,51 @@ public struct KapiStatsView: View {
 
     private var periodLabelText: String {
         switch selectedPeriod {
-        case "周": return "最近 7 天收支趋势"
-        case "月": return "2026年 11月"
-        case "年": return "2026年 全年"
-        default: return "全部历史账单"
+        case "周":
+            if statsWeekOffset == 0 {
+                return "本周 (最近 7 天)"
+            } else if statsWeekOffset < 0 {
+                return String(format: "往前第 %d 周", abs(statsWeekOffset))
+            } else {
+                return String(format: "往后第 %d 周", statsWeekOffset)
+            }
+        case "月":
+            return String(format: "%d年 %d月", statsYear, statsMonth)
+        case "年":
+            return String(format: "%d年 全年", statsYear)
+        case "自定义":
+            let f = DateFormatter()
+            f.dateFormat = "yyyy/MM/dd"
+            return "\(f.string(from: customStartDate)) ~ \(f.string(from: customEndDate))"
+        default:
+            return "全部历史账单"
+        }
+    }
+
+    private func navigatePeriod(forward: Bool) {
+        switch selectedPeriod {
+        case "月":
+            if forward {
+                if statsMonth == 12 {
+                    statsMonth = 1
+                    statsYear += 1
+                } else {
+                    statsMonth += 1
+                }
+            } else {
+                if statsMonth == 1 {
+                    statsMonth = 12
+                    statsYear -= 1
+                } else {
+                    statsMonth -= 1
+                }
+            }
+        case "周":
+            statsWeekOffset += (forward ? 1 : -1)
+        case "年":
+            statsYear += (forward ? 1 : -1)
+        default:
+            break
         }
     }
 
@@ -133,16 +181,23 @@ public struct KapiStatsView: View {
         .background(KapiTheme.background.ignoresSafeArea())
     }
 
-    // MARK: - Top Navigation Bar (☰ Kapi ⌄ | 全部账本 ⌄ | 筛选)
+    // MARK: - Top Navigation Bar (< 记录 | 统计 ⌄ | 全部账本 ⌄ | 筛选)
 
     private var topBar: some View {
-        HStack(spacing: 12) {
-            Button(action: onOpenDrawer) {
-                Image(systemName: "line.3.horizontal")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(KapiTheme.textPrimary)
-                    .frame(width: 34, height: 34)
+        HStack(spacing: 10) {
+            Button(action: onSwitchToHome) {
+                HStack(spacing: 4) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 15, weight: .bold))
+                    Text("记录")
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                .foregroundColor(KapiTheme.textPrimary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Capsule().fill(Color.white))
             }
+            .buttonStyle(.plain)
 
             Menu {
                 Button("记录 (首页)") { onSwitchToHome() }
@@ -150,11 +205,11 @@ public struct KapiStatsView: View {
                 Button("资产管理") { onOpenAssets() }
             } label: {
                 HStack(spacing: 4) {
-                    Text("Kapi")
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                    Text("统计")
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
                         .foregroundColor(KapiTheme.textPrimary)
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 11, weight: .bold))
                         .foregroundColor(KapiTheme.textSecondary)
                 }
             }
@@ -171,14 +226,14 @@ public struct KapiStatsView: View {
             } label: {
                 HStack(spacing: 4) {
                     Text(selectedLedgerFilterId == "all" ? "全部账本" : (store.ledgers.first(where: { $0.id == selectedLedgerFilterId })?.name ?? store.currentLedgerName))
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundColor(KapiTheme.textPrimary)
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 9, weight: .bold))
                         .foregroundColor(KapiTheme.textSecondary)
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
                 .background(Capsule().fill(Color.white))
             }
 
@@ -187,22 +242,22 @@ public struct KapiStatsView: View {
                 Button("仅看支出") { selectedFilterType = "仅支出" }
                 Button("仅看收入") { selectedFilterType = "仅收入" }
             } label: {
-                HStack(spacing: 4) {
+                HStack(spacing: 3) {
                     Text(selectedFilterType == "全部" ? "筛选" : selectedFilterType)
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundColor(KapiTheme.textPrimary)
                     Image(systemName: "line.3.horizontal.decrease.circle")
                         .font(.system(size: 11))
                         .foregroundColor(KapiTheme.expenseBlue)
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
                 .background(Capsule().fill(Color.white))
             }
         }
     }
 
-    // MARK: - Period Control (周 | 月 | 年 | 自定义)
+    // MARK: - Period Control (周 | 月 | 年 | 自定义 + 前进后退导航)
 
     private var periodSegmentedControl: some View {
         VStack(spacing: 10) {
@@ -227,66 +282,130 @@ public struct KapiStatsView: View {
             .padding(4)
             .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xE9ECF4)))
 
+            // Forward/Backward Period Selector Bar
             HStack {
-                Text(periodLabelText)
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundColor(KapiTheme.textPrimary)
-                Spacer()
-                if selectedPeriod != "周" {
-                    Button("回本周") {
-                        selectedPeriod = "周"
+                Button {
+                    navigatePeriod(forward: false)
+                } label: {
+                    HStack(spacing: 2) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 11, weight: .bold))
+                        Text("往前")
+                            .font(.system(size: 11, weight: .medium))
                     }
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(KapiTheme.expenseBlue)
+                    .foregroundColor(KapiTheme.textSecondary)
                     .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(Color.white))
                 }
+                .buttonStyle(.plain)
+
+                Spacer()
+
+                Text(periodLabelText)
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundColor(KapiTheme.textPrimary)
+
+                Spacer()
+
+                Button {
+                    navigatePeriod(forward: true)
+                } label: {
+                    HStack(spacing: 2) {
+                        Text("往后")
+                            .font(.system(size: 11, weight: .medium))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .bold))
+                    }
+                    .foregroundColor(KapiTheme.textSecondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(Color.white))
+                }
+                .buttonStyle(.plain)
+            }
+
+            if selectedPeriod == "自定义" {
+                HStack(spacing: 8) {
+                    Text("起:")
+                        .font(.system(size: 11))
+                        .foregroundColor(KapiTheme.textSecondary)
+                    DatePicker("", selection: $customStartDate, displayedComponents: .date)
+                        .labelsHidden()
+
+                    Text("止:")
+                        .font(.system(size: 11))
+                        .foregroundColor(KapiTheme.textSecondary)
+                    DatePicker("", selection: $customEndDate, displayedComponents: .date)
+                        .labelsHidden()
+                }
+                .padding(8)
+                .background(RoundedRectangle(cornerRadius: 10).fill(Color.white))
             }
         }
     }
 
-    // MARK: - Capybara Balance Overview Banner (IMG_2253)
+    // MARK: - Balance Overview Banner (总支出, 总收入, 净结余 一样大三等分展示)
 
     private var capybaraBalanceCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(balanceCardTitle)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(KapiTheme.textSecondary)
+        VStack(spacing: 12) {
+            HStack(spacing: 8) {
+                // Column 1: 总支出
+                VStack(spacing: 4) {
+                    HStack(spacing: 4) {
+                        Circle().fill(KapiTheme.expenseBlue).frame(width: 6, height: 6)
+                        Text("总支出")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(KapiTheme.textSecondary)
+                    }
+                    Text(KapiTheme.formatRM(totalExpense))
+                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .foregroundColor(KapiTheme.expenseBlue)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xF2F5FC)))
+
+                // Column 2: 总收入
+                VStack(spacing: 4) {
+                    HStack(spacing: 4) {
+                        Circle().fill(KapiTheme.incomeOrange).frame(width: 6, height: 6)
+                        Text("总收入")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(KapiTheme.textSecondary)
+                    }
+                    Text(KapiTheme.formatRM(totalIncome))
+                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .foregroundColor(KapiTheme.incomeOrange)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xFFF7F0)))
+
+                // Column 3: 净结余
+                VStack(spacing: 4) {
+                    HStack(spacing: 4) {
+                        Circle().fill(netBalance >= 0 ? KapiTheme.balanceGreen : KapiTheme.dangerRed).frame(width: 6, height: 6)
+                        Text(netBalance >= 0 ? "净结余" : "超支")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(KapiTheme.textSecondary)
+                    }
                     Text(KapiTheme.formatRM(netBalance))
-                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .font(.system(size: 17, weight: .bold, design: .rounded))
                         .foregroundColor(netBalance >= 0 ? KapiTheme.balanceGreen : KapiTheme.dangerRed)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
-
-                Spacer()
-
-                ZStack {
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(hex: 0xFFF3E0))
-                        .frame(width: 58, height: 58)
-                    Text("🦫🪙")
-                        .font(.system(size: 24))
-                }
-            }
-
-            HStack(spacing: 20) {
-                HStack(spacing: 6) {
-                    Circle().fill(KapiTheme.incomeOrange).frame(width: 7, height: 7)
-                    Text("总收入 \(KapiTheme.formatRM(totalIncome))")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(KapiTheme.textSecondary)
-                }
-                HStack(spacing: 6) {
-                    Circle().fill(KapiTheme.expenseBlue).frame(width: 7, height: 7)
-                    Text("总支出 \(KapiTheme.formatRM(totalExpense))")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(KapiTheme.textSecondary)
-                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(RoundedRectangle(cornerRadius: 14).fill(netBalance >= 0 ? Color(hex: 0xF0F9F4) : Color(hex: 0xFEECEC)))
             }
         }
-        .padding(16)
+        .padding(14)
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
     }
 

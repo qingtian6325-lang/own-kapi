@@ -214,4 +214,28 @@ final class StoreAndBudgetTests: XCTestCase {
         XCTAssertEqual(tngCalibrated.initialBalance, 1200.0, accuracy: 0.001)
         XCTAssertEqual(store.netWorth, 500.0, accuracy: 0.001)
     }
+
+    func testBudgetAdjustmentAndCategoryBudgetManagement() {
+        let store = KapiStore(inMemory: true)
+        let initialBudget = store.monthlyBudgetTotal
+        store.updateMonthlyBudget(initialBudget + 500.0)
+        XCTAssertEqual(store.monthlyBudgetTotal, initialBudget + 500.0, accuracy: 0.001)
+
+        store.setCategoryBudget(categoryName: "餐饮", monthlyLimit: 750.0, iconName: "food")
+        XCTAssertEqual(store.categoryBudgets.first(where: { $0.categoryName == "餐饮" })?.monthlyLimit, 750.0, accuracy: 0.001)
+
+        store.removeCategoryBudget(categoryName: "餐饮")
+        XCTAssertNil(store.categoryBudgets.first(where: { $0.categoryName == "餐饮" }))
+    }
+
+    func testExportCSVWithDateFiltering() {
+        let store = KapiStore(inMemory: true)
+        let now = Date()
+        let cal = Calendar(identifier: .gregorian)
+        guard let yesterday = cal.date(byAdding: .day, value: -1, to: now),
+              let tomorrow = cal.date(byAdding: .day, value: 1, to: now) else { return }
+
+        let exported = store.exportKapiCSV(startDate: yesterday, endDate: tomorrow)
+        XCTAssertTrue(exported.contains("日期,时间,类型,金额,一级分类"))
+    }
 }
