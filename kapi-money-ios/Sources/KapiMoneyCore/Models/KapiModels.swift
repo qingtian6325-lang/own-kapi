@@ -103,6 +103,7 @@ public struct AccountItem: Identifiable, Codable, Equatable, Sendable {
     public var badgeText: String?
     public var iconName: String
     public var balance: Double
+    public var initialBalance: Double
     public var isLiability: Bool
 
     public init(
@@ -112,6 +113,7 @@ public struct AccountItem: Identifiable, Codable, Equatable, Sendable {
         badgeText: String? = nil,
         iconName: String,
         balance: Double,
+        initialBalance: Double? = nil,
         isLiability: Bool = false
     ) {
         self.id = id
@@ -120,7 +122,24 @@ public struct AccountItem: Identifiable, Codable, Equatable, Sendable {
         self.badgeText = badgeText
         self.iconName = iconName
         self.balance = balance
+        self.initialBalance = initialBalance ?? balance
         self.isLiability = isLiability
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, subtitle, badgeText, iconName, balance, initialBalance, isLiability
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        subtitle = try container.decode(String.self, forKey: .subtitle)
+        badgeText = try container.decodeIfPresent(String.self, forKey: .badgeText)
+        iconName = try container.decode(String.self, forKey: .iconName)
+        balance = try container.decode(Double.self, forKey: .balance)
+        initialBalance = try container.decodeIfPresent(Double.self, forKey: .initialBalance) ?? balance
+        isLiability = try container.decodeIfPresent(Bool.self, forKey: .isLiability) ?? false
     }
 }
 

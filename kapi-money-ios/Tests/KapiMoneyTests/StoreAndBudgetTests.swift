@@ -174,4 +174,44 @@ final class StoreAndBudgetTests: XCTestCase {
         store.setNickname("景豪专属")
         XCTAssertEqual(store.userNickname, "景豪专属")
     }
+
+    func testInitialCapitalAndNegativeBalanceHandling() {
+        // 1. Negative formatting verification
+        XCTAssertEqual(KapiTheme.formatRM(-700.0), "-RM700.00")
+        XCTAssertEqual(KapiTheme.formatRM(700.0), "RM700.00")
+        XCTAssertEqual(KapiTheme.formatRM(0.0), "RM0.00")
+
+        // 2. Spending 700 with 0 starting capital results in -700.00 balance and net worth
+        let store = KapiStore(inMemory: true)
+        store.resetToCleanEmpty()
+        let tngAccount = store.accounts.first(where: { $0.id == "tng" })!
+        XCTAssertEqual(tngAccount.balance, 0.0, accuracy: 0.001)
+
+        let expense700 = TransactionItem(
+            type: .expense,
+            categoryPath: "餐饮-晚餐",
+            amount: 700.0,
+            accountName: tngAccount.name
+        )
+        store.addTransaction(expense700)
+
+        let updatedTng = store.accounts.first(where: { $0.id == "tng" })!
+        XCTAssertEqual(updatedTng.balance, -700.0, accuracy: 0.001)
+        XCTAssertEqual(store.netWorth, -700.0, accuracy: 0.001)
+        XCTAssertEqual(KapiTheme.formatRM(updatedTng.balance), "-RM700.00")
+
+        // 3. Setting initial starting capital (forward mode: 1000 initial - 700 spend = 300 balance)
+        store.setAccountInitialBalance(accountId: "tng", initialBalance: 1000.0)
+        let tngWithInitial = store.accounts.first(where: { $0.id == "tng" })!
+        XCTAssertEqual(tngWithInitial.initialBalance, 1000.0, accuracy: 0.001)
+        XCTAssertEqual(tngWithInitial.balance, 300.0, accuracy: 0.001)
+        XCTAssertEqual(store.netWorth, 300.0, accuracy: 0.001)
+
+        // 4. Calibrating current real balance (reverse mode: current 500 - (-700 delta) = 1200 initial)
+        store.updateAccountBalance(accountId: "tng", newBalance: 500.0)
+        let tngCalibrated = store.accounts.first(where: { $0.id == "tng" })!
+        XCTAssertEqual(tngCalibrated.balance, 500.0, accuracy: 0.001)
+        XCTAssertEqual(tngCalibrated.initialBalance, 1200.0, accuracy: 0.001)
+        XCTAssertEqual(store.netWorth, 500.0, accuracy: 0.001)
+    }
 }

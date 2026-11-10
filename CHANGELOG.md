@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.0.4] - 2026-11-10
+
+### 🚀 Highlights
+- **修复负数余额被绝对值吞没的重大 Bug**：修复 `KapiTheme.formatRM` 错误调用 `abs(value)` 导致账户透支或负数金额（如 `-RM700.00`）错误显示为正数 `RM700.00` 的问题。若透支不够钱，严格显示 `-RM700.00` 并高亮红字警示。
+- **重构并理清【期初起始资金 (Initial Capital)】全生命周期**：
+  - 每个账户底层独立引入 `initialBalance`（全部记账前的初始资金）与 `balance`（当前实际余额）。
+  - **正推法**：输入记账前的起始资金，系统结合历史流水净变动，自动计算当前真实余额。
+  - **倒推法**：输入手机银行当前实际余额，系统自动逆向倒推出当年记账前的起始资金。
+  - 在【资产管理】与【通用设置】中全面支持双模式校准，历史流水与当前身家严谨闭环。
+
 ## [v1.0.3] - 2026-11-10
 
 ### 🚀 Highlights

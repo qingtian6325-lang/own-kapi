@@ -1193,6 +1193,7 @@ public struct AccountInitialBalanceRow: View {
     public let account: AccountItem
     @ObservedObject public var store: KapiStore
     @State private var balanceInput: String = ""
+    @State private var editMode: Int = 0 // 0: 设定起始资金 (记账前), 1: 设定当前余额 (卡里现在)
     @State private var isEditing: Bool = false
 
     public init(account: AccountItem, store: KapiStore) {
@@ -1201,58 +1202,74 @@ public struct AccountInitialBalanceRow: View {
     }
 
     public var body: some View {
-        HStack(spacing: 8) {
-            Text(account.name)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(KapiTheme.textPrimary)
-                .frame(width: 100, alignment: .leading)
-
-            Spacer()
-
-            if isEditing {
-                Text("RM")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(KapiTheme.textSecondary)
-
-                TextField("0.00", text: $balanceInput)
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .frame(width: 75)
-                    .padding(5)
-                    .background(RoundedRectangle(cornerRadius: 6).stroke(KapiTheme.expenseBlue, lineWidth: 1))
-
-                Button("保存") {
-                    if let val = Double(balanceInput) {
-                        store.updateAccountBalance(accountName: account.name, newBalance: val)
-                    }
-                    isEditing = false
-                }
-                .font(.system(size: 11, weight: .bold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(Capsule().fill(KapiTheme.expenseBlue))
-            } else {
-                Text(KapiTheme.formatRM(account.balance))
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Text(account.name)
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(KapiTheme.textPrimary)
+                    .frame(width: 90, alignment: .leading)
 
-                Button {
-                    balanceInput = String(format: "%.2f", account.balance)
-                    isEditing = true
-                } label: {
-                    Text("设定")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(KapiTheme.expenseBlue)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Capsule().fill(Color(hex: 0xEAF1FF)))
+                Spacer()
+
+                if isEditing {
+                    Picker("模式", selection: $editMode) {
+                        Text("起始资金").tag(0)
+                        Text("当前余额").tag(1)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 140)
+
+                    TextField("0.00", text: $balanceInput)
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .frame(width: 65)
+                        .padding(5)
+                        .background(RoundedRectangle(cornerRadius: 6).stroke(KapiTheme.expenseBlue, lineWidth: 1))
+
+                    Button("保存") {
+                        if let val = Double(balanceInput) {
+                            if editMode == 0 {
+                                store.setAccountInitialBalance(accountId: account.id, initialBalance: val)
+                            } else {
+                                store.updateAccountBalance(accountId: account.id, newBalance: val)
+                            }
+                        }
+                        isEditing = false
+                    }
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(KapiTheme.expenseBlue))
+                } else {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(KapiTheme.formatRM(account.balance))
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundColor(account.balance < -0.0001 ? Color(hex: 0xE53935) : KapiTheme.textPrimary)
+
+                        Text("起始: \(KapiTheme.formatRM(account.initialBalance))")
+                            .font(.system(size: 10))
+                            .foregroundColor(KapiTheme.textMuted)
+                    }
+
+                    Button {
+                        balanceInput = String(format: "%.2f", account.initialBalance)
+                        editMode = 0
+                        isEditing = true
+                    } label: {
+                        Text("设置")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(KapiTheme.expenseBlue)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Capsule().fill(Color(hex: 0xEAF1FF)))
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
         }
         .padding(.vertical, 3)
         .onAppear {
-            balanceInput = String(format: "%.2f", account.balance)
+            balanceInput = String(format: "%.2f", account.initialBalance)
         }
     }
 }

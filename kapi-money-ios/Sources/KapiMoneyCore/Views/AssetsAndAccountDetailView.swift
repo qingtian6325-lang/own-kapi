@@ -7,6 +7,7 @@ public struct AssetsAndAccountDetailView: View {
     @State private var selectedAccount: AccountItem?
     @State private var showBalanceEditSheet: Bool = false
     @State private var newBalanceInput: String = ""
+    @State private var balanceEditMode: Int = 0 // 0: 设定期初起始资金, 1: 校准当前余额
     @State private var detailTabMode: String = "明细" // "明细" (audit logs) vs "账单" (bills)
     @State private var showAddAccountSheet: Bool = false
     @State private var newAccountName: String = ""
@@ -121,12 +122,12 @@ public struct AssetsAndAccountDetailView: View {
 
             Text(KapiTheme.formatRM(store.netWorth))
                 .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundColor(KapiTheme.textPrimary)
+                .foregroundColor(store.netWorth < -0.0001 ? Color(hex: 0xE53935) : KapiTheme.textPrimary)
 
             HStack(spacing: 24) {
                 Text("总资产 \(KapiTheme.formatRM(store.totalAssets))")
                     .font(.system(size: 12))
-                    .foregroundColor(KapiTheme.textSecondary)
+                    .foregroundColor(store.totalAssets < -0.0001 ? Color(hex: 0xE53935) : KapiTheme.textSecondary)
                 Text("总负债 \(KapiTheme.formatRM(store.totalLiabilities))")
                     .font(.system(size: 12))
                     .foregroundColor(KapiTheme.textSecondary)
@@ -211,7 +212,7 @@ public struct AssetsAndAccountDetailView: View {
 
                         Text(KapiTheme.formatRM(account.balance))
                             .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .foregroundColor(KapiTheme.textPrimary)
+                            .foregroundColor(account.balance < -0.0001 ? Color(hex: 0xE53935) : KapiTheme.textPrimary)
 
                         Image(systemName: "chevron.right")
                             .font(.system(size: 11))
@@ -283,26 +284,63 @@ public struct AssetsAndAccountDetailView: View {
 
                         Text(KapiTheme.formatRM(liveAccount.balance))
                             .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundColor(KapiTheme.expenseBlue)
+                            .foregroundColor(liveAccount.balance < -0.0001 ? Color(hex: 0xE53935) : KapiTheme.expenseBlue)
+
+                        HStack(spacing: 20) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("记账前起始资金")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(KapiTheme.textMuted)
+                                Text(KapiTheme.formatRM(liveAccount.initialBalance))
+                                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                    .foregroundColor(KapiTheme.textPrimary)
+                            }
+
+                            let delta = store.accountTransactionDelta(accountId: liveAccount.id)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("期间流水净变动")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(KapiTheme.textMuted)
+                                Text(KapiTheme.formatRM(delta))
+                                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                    .foregroundColor(delta < -0.0001 ? Color(hex: 0xE53935) : KapiTheme.balanceGreen)
+                            }
+                        }
 
                         if showBalanceEditSheet {
-                            HStack(spacing: 8) {
-                                TextField("输入新余额", text: $newBalanceInput)
-                                    .font(.system(size: 14))
-                                    .padding(8)
-                                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.white))
-
-                                Button("确定") {
-                                    if let val = Double(newBalanceInput) {
-                                        store.updateAccountBalance(accountName: liveAccount.name, newBalance: val)
-                                    }
-                                    showBalanceEditSheet = false
+                            VStack(alignment: .leading, spacing: 8) {
+                                Picker("设置类型", selection: $balanceEditMode) {
+                                    Text("设定期初资金(记账前)").tag(0)
+                                    Text("校准当前余额(手机银行)").tag(1)
                                 }
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(RoundedRectangle(cornerRadius: 8).fill(KapiTheme.expenseBlue))
+                                .pickerStyle(.segmented)
+
+                                HStack(spacing: 8) {
+                                    Text("RM")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(KapiTheme.textSecondary)
+
+                                    TextField("输入金额", text: $newBalanceInput)
+                                        .font(.system(size: 14))
+                                        .padding(8)
+                                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.white))
+
+                                    Button("确定") {
+                                        if let val = Double(newBalanceInput) {
+                                            if balanceEditMode == 0 {
+                                                store.setAccountInitialBalance(accountId: liveAccount.id, initialBalance: val)
+                                            } else {
+                                                store.updateAccountBalance(accountId: liveAccount.id, newBalance: val)
+                                            }
+                                        }
+                                        showBalanceEditSheet = false
+                                    }
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 8)
+                                    .background(RoundedRectangle(cornerRadius: 8).fill(KapiTheme.expenseBlue))
+                                }
                             }
                         }
                     }

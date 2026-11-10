@@ -122,12 +122,65 @@ public final class KapiStore: ObservableObject {
         saveState()
     }
 
+    public func accountTransactionDelta(accountId: String) -> Double {
+        let acc = accounts.first(where: { $0.id == accountId })
+        let accName = acc?.name ?? accountId
+        var delta: Double = 0.0
+        for tx in transactions {
+            let net = max(0.0, tx.amount - tx.discountAmount - tx.refundAmount)
+            if tx.type == .expense && (tx.accountId == accountId || tx.accountName == accName) {
+                delta -= net
+            } else if tx.type == .income && (tx.accountId == accountId || tx.accountName == accName) {
+                delta += net
+            } else if tx.type == .transfer {
+                if tx.accountId == accountId || tx.accountName == accName {
+                    delta -= net
+                }
+                if tx.targetAccountId == accountId || tx.targetAccountName == accName {
+                    delta += net
+                }
+            }
+        }
+        return ((delta * 100.0).rounded()) / 100.0
+    }
+
+    public func setAccountInitialBalance(accountId: String, initialBalance: Double) {
+        guard let idx = accounts.firstIndex(where: { $0.id == accountId }) else { return }
+        let roundedInit = (initialBalance * 100.0).rounded() / 100.0
+        accounts[idx].initialBalance = roundedInit
+        let delta = accountTransactionDelta(accountId: accountId)
+        let newCurrent = ((roundedInit + delta) * 100.0).rounded() / 100.0
+        accounts[idx].balance = newCurrent
+
+        let log = AccountAuditLog(
+            accountId: accountId,
+            action: .updated,
+            transactionType: .income,
+            categoryTitle: "设定期初资金 | \(accounts[idx].name)",
+            note: "设定记账前起始资金为 RM\(String(format: "%.2f", roundedInit))",
+            amount: roundedInit,
+            balanceAfter: newCurrent,
+            billDate: Date(),
+            loggedAt: Date()
+        )
+        auditLogs.insert(log, at: 0)
+        saveState()
+    }
+
+    public func setAccountInitialBalance(accountName: String, initialBalance: Double) {
+        if let match = accounts.first(where: { $0.name == accountName || $0.id == accountName }) {
+            setAccountInitialBalance(accountId: match.id, initialBalance: initialBalance)
+        }
+    }
+
     public func updateAccountBalance(accountId: String, newBalance: Double) {
         guard let idx = accounts.firstIndex(where: { $0.id == accountId }) else { return }
         let oldBalance = accounts[idx].balance
         let roundedNew = (newBalance * 100.0).rounded() / 100.0
         accounts[idx].balance = roundedNew
         let delta = roundedNew - oldBalance
+        let transDelta = accountTransactionDelta(accountId: accountId)
+        accounts[idx].initialBalance = ((roundedNew - transDelta) * 100.0).rounded() / 100.0
         let log = AccountAuditLog(
             accountId: accountId,
             action: .updated,

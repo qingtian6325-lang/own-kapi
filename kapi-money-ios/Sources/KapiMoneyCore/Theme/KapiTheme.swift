@@ -44,8 +44,13 @@ public enum KapiTheme {
         numberFormatter.numberStyle = .decimal
         let groupedInt = numberFormatter.string(from: NSNumber(value: intPart)) ?? "\(intPart)"
         let base = "\(currency.symbol)\(groupedInt).\(decPart)"
-        guard signed else { return base }
-        return isExpense ? "-\(base)" : "+\(base)"
+        if signed {
+            return isExpense ? "-\(base)" : "+\(base)"
+        }
+        if value < -0.0001 {
+            return "-\(base)"
+        }
+        return base
     }
 }
 
