@@ -177,7 +177,7 @@ public final class ReceiptOCRService: Sendable {
     private static func detectAccount(from text: String) -> (String?, String) {
         let lower = text.lowercased()
         if lower.contains("tng") || lower.contains("ewallet") || lower.contains("touch 'n go") || lower.contains("tngd") || lower.contains("duitnow") {
-            return ("acc_tng", "TNG eWallet")
+            return ("acc_tng", "TNGewallet")
         }
         if lower.contains("pbb") || lower.contains("public bank") || lower.contains("大众银行") {
             return ("acc_pbb", "PBBank")
@@ -191,7 +191,7 @@ public final class ReceiptOCRService: Sendable {
         if lower.contains("现金") || lower.contains("cash") {
             return ("acc_cash", "现金")
         }
-        return ("acc_tng", "TNG eWallet")
+        return ("acc_tng", "TNGewallet")
     }
 
     private static func detectCategory(from text: String) -> (String, String?, String) {

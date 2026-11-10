@@ -224,7 +224,7 @@ public enum DefaultCatalog {
         [
             AccountItem(id: "acc_cash", name: "现金", subtitle: "现金余额", badgeText: nil, iconName: "💰", balance: 0.00, initialBalance: 0.00),
             AccountItem(id: "acc_cimb", name: "CIMB", subtitle: "其他银行储蓄卡余额", badgeText: "储蓄卡", iconName: "🏦", balance: 0.00, initialBalance: 0.00),
-            AccountItem(id: "acc_tng", name: "TNG eWallet", subtitle: "电子钱包", badgeText: nil, iconName: "💬", balance: 0.00, initialBalance: 0.00),
+            AccountItem(id: "acc_tng", name: "TNG eWallet", subtitle: "电子钱包 (TNGewallet)", badgeText: nil, iconName: "💬", balance: 0.00, initialBalance: 0.00),
             AccountItem(id: "acc_pbb", name: "PBBank", subtitle: "其他银行储蓄卡余额", badgeText: "储蓄卡", iconName: "🏦", balance: 0.00, initialBalance: 0.00)
         ]
     }
