@@ -316,6 +316,7 @@ public struct TransactionItem: Identifiable, Codable, Equatable, Sendable {
         refundAmount: Double = 0.0,
         includeInStats: Bool = true,
         includeInBudget: Bool = true,
+        tags: [String] = [],
         receiptImageLabels: [String] = [],
         date: Date = Date(),
         isConfirmed: Bool = true
@@ -339,7 +340,7 @@ public struct TransactionItem: Identifiable, Codable, Equatable, Sendable {
             refundAmount: refundAmount,
             includeInStats: includeInStats,
             includeInBudget: includeInBudget,
-            tags: [],
+            tags: tags,
             attachmentPaths: receiptImageLabels,
             date: date,
             createdAt: date,

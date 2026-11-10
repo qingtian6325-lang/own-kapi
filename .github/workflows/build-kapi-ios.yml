@@ -40,6 +40,7 @@ jobs:
           SDK_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
           SDK_BUILD="$(xcrun --sdk iphoneos --show-sdk-build-version)"
           XCODE_BUILD="$(xcodebuild -version | awk 'NR==2 {print $3}')"
+          APP_VERSION="$(cat VERSION 2>/dev/null || echo "1.0.1")"
 
           swift build -c release --product KapiMoneyApp \
             --triple arm64-apple-ios17.0 \
@@ -109,13 +110,13 @@ jobs:
             <key>CFBundlePackageType</key>
             <string>APPL</string>
             <key>CFBundleShortVersionString</key>
-            <string>1.0.0</string>
+            <string>${APP_VERSION}</string>
             <key>CFBundleSupportedPlatforms</key>
             <array>
               <string>iPhoneOS</string>
             </array>
             <key>CFBundleVersion</key>
-            <string>1</string>
+            <string>${GITHUB_RUN_NUMBER:-1}</string>
             <key>DTCompiler</key>
             <string>com.apple.compilers.llvm.clang.1_0</string>
             <key>DTPlatformBuild</key>
@@ -190,12 +191,26 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git tag -f v1.0.0
-          git push origin v1.0.0 --force
+          APP_VERSION="$(cat VERSION 2>/dev/null || echo "1.0.1")"
+          RELEASE_TAG="v${APP_VERSION}"
+          echo "Publishing release for ${RELEASE_TAG}..."
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -f "${RELEASE_TAG}"
+          git push origin "${RELEASE_TAG}" --force
+
+          NOTES_CONTENT="咔皮记账 iOS ${RELEASE_TAG} 发布版本。\n\n### 🚀 更新说明\n- 纯净空白账本：默认启动 0 账单、0 结余、0 记录天数，无任何假数据或硬编码\n- 全功能 11 个模块真实逻辑：账本管理、标签增删与筛选、定时记账、小组件实时渲染预览、通用设置、收支统计多周期筛选\n- iOS 快捷指令 100% 可用：支持 Vision OCR 动态解析截屏金额与商户，无截图时自动读取剪贴板\n- 双表头 CSV 完整导入导出：支持 151 条历史账单（140 笔收支 + 11 笔转账）无损导入\n\n### 📦 资产下载\n- **KapiMoney-iOS.ipa**：App 安装包（建议使用 Sideloadly / AltStore 签名安装）\n- **KapiScreenshotBookkeeping.shortcut**：iOS 快捷指令一键导入文件"
+
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            gh release upload "${RELEASE_TAG}" build/KapiMoney-iOS.ipa shortcuts/KapiScreenshotBookkeeping.shortcut --clobber
+            gh release edit "${RELEASE_TAG}" --title "咔皮记账 iOS ${RELEASE_TAG} (KapiMoney-iOS.ipa)" --notes "${NOTES_CONTENT}"
+          else
+            gh release create "${RELEASE_TAG}" build/KapiMoney-iOS.ipa shortcuts/KapiScreenshotBookkeeping.shortcut \
+              --title "咔皮记账 iOS ${RELEASE_TAG} (KapiMoney-iOS.ipa)" \
+              --notes "${NOTES_CONTENT}"
+          fi
+
           if gh release view v1.0.0 >/dev/null 2>&1; then
             gh release upload v1.0.0 build/KapiMoney-iOS.ipa shortcuts/KapiScreenshotBookkeeping.shortcut --clobber
-          else
-            gh release create v1.0.0 build/KapiMoney-iOS.ipa shortcuts/KapiScreenshotBookkeeping.shortcut \
-              --title "咔皮记账 iOS v1.0.0 (KapiMoney-iOS.ipa)" \
-              --notes "1:1 原生 SwiftUI 咔皮记账 iOS 安装包（含快捷指令自动截屏记账弹窗、一句话记多笔、动态日预算与资产审计明细）。直接下载下方 KapiMoney-iOS.ipa 并使用 Sideloadly / AltStore 签名安装即可。附带可一键导入 iOS 快捷指令的 KapiScreenshotBookkeeping.shortcut 文件。"
           fi
