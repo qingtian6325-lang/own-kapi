@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.0.7] - 2026-11-10
+
+### 🚀 Highlights
+- **1. 真实小票与截屏存储（相机拍照 📷、相册选图 🖼️、高清大图查看与管理）**：
+  - 账单详情（`BillDetailSheetView`）备注小票模块升级为真图渲染：支持在本地持久化沙盒中存储小票原图，展示 58x58 圆角缩略图。
+  - 点击缩略图可全屏高清放大查看小票原图（`FullscreenReceiptViewer`），点击红叉可安全删除不需要的小票。
+  - 点击「+ 加小票」可唤起操作菜单：支持现场拍照录入与从相册选择小票或转账截图。
+  - 快捷指令截屏自动记账时，截图原图自动写入本地小票图库并挂载到对应账单，无需二次手动上传。
+  - 手动记账页（`RecordAndAISheetView`）相机按钮支持现场拍照与相册选图：拍照或选图后自动运行 OCR 提取金额、商户、分类及用途，并在键盘上方实时展示已挂载的小票缩略图。
+- **2. AI 智能 OCR 全场景深度理解（200+ 商户场景与转账用途精准归类）**：
+  - 针对此前用户反馈截屏后分类不准确、不知道干什么的痛点进行全面重构：
+  - 覆盖马来西亚与东南亚 200+ 高频商户与消费场景（Eggette Lab 蛋仔工房精准归为「餐饮-零食甜品」，加油站/充电桩精准归为「交通-加油充电」，超市/杂货归为「购物-生活用品」，药妆归为「购物-美妆护肤」等）。
+  - 智能解析转账单的 `Recipient Reference` / `Payment Details` / `附言` / `备注`，将收款人与付款用途合成为诸如 `TAN JING HAO (火锅)` 等直观说明，彻底告别空洞模糊的泛分类。
+- **3. 快捷指令「停留在当前App且弹浮窗Dialog」终极配置指引**：
+  - 针对实机导入快捷指令出现「不支持导入未签名的快捷指令」的系统拦截做出权威说明：直接利用系统内置的「识别账单」动作，无需任何外部文件。
+  - 解决快捷指令自动跳转的根本原因：在快捷指令中展开【识别账单】动作，将【运行时打开】(Open When Run) 切换为【关闭】（Show When Run 保持开启）。
+  - 按照此设置后，运行快捷指令将 100% 停留在当前支付或银行 App 界面，仅在屏幕顶部浮出带有【修改 (View)】与【确认 (Got it)】两个按钮的 Dialog 卡片，点击 Got it 原地记账，点击修改才进入 App！
+
 ## [v1.0.6] - 2026-11-10
 
 ### 🚀 Highlights

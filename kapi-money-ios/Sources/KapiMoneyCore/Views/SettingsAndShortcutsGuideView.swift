@@ -521,22 +521,24 @@ public struct SettingsAndShortcutsGuideView: View {
                 Spacer()
             }
 
-            Text("在 iPhone「快捷指令」中绑定『截屏 ➔ 咔皮截图记账』，付款后敲两下手机背面即可弹出以下卡片：点击「修改 (View)」直达 App 账单详情页，点击「确认 (Got it)」直接入账。")
+            Text("在 iPhone「快捷指令」中绑定『截屏 ➔ 咪咪记账 · 识别账单』，付款后在控制中心点击或敲两下手机背面即可弹出以下卡片：点击「修改 (View)」直达 App 账单详情页，点击「确认 (Got it)」原地直接入账。")
                 .font(.system(size: 12))
                 .foregroundColor(KapiTheme.textSecondary)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("📌 3 步设置「背面轻点两下」无感记账：")
+                Text("📌 控制中心 / 轻点背面无感记账配置（推荐）：")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundColor(KapiTheme.textPrimary)
-                Text("1. 打开 iPhone「设置」➔「辅助功能」➔「触控」➔「轻点背面」")
+                Text("1. 打开自带「快捷指令」App ➔ 点右上角「+」新建")
+                    .font(.system(size: 12))
+                Text("2. 依次添加以下动作：\n   ① 隐藏控制中心 (Hide Control Centre)\n   ② 等待 1 秒 (Wait 1 second)\n   ③ 截屏 (Take screenshot)\n   ④ 从截屏获取图像 (Get images from Screenshot)\n   ⑤ 识别账单 (咪咪记账)")
                     .font(.system(size: 12))
                     .foregroundColor(KapiTheme.textSecondary)
-                Text("2. 点击「轻点两下」，往下滑动到快捷指令列表")
-                    .font(.system(size: 12))
-                    .foregroundColor(KapiTheme.textSecondary)
-                Text("3. 勾选「咔皮截图记账」（App 已原生内置提供，开箱即选）")
-                    .font(.system(size: 12))
+                Text("3. ⚠️ 最关键一步：点击【识别账单】展开箭头，务必将【运行时打开】(Open When Run) 切换为【关闭】！")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(KapiTheme.dangerRed)
+                Text("👉 关闭「运行时打开」后，快捷指令就会停留在当前画面（不会跳进App），在屏幕顶部浮出包含【修改 (View)】与【确认 (Got it)】两个按钮的 Dialog 卡片：按确认原地直接记账；按修改才会打开 App！")
+                    .font(.system(size: 11))
                     .foregroundColor(KapiTheme.textSecondary)
             }
             .padding(12)
@@ -547,46 +549,27 @@ public struct SettingsAndShortcutsGuideView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "bubble.left.and.exclamationmark.bubble.right.fill")
                         .foregroundColor(KapiTheme.expenseBlue)
-                    Text("💡 如何实现「停留当前App，弹Dialog确认才跳转」？")
+                    Text("💡 为什么提示「不支持导入未签名的快捷指令」？")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(KapiTheme.textPrimary)
                 }
 
-                Text("你想要的是：付款后留在当前App不跳转，顶部弹出类似 Dialog 的卡片，点击「Got it」静默入账绝不跳转，只有点「Edit」才跳转进App修改。这正是咔皮记账的核心设计！以下是两种设置方式：")
+                Text("因为 iOS 限制从网页直接下载 .shortcut 文件。你完全不需要下载任何外部文件！本 App 安装后，系统已内置原生动作【识别账单】。请直接在自带「快捷指令」App 中搜索并添加【识别账单】即可（100% 官方支持，永不失效）！")
                     .font(.system(size: 11))
                     .foregroundColor(KapiTheme.textSecondary)
 
                 Divider()
 
-                // Mode 1: Built-in AppIntent Dialog
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 4) {
-                        Text("✨ 方式 1：iOS 系统级浮窗卡片 Dialog（最推荐）")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(KapiTheme.expenseBlue)
-                    }
-                    Text("1. 打开自带「快捷指令」App ➔ 点右上角「+」")
-                        .font(.system(size: 11, weight: .medium))
-                    Text("2. 底部搜索框搜「咔皮」，直接添加系统动作：【咔皮截图记账】")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(KapiTheme.textPrimary)
-                    Text("👉 运行后屏幕顶部浮出带有「修改 (View)」和「确认 (Got it)」两个按钮的 Dialog 卡片：按确认不跳转留在当前App；按修改才跳转进App！")
-                        .font(.system(size: 11))
-                        .foregroundColor(KapiTheme.textSecondary)
-                }
-                .padding(8)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color.white))
-
                 // Mode 2: Shortcuts "Choose from Menu" Dialog
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 4) {
-                        Text("🛠️ 方式 2：快捷指令原生「从菜单中选取」对话框")
+                        Text("🛠️ 备用方式：快捷指令原生「从菜单中选取」对话框")
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(KapiTheme.incomeOrange)
                     }
                     Text("1. 在快捷指令中依次添加：【截屏】➔【拷贝至剪贴板】")
                         .font(.system(size: 11))
-                    Text("2. 添加【从菜单中选取】(Choose from Menu)，提示写「是否记入咔皮记账？」")
+                    Text("2. 添加【从菜单中选取】(Choose from Menu)，提示写「是否记入咪咪记账？」")
                         .font(.system(size: 11, weight: .semibold))
                     Text("   • 选项 ①「Got it」：内部留空 ➔ 100% 停留在当前App，不跳转！\n   • 选项 ②「Edit」：内部添加【打开 URL】kapimoney://quick-scan ➔ 只有按此才跳转！")
                         .font(.system(size: 11))
@@ -1300,7 +1283,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 .font(.system(size: 16, weight: .bold))
                 .foregroundColor(KapiTheme.textPrimary)
 
-            Text("在 iPhone 桌面长按进入编辑状态 ➔ 点击左上角「+」➔ 搜索「咔皮记账」，即可添加以下官方设计小组件：")
+            Text("在 iPhone 桌面长按进入编辑状态 ➔ 点击左上角「+」➔ 搜索「咪咪记账」，即可添加以下官方设计小组件：")
                 .font(.system(size: 12))
                 .foregroundColor(KapiTheme.textSecondary)
 

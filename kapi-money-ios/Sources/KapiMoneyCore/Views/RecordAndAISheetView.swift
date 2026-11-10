@@ -24,6 +24,14 @@ public struct RecordAndAISheetView: View {
     @State private var selectedDate: Date = Date()
     @State private var showDatePickerSheet: Bool = false
     @State private var selectedTags: [String] = []
+    @State private var attachedReceiptFilenames: [String] = []
+    @State private var showImageSourceDialog: Bool = false
+    @State private var showImagePickerSheet: Bool = false
+    #if canImport(UIKit)
+    @State private var pickerSourceType: UIKitImagePicker.SourceType = .photoLibrary
+    #endif
+    @State private var selectedViewerImageData: Data? = nil
+    @State private var isViewerPresented: Bool = false
 
     public init(
         store: KapiStore,
@@ -105,6 +113,43 @@ public struct RecordAndAISheetView: View {
                 }
             }
             .presentationDetents([.medium])
+        }
+        .confirmationDialog("添加小票并自动识别", isPresented: $showImageSourceDialog, titleVisibility: .visible) {
+            #if canImport(UIKit)
+            Button("📷 拍照真实小票") {
+                pickerSourceType = .camera
+                showImagePickerSheet = true
+            }
+            Button("🖼️ 从相册选择小票/截图") {
+                pickerSourceType = .photoLibrary
+                showImagePickerSheet = true
+            }
+            Button("📋 识别剪贴板文本或图片") {
+                readFromClipboard()
+            }
+            #endif
+            Button("取消", role: .cancel) {}
+        }
+        #if canImport(UIKit)
+        .sheet(isPresented: $showImagePickerSheet) {
+            UIKitImagePicker(sourceType: pickerSourceType) { pickedImage in
+                if let data = pickedImage.jpegData(compressionQuality: 0.8) {
+                    let filename = store.saveReceiptImage(data: data)
+                    attachedReceiptFilenames.append(filename)
+                    Task {
+                        let draft = await ReceiptOCRService.recognizeAndParseImageData(data)
+                        await MainActor.run {
+                            applyDraft(draft)
+                        }
+                    }
+                }
+            }
+        }
+        #endif
+        .fullScreenCover(isPresented: $isViewerPresented) {
+            FullscreenReceiptViewer(imageData: selectedViewerImageData) {
+                isViewerPresented = false
+            }
         }
     }
 
@@ -378,35 +423,7 @@ public struct RecordAndAISheetView: View {
                         .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
 
                     Button {
-                        #if canImport(UIKit)
-                        let recognizedDraft: ParsedDraftBill?
-                        if let image = UIPasteboard.general.image, let pngData = image.pngData() {
-                            recognizedDraft = ReceiptOCRService.recognizeAndParseImageSync(pngData)
-                        } else if let clip = UIPasteboard.general.string, !clip.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            recognizedDraft = ReceiptOCRService.parseReceiptText(clip)
-                        } else {
-                            recognizedDraft = nil
-                        }
-
-                        if let draft = recognizedDraft {
-                            if draft.amount > 0 {
-                                expression = String(format: "%.2f", draft.amount)
-                            }
-                            if !draft.note.isEmpty && draft.note != "快捷记账" {
-                                noteText = draft.note
-                            }
-                            if !draft.accountName.isEmpty {
-                                selectedAccountName = draft.accountName
-                            }
-                            if let grpIdx = activeCategories.firstIndex(where: { $0.id == draft.primaryCategoryId || $0.name == draft.primaryCategoryId }) {
-                                selectedGroupIndex = grpIdx
-                                if let subId = draft.subCategoryId,
-                                   let subIdx = activeCategories[grpIdx].subcategories.firstIndex(where: { $0.id == subId || $0.name == subId }) {
-                                    selectedSubIndex = subIdx
-                                }
-                            }
-                        }
-                        #endif
+                        showImageSourceDialog = true
                     } label: {
                         Image(systemName: "camera.fill")
                             .font(.system(size: 15))
@@ -415,6 +432,58 @@ public struct RecordAndAISheetView: View {
                             .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xE8F0FE)))
                     }
                     .buttonStyle(.plain)
+                }
+
+                if !attachedReceiptFilenames.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(Array(attachedReceiptFilenames.enumerated()), id: \.offset) { idx, path in
+                                let data = store.loadReceiptImageData(filename: path)
+                                ZStack(alignment: .topTrailing) {
+                                    Group {
+                                        #if canImport(UIKit)
+                                        if let d = data, let img = UIImage(data: d) {
+                                            Image(uiImage: img)
+                                                .resizable()
+                                                .scaledToFill()
+                                                .frame(width: 48, height: 48)
+                                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                        } else {
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(Color(hex: 0xEAF1FF))
+                                                .frame(width: 48, height: 48)
+                                        }
+                                        #else
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(Color(hex: 0xEAF1FF))
+                                            .frame(width: 48, height: 48)
+                                        #endif
+                                    }
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        if let d = data {
+                                            selectedViewerImageData = d
+                                            isViewerPresented = true
+                                        }
+                                    }
+
+                                    Button {
+                                        if idx < attachedReceiptFilenames.count {
+                                            let removed = attachedReceiptFilenames.remove(at: idx)
+                                            store.deleteReceiptImage(filename: removed)
+                                        }
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.white)
+                                            .background(Circle().fill(Color.black.opacity(0.65)))
+                                    }
+                                    .offset(x: 3, y: -3)
+                                }
+                            }
+                        }
+                        .padding(.vertical, 2)
+                    }
                 }
             }
             .padding(.horizontal, 16)
@@ -506,6 +575,7 @@ public struct RecordAndAISheetView: View {
             accountName: selectedAccountName,
             targetAccountName: selectedTab == .transfer ? targetAccountName : nil,
             note: noteText,
+            receiptImageLabels: attachedReceiptFilenames,
             discountAmount: discountVal,
             includeInStats: selectedTab == .transfer ? false : includeInStats,
             tags: selectedTags,
@@ -516,8 +586,50 @@ public struct RecordAndAISheetView: View {
         noteText = ""
         discountAmountText = ""
         selectedTags = []
+        attachedReceiptFilenames = []
         if dismissAfter {
             onDismiss()
+        }
+    }
+
+    private func readFromClipboard() {
+        #if canImport(UIKit)
+        if let image = UIPasteboard.general.image, let pngData = image.pngData() {
+            let filename = store.saveReceiptImage(data: pngData)
+            attachedReceiptFilenames.append(filename)
+            let draft = ReceiptOCRService.recognizeAndParseImageSync(pngData)
+            applyDraft(draft)
+        } else if let clip = UIPasteboard.general.string, !clip.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            let draft = ReceiptOCRService.parseReceiptText(clip)
+            applyDraft(draft)
+        }
+        #endif
+    }
+
+    private func applyDraft(_ draft: ParsedDraftBill) {
+        if draft.amount > 0 {
+            expression = String(format: "%.2f", draft.amount)
+        }
+        if !draft.note.isEmpty && draft.note != "快捷记账" {
+            noteText = draft.note
+        }
+        if !draft.accountName.isEmpty {
+            selectedAccountName = draft.accountName
+        }
+        selectedDate = draft.date
+        if draft.type == .income {
+            selectedTab = .income
+        } else {
+            selectedTab = .expense
+        }
+        if let grpIdx = activeCategories.firstIndex(where: { $0.id == draft.primaryCategoryId || $0.name == draft.primaryCategoryId }) {
+            selectedGroupIndex = grpIdx
+            if let subId = draft.subCategoryId,
+               let subIdx = activeCategories[grpIdx].subcategories.firstIndex(where: { $0.id == subId || $0.name == subId }) {
+                selectedSubIndex = subIdx
+            } else if !activeCategories[grpIdx].subcategories.isEmpty {
+                selectedSubIndex = 0
+            }
         }
     }
 

@@ -9,6 +9,14 @@ public struct BillDetailSheetView: View {
     @State private var discountString: String
     @State private var refundString: String
 
+    @State private var showingActionSheet = false
+    @State private var showingImagePicker = false
+    #if canImport(UIKit)
+    @State private var pickerSourceType: UIKitImagePicker.SourceType = .photoLibrary
+    #endif
+    @State private var selectedViewerImageData: Data? = nil
+    @State private var isViewerPresented = false
+
     public init(
         store: KapiStore,
         transaction: TransactionItem,
@@ -96,40 +104,72 @@ public struct BillDetailSheetView: View {
                                     .multilineTextAlignment(.trailing)
                             }
 
-                            HStack(spacing: 10) {
-                                ForEach(editableBill.receiptImageLabels, id: \.self) { label in
-                                    ZStack(alignment: .topTrailing) {
+                            // Real Image Thumbnails + Add Photo Button
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 10) {
+                                    ForEach(Array(editableBill.receiptImageLabels.enumerated()), id: \.offset) { idx, path in
+                                        let imageData = store.loadReceiptImageData(filename: path)
+                                        ZStack(alignment: .topTrailing) {
+                                            Group {
+                                                #if canImport(UIKit)
+                                                if let data = imageData, let uiImage = UIImage(data: data) {
+                                                    Image(uiImage: uiImage)
+                                                        .resizable()
+                                                        .scaledToFill()
+                                                        .frame(width: 58, height: 58)
+                                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                                } else {
+                                                    fallbackDocIcon(label: path)
+                                                }
+                                                #else
+                                                fallbackDocIcon(label: path)
+                                                #endif
+                                            }
+                                            .contentShape(Rectangle())
+                                            .onTapGesture {
+                                                if let data = imageData {
+                                                    selectedViewerImageData = data
+                                                    isViewerPresented = true
+                                                }
+                                            }
+
+                                            // Delete receipt button
+                                            Button {
+                                                if idx < editableBill.receiptImageLabels.count {
+                                                    let removed = editableBill.receiptImageLabels.remove(at: idx)
+                                                    store.deleteReceiptImage(filename: removed)
+                                                }
+                                            } label: {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .font(.system(size: 16))
+                                                    .foregroundColor(.white)
+                                                    .background(Circle().fill(Color.black.opacity(0.65)))
+                                            }
+                                            .offset(x: 4, y: -4)
+                                        }
+                                    }
+
+                                    Button {
+                                        showingActionSheet = true
+                                    } label: {
                                         RoundedRectangle(cornerRadius: 10)
-                                            .fill(Color(hex: 0xEAF1FF))
+                                            .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4]))
+                                            .foregroundColor(KapiTheme.textMuted)
                                             .frame(width: 58, height: 58)
                                             .overlay(
-                                                VStack(spacing: 2) {
-                                                    Image(systemName: "doc.text.image")
+                                                VStack(spacing: 3) {
+                                                    Image(systemName: "camera.badge.ellipsis")
                                                         .font(.system(size: 18))
                                                         .foregroundColor(KapiTheme.expenseBlue)
-                                                    Text(label)
-                                                        .font(.system(size: 8))
+                                                    Text("加小票")
+                                                        .font(.system(size: 9, weight: .medium))
                                                         .foregroundColor(KapiTheme.textSecondary)
-                                                        .lineLimit(1)
                                                 }
                                             )
                                     }
+                                    .buttonStyle(.plain)
                                 }
-
-                                Button {
-                                    editableBill.receiptImageLabels.append("小票_\(editableBill.receiptImageLabels.count + 1)")
-                                } label: {
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4]))
-                                        .foregroundColor(KapiTheme.textMuted)
-                                        .frame(width: 58, height: 58)
-                                        .overlay(
-                                            Image(systemName: "plus")
-                                                .font(.system(size: 18))
-                                                .foregroundColor(KapiTheme.textMuted)
-                                        )
-                                }
-                                .buttonStyle(.plain)
+                                .padding(.vertical, 4)
                             }
                         }
                         .padding(16)
@@ -247,7 +287,52 @@ public struct BillDetailSheetView: View {
                     }
                 }
             }
+            .confirmationDialog("添加小票或截图", isPresented: $showingActionSheet, titleVisibility: .visible) {
+                #if canImport(UIKit)
+                Button("📷 拍摄真实小票") {
+                    pickerSourceType = .camera
+                    showingImagePicker = true
+                }
+                Button("🖼️ 从相册选择小票/截图") {
+                    pickerSourceType = .photoLibrary
+                    showingImagePicker = true
+                }
+                #endif
+                Button("取消", role: .cancel) {}
+            }
+            #if canImport(UIKit)
+            .sheet(isPresented: $showingImagePicker) {
+                UIKitImagePicker(sourceType: pickerSourceType) { pickedImage in
+                    if let data = pickedImage.jpegData(compressionQuality: 0.8) {
+                        let filename = store.saveReceiptImage(data: data)
+                        editableBill.receiptImageLabels.append(filename)
+                    }
+                }
+            }
+            #endif
+            .fullScreenCover(isPresented: $isViewerPresented) {
+                FullscreenReceiptViewer(imageData: selectedViewerImageData) {
+                    isViewerPresented = false
+                }
+            }
         }
+    }
+
+    private func fallbackDocIcon(label: String) -> some View {
+        RoundedRectangle(cornerRadius: 10)
+            .fill(Color(hex: 0xEAF1FF))
+            .frame(width: 58, height: 58)
+            .overlay(
+                VStack(spacing: 2) {
+                    Image(systemName: "doc.text.image")
+                        .font(.system(size: 18))
+                        .foregroundColor(KapiTheme.expenseBlue)
+                    Text(label)
+                        .font(.system(size: 8))
+                        .foregroundColor(KapiTheme.textSecondary)
+                        .lineLimit(1)
+                }
+            )
     }
 
     private func detailRow<Content: View>(label: String, @ViewBuilder content: () -> Content) -> some View {

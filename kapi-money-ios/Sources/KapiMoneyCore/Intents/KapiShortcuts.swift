@@ -22,6 +22,11 @@ public struct ShortcutExecutionOutcome: Equatable, Sendable {
 @MainActor
 public enum ShortcutActionCoordinator {
     public static func recordRecognizedDraft(_ draft: ParsedDraftBill, in store: KapiStore) -> TransactionItem {
+        var attachments: [String] = []
+        if let raw = draft.rawImageData {
+            let filename = store.saveReceiptImage(data: raw)
+            attachments.append(filename)
+        }
         let tx = TransactionItem(
             type: draft.type,
             categoryPath: draft.categoryPath,
@@ -29,6 +34,7 @@ public enum ShortcutActionCoordinator {
             amount: draft.amount,
             accountName: draft.accountName,
             note: draft.note,
+            receiptImageLabels: attachments,
             date: draft.date,
             isConfirmed: true
         )
@@ -103,7 +109,7 @@ public enum ShortcutActionCoordinator {
     public static func getLocalShortcutFileURL() -> URL? {
         guard let data = Data(base64Encoded: bundledShortcutBase64) else { return nil }
         let tempDir = FileManager.default.temporaryDirectory
-        let fileUrl = tempDir.appendingPathComponent("咔皮截屏自动记账.shortcut")
+        let fileUrl = tempDir.appendingPathComponent("咪咪截屏自动记账.shortcut")
         do {
             try data.write(to: fileUrl)
             return fileUrl
@@ -228,7 +234,7 @@ public struct ScreenshotResultSnippetView: View {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 13))
                     .foregroundColor(KapiTheme.balanceGreen)
-                Text("已识别记录以上信息，打开「咔皮记账」查看更多")
+                Text("已识别记录以上信息，打开「咪咪记账」查看更多")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(KapiTheme.textSecondary)
             }
@@ -319,7 +325,7 @@ public struct ScreenshotResultSnippetView: View {
 @available(iOS 16.0, macOS 13.0, *)
 public struct OpenBillForEditIntent: AppIntent {
     public static var title: LocalizedStringResource = "修改账单 (View)"
-    public static var description = IntentDescription("打开咔皮记账并跳转到该笔账单详情编辑页")
+    public static var description = IntentDescription("打开咪咪记账并跳转到该笔账单详情编辑页")
     public static var openAppWhenRun: Bool = true
 
     @Parameter(title: "账单ID")
@@ -420,7 +426,7 @@ public struct ScanScreenshotIntent: AppIntent {
             _ = ShortcutActionCoordinator.markForInAppModification(transactionId: saved.id, in: store)
         }
         return .result(
-            dialog: "已识别记录以上信息，打开「咔皮记账」查看更多"
+            dialog: "已识别记录以上信息，打开「咪咪记账」查看更多"
         ) {
             ScreenshotResultSnippetView(transaction: saved)
         }

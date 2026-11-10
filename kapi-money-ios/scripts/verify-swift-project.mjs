@@ -162,7 +162,7 @@ function verifyTask3() {
     'public final class KapiAIEngine: ObservableObject',
     'public func parseNaturalLanguageBills(',
     'public func handleUserMessage(',
-    '小金主，咔皮记账的标准支出分类如下',
+    '咪咪记账',
     '标准收入分类如下',
     '另外你还自建了「家用」「车贷」两个支出分类和「别人转账」这个收入分类'
   ]) {
@@ -187,7 +187,7 @@ function verifyTask4() {
     'public struct ConfirmBillIntent',
     'public struct KapiAppShortcutsProvider',
     'public struct ScreenshotResultSnippetView',
-    '已识别记录以上信息，打开「咔皮记账」查看更多',
+    '已识别记录以上信息，打开「咪咪记账」查看更多',
     '修改 (View)',
     '确认 (Got it)'
   ]) {

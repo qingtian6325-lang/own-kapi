@@ -36,6 +36,41 @@ public final class KapiStore: ObservableObject {
     private let inMemory: Bool
     private let storageURL: URL
 
+    // MARK: - Receipt Image Persistence
+    public var receiptsDirectoryURL: URL {
+        let docDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSTemporaryDirectory())
+        let receiptsURL = docDir.appendingPathComponent("Receipts", isDirectory: true)
+        if !FileManager.default.fileExists(atPath: receiptsURL.path) {
+            try? FileManager.default.createDirectory(at: receiptsURL, withIntermediateDirectories: true)
+        }
+        return receiptsURL
+    }
+
+    public func saveReceiptImage(data: Data) -> String {
+        let filename = "receipt_\(UUID().uuidString.prefix(12)).jpg"
+        let fileURL = receiptsDirectoryURL.appendingPathComponent(filename)
+        try? data.write(to: fileURL, options: .atomic)
+        return filename
+    }
+
+    public func loadReceiptImageData(filename: String) -> Data? {
+        let clean = filename.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty else { return nil }
+        if clean.hasPrefix("/") || clean.contains(":\\") {
+            return try? Data(contentsOf: URL(fileURLWithPath: clean))
+        }
+        let fileURL = receiptsDirectoryURL.appendingPathComponent(clean)
+        return try? Data(contentsOf: fileURL)
+    }
+
+    public func deleteReceiptImage(filename: String) {
+        let clean = filename.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty else { return }
+        let fileURL = clean.hasPrefix("/") ? URL(fileURLWithPath: clean) : receiptsDirectoryURL.appendingPathComponent(clean)
+        try? FileManager.default.removeItem(at: fileURL)
+    }
+
     public init(inMemory: Bool = false) {
         self.inMemory = inMemory
         let docDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first

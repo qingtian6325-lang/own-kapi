@@ -186,7 +186,7 @@ public final class KapiAIEngine: ObservableObject {
             let incomeSectionHeader = "标准收入分类如下："
             let customNote = "\(incomeSectionHeader)\n另外你还自建了「家用」「车贷」两个支出分类和「别人转账」这个收入分类 😊\n你可以在左侧菜单 →「分类管理」中随时新增、编辑或长按排序分类。"
             return [
-                .text("小金主，咔皮记账的标准支出分类如下："),
+                .text("小金主，咪咪记账的标准支出分类如下："),
                 .categoryTable(expenseRows: expenseRows, incomeRows: incomeRows, customNote: customNote)
             ]
         }
@@ -224,13 +224,13 @@ public final class KapiAIEngine: ObservableObject {
         let drafts = parseNaturalLanguageBills(trimmed)
         if !drafts.isEmpty {
             return [
-                .text("小金主，咔皮已为你识别并拆分出 \(drafts.count) 笔账单，点击下方确认即可入账："),
+                .text("小金主，咪咪已为你识别并拆分出 \(drafts.count) 笔账单，点击下方确认即可入账："),
                 .draftBills(drafts)
             ]
         }
 
         return [
-            .text("你可以直接对我说“今天午饭吃餐厅8.30，TNG打麻将28”来一句话记多笔，或者问我“这个月花了多少”、“可以增加或删除某个分类吗？” 🦫")
+            .text("你可以直接对我说“今天午饭吃餐厅8.30，TNG打麻将28”来一句话记多笔，或者问我“这个月花了多少”、“可以增加或删除某个分类吗？” 🐱")
         ]
     }
 
