@@ -32,33 +32,106 @@ jobs:
       - name: Run KapiMoneyTests (macOS host unit tests)
         run: swift test
 
-      - name: Build iOS App Bundle & IPA via iOS SDK
+      - name: Build Standard iOS App Bundle & IPA via iOS SDK
         run: |
+          rm -rf build
           mkdir -p build/Payload/KapiMoneyApp.app
           IOS_SDK_PATH="$(xcrun --sdk iphoneos --show-sdk-path)"
-          swift build -c release --product KapiMoneyApp --triple arm64-apple-ios17.0 -Xswiftc -sdk -Xswiftc "${IOS_SDK_PATH}" -Xcc -isysroot -Xcc "${IOS_SDK_PATH}"
+          SDK_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
+          SDK_BUILD="$(xcrun --sdk iphoneos --show-sdk-build-version)"
+          XCODE_BUILD="$(xcodebuild -version | awk 'NR==2 {print $3}')"
+
+          swift build -c release --product KapiMoneyApp \
+            --triple arm64-apple-ios17.0 \
+            -Xswiftc -sdk -Xswiftc "${IOS_SDK_PATH}" \
+            -Xcc -isysroot -Xcc "${IOS_SDK_PATH}"
+
           BIN_PATH="$(find .build -path "*/release/KapiMoneyApp" -type f | head -n 1)"
           cp "${BIN_PATH}" build/Payload/KapiMoneyApp.app/KapiMoneyApp
-          chmod +x build/Payload/KapiMoneyApp.app/KapiMoneyApp
-          cat > build/Payload/KapiMoneyApp.app/Info.plist << 'EOF'
+          chmod 755 build/Payload/KapiMoneyApp.app/KapiMoneyApp
+
+          # Write standard 8-byte PkgInfo
+          printf "APPL????" > build/Payload/KapiMoneyApp.app/PkgInfo
+
+          # Generate valid 120x120 and 180x180 PNG App Icons so i4Tools / Sideloadly displays the icon and passes icon checks
+          python3 - << 'PYEOF'
+          import struct, zlib
+
+          def make_png(width, height, rgb=(45, 90, 240)):
+              raw = b""
+              for y in range(height):
+                  raw += b"\x00" + bytes(rgb) * width
+              def chunk(tag, data):
+                  return struct.pack("!I", len(data)) + tag + data + struct.pack("!I", zlib.crc32(tag + data) & 0xffffffff)
+              ihdr = struct.pack("!IIBBBBB", width, height, 8, 2, 0, 0, 0)
+              return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b"")
+
+          with open("build/Payload/KapiMoneyApp.app/AppIcon60x60@2x.png", "wb") as f:
+              f.write(make_png(120, 120))
+          with open("build/Payload/KapiMoneyApp.app/AppIcon60x60@3x.png", "wb") as f:
+              f.write(make_png(180, 180))
+          PYEOF
+
+          cat > build/Payload/KapiMoneyApp.app/Info.plist << EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
           <dict>
-            <key>CFBundleExecutable</key>
-            <string>KapiMoneyApp</string>
-            <key>CFBundleIdentifier</key>
-            <string>com.jinghao.kapimoney</string>
-            <key>CFBundleName</key>
-            <string>咔皮记账</string>
+            <key>CFBundleDevelopmentRegion</key>
+            <string>zh_CN</string>
             <key>CFBundleDisplayName</key>
             <string>咔皮记账</string>
+            <key>CFBundleExecutable</key>
+            <string>KapiMoneyApp</string>
+            <key>CFBundleIconFiles</key>
+            <array>
+              <string>AppIcon60x60@2x.png</string>
+              <string>AppIcon60x60@3x.png</string>
+            </array>
+            <key>CFBundleIcons</key>
+            <dict>
+              <key>CFBundlePrimaryIcon</key>
+              <dict>
+                <key>CFBundleIconFiles</key>
+                <array>
+                  <string>AppIcon60x60</string>
+                </array>
+                <key>CFBundleIconName</key>
+                <string>AppIcon</string>
+              </dict>
+            </dict>
+            <key>CFBundleIdentifier</key>
+            <string>com.jinghao.kapimoney</string>
+            <key>CFBundleInfoDictionaryVersion</key>
+            <string>6.0</string>
+            <key>CFBundleName</key>
+            <string>KapiMoneyApp</string>
             <key>CFBundlePackageType</key>
             <string>APPL</string>
             <key>CFBundleShortVersionString</key>
             <string>1.0.0</string>
+            <key>CFBundleSupportedPlatforms</key>
+            <array>
+              <string>iPhoneOS</string>
+            </array>
             <key>CFBundleVersion</key>
             <string>1</string>
+            <key>DTCompiler</key>
+            <string>com.apple.compilers.llvm.clang.1_0</string>
+            <key>DTPlatformBuild</key>
+            <string>${SDK_BUILD}</string>
+            <key>DTPlatformName</key>
+            <string>iphoneos</string>
+            <key>DTPlatformVersion</key>
+            <string>${SDK_VERSION}</string>
+            <key>DTSDKBuild</key>
+            <string>${SDK_BUILD}</string>
+            <key>DTSDKName</key>
+            <string>iphoneos${SDK_VERSION}</string>
+            <key>DTXcode</key>
+            <string>1600</string>
+            <key>DTXcodeBuild</key>
+            <string>${XCODE_BUILD}</string>
             <key>LSRequiresIPhoneOS</key>
             <true/>
             <key>MinimumOSVersion</key>
@@ -70,6 +143,10 @@ jobs:
             </array>
             <key>UILaunchScreen</key>
             <dict/>
+            <key>UIRequiredDeviceCapabilities</key>
+            <array>
+              <string>arm64</string>
+            </array>
             <key>UISupportedInterfaceOrientations</key>
             <array>
               <string>UIInterfaceOrientationPortrait</string>
@@ -96,6 +173,11 @@ jobs:
           </dict>
           </plist>
           EOF
+
+          # Convert Info.plist to standard Apple binary plist and generate _CodeSignature/CodeResources
+          plutil -convert binary1 build/Payload/KapiMoneyApp.app/Info.plist
+          codesign --force --deep --sign - build/Payload/KapiMoneyApp.app
+
           cd build && zip -qry KapiMoney-iOS.ipa Payload
 
       - name: Upload KapiMoney-iOS.ipa Artifact
@@ -115,5 +197,5 @@ jobs:
           else
             gh release create v1.0.0 build/KapiMoney-iOS.ipa \
               --title "咔皮记账 iOS v1.0.0 (KapiMoney-iOS.ipa)" \
-              --notes "1:1 原生 SwiftUI 咔皮记账 iOS 安装包（含快捷指令自动截屏记账弹窗、一句话记多笔、动态日预算与资产审计明细）。直接下载下方 KapiMoney-iOS.ipa 并使用 Sideloadly / AltStore 签名安装即可。"
+              --notes "1:1 原生 SwiftUI 咔皮记账 iOS 安装包（含快捷指令自动截屏记账弹窗、一句话记多笔、动态日预算与资产审计明细）。直接下载下方 KapiMoney-iOS.ipa 并使用 Sideloadly / AltStore / 爱思助手签名安装即可。"
           fi
