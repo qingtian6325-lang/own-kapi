@@ -50,6 +50,7 @@ jobs:
           BIN_PATH="$(find .build -path "*/release/KapiMoneyApp" -type f | head -n 1)"
           cp "${BIN_PATH}" build/Payload/KapiMoneyApp.app/KapiMoneyApp
           chmod 755 build/Payload/KapiMoneyApp.app/KapiMoneyApp
+          cp shortcuts/KapiScreenshotBookkeeping.shortcut build/Payload/KapiMoneyApp.app/KapiScreenshotBookkeeping.shortcut
 
           # Write standard 8-byte PkgInfo
           printf "APPL????" > build/Payload/KapiMoneyApp.app/PkgInfo

@@ -95,6 +95,40 @@ public enum ShortcutActionCoordinator {
         }
         return false
     }
+
+    public static let bundledShortcutBase64 = "YnBsaXN0MDDYAQIDBAUGBwgJKSorMDEzNF8QEVdGV29ya2Zsb3dBY3Rpb25zXxAXV0ZXb3JrZmxvd0NsaWVudFJlbGVhc2VfEBdXRldvcmtmbG93Q2xpZW50VmVyc2lvbl5XRldvcmtmbG93SWNvbl8QGVdGV29ya2Zsb3dJbXBvcnRRdWVzdGlvbnNfECFXRldvcmtmbG93SW5wdXRDb250ZW50SXRlbUNsYXNzZXNfEB5XRldvcmtmbG93TWluaW11bUNsaWVudFZlcnNpb25fEA9XRldvcmtmbG93VHlwZXOjChEg0gsMDQ5fEBpXRldvcmtmbG93QWN0aW9uSWRlbnRpZmllcl8QGldGV29ya2Zsb3dBY3Rpb25QYXJhbWV0ZXJzXxAiaXMud29ya2Zsb3cuYWN0aW9ucy50YWtlc2NyZWVuc2hvdNEPEFRVVUlEXxAkODRCOUFBMjgtOEY2QS00MTA0LUEyQTQtQzkwMzQ0OERDQ0Mw0gsMEhNfECBpcy53b3JrZmxvdy5hY3Rpb25zLnNldGNsaXBib2FyZNIPFBUWV1dGSW5wdXRfECRDQUFDRjlBRS0xNjM0LTQ3ODQtODA5Qi00RjA5QjQ4MUFDN0XSFxgZH1VWYWx1ZV8QE1dGU2VyaWFsaXphdGlvblR5cGXTGhscHRAeWk91dHB1dE5hbWVaT3V0cHV0VVVJRFRUeXBlYmIqXE9cQWN0aW9uT3V0cHV0XxAVV0ZUZXh0VG9rZW5BdHRhY2htZW500gsMISJfEBtpcy53b3JrZmxvdy5hY3Rpb25zLm9wZW51cmzSDxQjJF8QJEVCM0U3QUM3LUIwMDItNDUzQy1CRTU1LTQzRDIxNDY2RUI1QtIXGCUo0SYnVnN0cmluZ18QFmthcGltb25leTovL3F1aWNrLXNjYW5fEBFXRlRleHRUb2tlblN0cmluZ1MyLjBYMjYwMC4wLjDSLC0uL18QGVdGV29ya2Zsb3dJY29uR2x5cGhOdW1iZXJfEBhXRldvcmtmbG93SWNvblN0YXJ0Q29sb3IR6HcS/0NR/6ChMl8QEldGSW1hZ2VDb250ZW50SXRlbREDhKM1NjdYTkNXaWRnZXRVV2F0Y2hfEA9BY3Rpb25FeHRlbnNpb24ACAAZAC0ARwBhAHAAjACwANEA4wDnAOwBCQEmAUsBTgFTAXoBfwGiAacBrwHWAdsB4QH3Af4CCQIUAhkCHgIrAkMCSAJmAmsCkgKXApoCoQK6As4C0gLbAuAC/AMXAxoDHwMgAyIDNwM6Az4DRwNNAAAAAAAAAgEAAAAAAAAAOAAAAAAAAAAAAAAAAAAAA18="
+
+    public static func getLocalShortcutFileURL() -> URL? {
+        guard let data = Data(base64Encoded: bundledShortcutBase64) else { return nil }
+        let tempDir = FileManager.default.temporaryDirectory
+        let fileUrl = tempDir.appendingPathComponent("咔皮截屏自动记账.shortcut")
+        do {
+            try data.write(to: fileUrl)
+            return fileUrl
+        } catch {
+            return nil
+        }
+    }
+
+    public static func openShortcutsApp() {
+        #if canImport(UIKit)
+        if let url = URL(string: "shortcuts://") {
+            UIApplication.shared.open(url)
+        }
+        #endif
+    }
+
+    public static func openOnlineShortcutInstallURL() {
+        #if canImport(UIKit)
+        if let url = URL(string: "https://github.com/qingtian6325-lang/own-kapi/releases/download/v1.0.3/KapiScreenshotBookkeeping.shortcut") {
+            UIApplication.shared.open(url, options: [:]) { success in
+                if !success {
+                    openShortcutsApp()
+                }
+            }
+        }
+        #endif
+    }
 }
 
 // MARK: - Screenshot Result Snippet View (1:1 Match with IMG_2294.PNG)

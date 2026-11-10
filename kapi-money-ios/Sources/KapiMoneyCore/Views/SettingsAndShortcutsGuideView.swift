@@ -338,39 +338,94 @@ public struct SettingsAndShortcutsGuideView: View {
             .padding(12)
             .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF5F6FA)))
 
-            HStack(spacing: 10) {
-                Link(destination: URL(string: "shortcuts://")!) {
-                    HStack {
+            // 1. One-click Jump Button requested by user
+            Button {
+                ShortcutActionCoordinator.openOnlineShortcutInstallURL()
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 16))
+                    Text("⚡ 一键跳转导入「咔皮截屏自动记账」快捷指令")
+                        .font(.system(size: 14, weight: .bold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 13)
+                .background(RoundedRectangle(cornerRadius: 12).fill(KapiTheme.expenseBlue))
+            }
+            .buttonStyle(.plain)
+
+            // 2. Action row: Open shortcuts app, or Share local offline shortcut file
+            HStack(spacing: 8) {
+                Button {
+                    ShortcutActionCoordinator.openShortcutsApp()
+                } label: {
+                    HStack(spacing: 4) {
                         Image(systemName: "arrow.up.forward.app")
                         Text("打开「快捷指令」App")
                     }
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(KapiTheme.expenseBlue)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xE8F0FE)))
                 }
+                .buttonStyle(.plain)
 
-                Button {
+                if let localFile = ShortcutActionCoordinator.getLocalShortcutFileURL() {
+                    ShareLink(
+                        item: localFile,
+                        preview: SharePreview("咔皮截屏自动记账.shortcut", icon: Image(systemName: "bolt.circle.fill"))
+                    ) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("离线发送到快捷指令")
+                        }
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(KapiTheme.textPrimary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF0F2F7)))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            // 3. Direct In-App Instant Recognition (No shortcut needed at all!)
+            Button {
+                #if canImport(UIKit)
+                if let image = UIPasteboard.general.image, let pngData = image.pngData() {
+                    let draft = ReceiptOCRService.recognizeAndParseImageSync(pngData)
+                    let saved = ShortcutActionCoordinator.recordRecognizedDraft(draft, in: store)
+                    simulatedSnippetTx = saved
+                    statusBannerMessage = "已通过 Apple Vision 成功识别剪贴板账单截图并记账！"
+                } else if let clipStr = UIPasteboard.general.string, !clipStr.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    let draft = ReceiptOCRService.parseReceiptText(clipStr)
+                    let saved = ShortcutActionCoordinator.recordRecognizedDraft(draft, in: store)
+                    simulatedSnippetTx = saved
+                    statusBannerMessage = "已识别剪贴板账单文字并记账！"
+                } else {
                     let demoDraft = ReceiptOCRService.parseReceiptText(
                         "-RM5.90\nPayment - TNGD\nNear Me Voucher Eggette Lab\n08/11/2026 16:56:34"
                     )
                     let saved = ShortcutActionCoordinator.recordRecognizedDraft(demoDraft, in: store)
                     simulatedSnippetTx = saved
-                    statusBannerMessage = "已模拟触发快捷指令截图识别"
-                } label: {
-                    HStack {
-                        Image(systemName: "sparkles")
-                        Text("模拟触发弹窗")
-                    }
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(KapiTheme.textPrimary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Capsule().fill(Color(hex: 0xF0F2F7)))
+                    statusBannerMessage = "剪贴板无截图，已演示默认截图识别"
                 }
-                .buttonStyle(.plain)
+                #endif
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "camera.viewfinder")
+                        .font(.system(size: 14))
+                    Text("📸 无需快捷指令 · 一键读取剪贴板截图直接记账")
+                        .font(.system(size: 13, weight: .bold))
+                }
+                .foregroundColor(KapiTheme.incomeOrange)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 11)
+                .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xFFF3E0)))
             }
+            .buttonStyle(.plain)
 
             let previewTx = simulatedSnippetTx ?? TransactionItem(
                 type: .expense,
