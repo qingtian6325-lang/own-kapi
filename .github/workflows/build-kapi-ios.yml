@@ -201,15 +201,33 @@ jobs:
           git tag -f "${RELEASE_TAG}"
           git push origin "${RELEASE_TAG}" --force
 
-          NOTES_CONTENT="咔皮记账 iOS ${RELEASE_TAG} 发布版本。\n\n### 🚀 更新说明\n- 纯净空白账本：默认启动 0 账单、0 结余、0 记录天数，无任何假数据或硬编码\n- 全功能 11 个模块真实逻辑：账本管理、标签增删与筛选、定时记账、小组件实时渲染预览、通用设置、收支统计多周期筛选\n- iOS 快捷指令 100% 可用：支持 Vision OCR 动态解析截屏金额与商户，无截图时自动读取剪贴板\n- 双表头 CSV 完整导入导出：支持 151 条历史账单（140 笔收支 + 11 笔转账）无损导入\n\n### 📦 资产下载\n- **KapiMoney-iOS.ipa**：App 安装包（建议使用 Sideloadly / AltStore 签名安装）\n- **KapiScreenshotBookkeeping.shortcut**：iOS 快捷指令一键导入文件"
+          node -e "
+            const fs = require('fs');
+            const tag = process.env.RELEASE_TAG;
+            const changelogPath = fs.existsSync('CHANGELOG.md') ? 'CHANGELOG.md' : 'kapi-money-ios/CHANGELOG.md';
+            let content = '';
+            if (fs.existsSync(changelogPath)) {
+              const text = fs.readFileSync(changelogPath, 'utf8').replace(/\r\n/g, '\n');
+              const startIdx = text.indexOf('## [' + tag + ']');
+              if (startIdx !== -1) {
+                const nextIdx = text.indexOf('\n## [', startIdx + 4);
+                content = (nextIdx !== -1 ? text.substring(startIdx, nextIdx) : text.substring(startIdx)).trim();
+              }
+            }
+            if (!content) {
+              content = '## [' + tag + ']\n\n- 咔皮记账 iOS ' + tag + ' 自动化发布版本';
+            }
+            content += '\n\n### 📦 资产下载\n- **KapiMoney-iOS.ipa**：App 安装包（建议使用 Sideloadly / AltStore 签名安装）\n- **KapiScreenshotBookkeeping.shortcut**：iOS 快捷指令一键导入文件';
+            fs.writeFileSync('RELEASE_NOTES.md', content);
+          "
 
           if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
             gh release upload "${RELEASE_TAG}" build/KapiMoney-iOS.ipa shortcuts/KapiScreenshotBookkeeping.shortcut --clobber
-            gh release edit "${RELEASE_TAG}" --title "咔皮记账 iOS ${RELEASE_TAG} (KapiMoney-iOS.ipa)" --notes "${NOTES_CONTENT}"
+            gh release edit "${RELEASE_TAG}" --title "咔皮记账 iOS ${RELEASE_TAG} (KapiMoney-iOS.ipa)" --notes-file RELEASE_NOTES.md
           else
             gh release create "${RELEASE_TAG}" build/KapiMoney-iOS.ipa shortcuts/KapiScreenshotBookkeeping.shortcut \
               --title "咔皮记账 iOS ${RELEASE_TAG} (KapiMoney-iOS.ipa)" \
-              --notes "${NOTES_CONTENT}"
+              --notes-file RELEASE_NOTES.md
           fi
 
           if gh release view v1.0.0 >/dev/null 2>&1; then

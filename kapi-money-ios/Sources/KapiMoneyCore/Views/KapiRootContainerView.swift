@@ -186,6 +186,13 @@ public struct KapiRootContainerView: View {
                 activeBillForEdit = match
             }
         }
+        .onChange(of: store.isRecordSheetPresented) { _, presented in
+            if presented {
+                openRecordSheetInAIMode = false
+                showRecordSheet = true
+                store.isRecordSheetPresented = false
+            }
+        }
         .onOpenURL { url in
             if ShortcutActionCoordinator.handleIncomingURL(url, in: store),
                let id = store.pendingEditTransactionId,

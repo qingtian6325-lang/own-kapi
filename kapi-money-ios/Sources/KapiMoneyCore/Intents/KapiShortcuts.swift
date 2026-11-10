@@ -86,12 +86,14 @@ public enum ShortcutActionCoordinator {
                 #endif
             }
 
-            let finalDraft = draft ?? ReceiptOCRService.parseReceiptText(
-                "-RM5.90\nPayment - TNGD\nNear Me Voucher Eggette Lab\n08/11/2026 16:56:34"
-            )
-            let saved = recordRecognizedDraft(finalDraft, in: store)
-            store.pendingShortcutSnippetBill = saved
-            return true
+            if let recognized = draft {
+                let saved = recordRecognizedDraft(recognized, in: store)
+                store.pendingShortcutSnippetBill = saved
+                return true
+            } else {
+                store.isRecordSheetPresented = true
+                return true
+            }
         }
         return false
     }

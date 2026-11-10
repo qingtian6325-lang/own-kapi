@@ -26,6 +26,7 @@ public final class KapiStore: ObservableObject {
     @Published public var tags: [String]
     @Published public var pendingEditTransactionId: UUID?
     @Published public var pendingShortcutSnippetBill: TransactionItem?
+    @Published public var isRecordSheetPresented: Bool = false
     @Published public var hideAmounts: Bool = false
     @Published public var reimbursableAmount: Double = 0.00
     @Published public var userNickname: String = "景豪"

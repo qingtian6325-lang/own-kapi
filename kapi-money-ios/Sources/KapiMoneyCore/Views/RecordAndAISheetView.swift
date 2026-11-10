@@ -378,17 +378,43 @@ public struct RecordAndAISheetView: View {
                         .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
 
                     Button {
-                        // Quick simulate photo OCR attachment
-                        let draft = ReceiptOCRService.parseReceiptText("-RM5.90\nPayment - TNGD\nNear Me Voucher Eggette Lab")
-                        expression = String(format: "%.2f", draft.amount)
-                        noteText = draft.note
-                        selectedAccountName = draft.accountName
+                        #if canImport(UIKit)
+                        if let image = UIPasteboard.general.image, let pngData = image.pngData() {
+                            let draft = ReceiptOCRService.recognizeAndParseImageSync(pngData)
+                            if draft.amount > 0 {
+                                expression = String(format: "%.2f", draft.amount)
+                            }
+                            if !draft.note.isEmpty && draft.note != "快捷记账" {
+                                noteText = draft.note
+                            }
+                            if !draft.accountName.isEmpty {
+                                selectedAccountName = draft.accountName
+                            }
+                            if !draft.categoryDisplayName.isEmpty {
+                                selectedCategory = draft.categoryDisplayName
+                            }
+                        } else if let clip = UIPasteboard.general.string, !clip.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            let draft = ReceiptOCRService.parseReceiptText(clip)
+                            if draft.amount > 0 {
+                                expression = String(format: "%.2f", draft.amount)
+                            }
+                            if !draft.note.isEmpty && draft.note != "快捷记账" {
+                                noteText = draft.note
+                            }
+                            if !draft.accountName.isEmpty {
+                                selectedAccountName = draft.accountName
+                            }
+                            if !draft.categoryDisplayName.isEmpty {
+                                selectedCategory = draft.categoryDisplayName
+                            }
+                        }
+                        #endif
                     } label: {
                         Image(systemName: "camera.fill")
                             .font(.system(size: 15))
-                            .foregroundColor(KapiTheme.textSecondary)
+                            .foregroundColor(KapiTheme.expenseBlue)
                             .frame(width: 36, height: 36)
-                            .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                            .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xE8F0FE)))
                     }
                     .buttonStyle(.plain)
                 }
