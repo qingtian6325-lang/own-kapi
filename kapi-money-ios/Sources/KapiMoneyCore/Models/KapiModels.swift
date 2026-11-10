@@ -255,6 +255,15 @@ public struct TransactionItem: Identifiable, Codable, Equatable, Sendable {
         }
     }
 
+    public var targetAccountName: String? {
+        get {
+            targetAccountId.map { DefaultCatalog.resolveAccountName(from: $0) }
+        }
+        set {
+            self.targetAccountId = newValue.flatMap { DefaultCatalog.resolveAccountId(from: $0) }
+        }
+    }
+
     public var ledgerName: String {
         get {
             ledgerId == "ledger_main" ? "Main Ledger" : ledgerId
