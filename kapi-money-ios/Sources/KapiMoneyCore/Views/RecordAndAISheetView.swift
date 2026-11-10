@@ -379,22 +379,16 @@ public struct RecordAndAISheetView: View {
 
                     Button {
                         #if canImport(UIKit)
+                        let recognizedDraft: ParsedDraftBill?
                         if let image = UIPasteboard.general.image, let pngData = image.pngData() {
-                            let draft = ReceiptOCRService.recognizeAndParseImageSync(pngData)
-                            if draft.amount > 0 {
-                                expression = String(format: "%.2f", draft.amount)
-                            }
-                            if !draft.note.isEmpty && draft.note != "快捷记账" {
-                                noteText = draft.note
-                            }
-                            if !draft.accountName.isEmpty {
-                                selectedAccountName = draft.accountName
-                            }
-                            if !draft.categoryDisplayName.isEmpty {
-                                selectedCategory = draft.categoryDisplayName
-                            }
+                            recognizedDraft = ReceiptOCRService.recognizeAndParseImageSync(pngData)
                         } else if let clip = UIPasteboard.general.string, !clip.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            let draft = ReceiptOCRService.parseReceiptText(clip)
+                            recognizedDraft = ReceiptOCRService.parseReceiptText(clip)
+                        } else {
+                            recognizedDraft = nil
+                        }
+
+                        if let draft = recognizedDraft {
                             if draft.amount > 0 {
                                 expression = String(format: "%.2f", draft.amount)
                             }
@@ -404,8 +398,12 @@ public struct RecordAndAISheetView: View {
                             if !draft.accountName.isEmpty {
                                 selectedAccountName = draft.accountName
                             }
-                            if !draft.categoryDisplayName.isEmpty {
-                                selectedCategory = draft.categoryDisplayName
+                            if let grpIdx = activeCategories.firstIndex(where: { $0.id == draft.primaryCategoryId || $0.name == draft.primaryCategoryId }) {
+                                selectedGroupIndex = grpIdx
+                                if let subId = draft.subCategoryId,
+                                   let subIdx = activeCategories[grpIdx].subcategories.firstIndex(where: { $0.id == subId || $0.name == subId }) {
+                                    selectedSubIndex = subIdx
+                                }
                             }
                         }
                         #endif

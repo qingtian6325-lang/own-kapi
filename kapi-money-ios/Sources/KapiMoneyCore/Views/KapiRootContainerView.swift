@@ -15,6 +15,7 @@ public struct KapiRootContainerView: View {
     @State private var showCategoryManager: Bool = false
     @State private var activeSettingsTitle: String?
 
+    @MainActor
     public init(store: KapiStore = .shared) {
         self.store = store
     }
