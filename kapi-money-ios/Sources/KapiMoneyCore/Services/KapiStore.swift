@@ -78,6 +78,7 @@ public final class KapiStore: ObservableObject {
             self.tags = empty.tags
             self.reimbursableAmount = 0.00
         }
+        recalculateAllAccountBalances()
     }
 
     public var currentLedger: LedgerItem {

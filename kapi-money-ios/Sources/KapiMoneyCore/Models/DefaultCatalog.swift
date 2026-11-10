@@ -222,10 +222,10 @@ public enum DefaultCatalog {
     // Exact 4 accounts from IMG_2258 summing to RM368.42
     public static func defaultAccounts() -> [AccountItem] {
         [
-            AccountItem(id: "acc_cash", name: "现金", subtitle: "现金余额", badgeText: nil, iconName: "💰", balance: 0.00, initialBalance: 0.00),
-            AccountItem(id: "acc_cimb", name: "CIMB", subtitle: "其他银行储蓄卡余额", badgeText: "储蓄卡", iconName: "🏦", balance: 0.00, initialBalance: 0.00),
-            AccountItem(id: "acc_tng", name: "TNG eWallet", subtitle: "电子钱包 (TNGewallet)", badgeText: nil, iconName: "💬", balance: 0.00, initialBalance: 0.00),
-            AccountItem(id: "acc_pbb", name: "PBBank", subtitle: "其他银行储蓄卡余额", badgeText: "储蓄卡", iconName: "🏦", balance: 0.00, initialBalance: 0.00)
+            AccountItem(id: "acc_cash", name: "现金", subtitle: "现金余额", badgeText: nil, iconName: "💰", balance: 72.10, initialBalance: 72.10),
+            AccountItem(id: "acc_cimb", name: "CIMB", subtitle: "其他银行储蓄卡余额", badgeText: "储蓄卡", iconName: "🏦", balance: 23.45, initialBalance: 23.45),
+            AccountItem(id: "acc_tng", name: "TNGewallet", subtitle: "电子钱包 (TNGewallet)", badgeText: nil, iconName: "💬", balance: 68.62, initialBalance: 101.62),
+            AccountItem(id: "acc_pbb", name: "PBBank", subtitle: "其他银行储蓄卡余额", badgeText: "储蓄卡", iconName: "🏦", balance: 204.25, initialBalance: 237.06)
         ]
     }
 
@@ -297,7 +297,7 @@ public enum DefaultCatalog {
 
     public static func resolveAccountName(from accountId: String?) -> String {
         guard let accountId, !accountId.isEmpty else { return "不选账户" }
-        if accountId == "acc_tng" { return "TNG eWallet" }
+        if accountId == "acc_tng" { return "TNGewallet" }
         if accountId == "acc_cimb" { return "CIMB" }
         if accountId == "acc_pbb" { return "PBBank" }
         if accountId == "acc_cash" { return "现金" }
