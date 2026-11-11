@@ -1,5 +1,8 @@
 import Foundation
 import Combine
+#if canImport(UIKit)
+import UIKit
+#endif
 
 public struct PersistedAppState: Codable, Sendable {
     public var ledgers: [LedgerItem]
