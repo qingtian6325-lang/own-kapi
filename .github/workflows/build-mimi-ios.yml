@@ -59,6 +59,23 @@ jobs:
             -parse-as-library \
             -O \
             $(find Sources/MimiMoneyCore -name '*.swift' | sort)
+          # Variant B: whole-module-optimization merges everything into a
+          # single frontend job — the mode in which -emit-const-values-path
+          # reliably produces one module-wide .swiftconstvalues file.
+          mkdir -p constvals-wmo module-wmo
+          xcrun --sdk iphoneos swiftc \
+            -target arm64-apple-ios17.0 \
+            -sdk "${IOS_SDK_PATH}" \
+            -module-name MimiMoneyCore \
+            -emit-module -emit-module-path module-wmo/MimiMoneyCore.swiftmodule \
+            -emit-const-values-path constvals-wmo/MimiMoneyCore.swiftconstvalues \
+            -whole-module-optimization \
+            -parse-as-library \
+            -O \
+            $(find Sources/MimiMoneyCore -name '*.swift' | sort)
+          echo "--- constvals emission diagnostics ---"
+          ls -la constvals constvals-wmo || true
+          find . -name '*.swiftconstvalues' | head -20 || true
 
       - name: Extract AppIntents metadata (appintentsmetadataprocessor)
         run: |
@@ -96,7 +113,11 @@ jobs:
           echo "Xcode version: ${XCODE_VERSION}"
 
           find "${PWD}/Sources/MimiMoneyCore" -name '*.swift' | sort > source-file-list.txt
-          find "${PWD}/constvals" .build -name '*.swiftconstvalues' 2>/dev/null | sort > swift-const-vals-list.txt
+          if find "${PWD}/constvals-wmo" -name '*.swiftconstvalues' 2>/dev/null | grep -q .; then
+            find "${PWD}/constvals-wmo" -name '*.swiftconstvalues' | sort > swift-const-vals-list.txt
+          else
+            find "${PWD}/constvals" .build -name '*.swiftconstvalues' 2>/dev/null | sort > swift-const-vals-list.txt
+          fi
           echo "--- source-file-list ($(wc -l < source-file-list.txt) files) ---"
           cat source-file-list.txt
           echo "--- swift-const-vals-list ($(wc -l < swift-const-vals-list.txt) files) ---"
