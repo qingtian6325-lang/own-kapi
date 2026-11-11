@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.2.3] - 2026-11-11
+
+### 🎯 Highlights
+- **修复识别必报 HTTP 400**：真机暴露——相册选图识别每次失败，Google 服务器原话是 `response_schema.properties[subCategory].enum[62]: cannot be empty`。根因在识别请求的结构化输出 schema：二级分类（subCategory）与对方账户（targetAccount）的 enum 末尾各混了一个空字符串（本意是「可以没有二级分类」），而 Google 的规矩是 enum 只许非空字符串——请求在模型看图之前就被拒。本版两个 enum 去掉空值，「可以为空」改用 schema 正规的 `nullable` 表达（模型无二级分类时返回 null，App 侧映射回空）；DTO 的 subCategory 相应改可空，系统 prompt 里「subCategory 留空」同步改成「填 null」。测试连接与问账不用这份 schema，所以此前一直正常，唯独识别中招。
+- **400/403 报错不再冤枉 Key**：以前 HTTP 400/403 一律显示「API Key 无效或请求被拒绝」，这次 schema 报错就被误导成 Key 问题。本版起 400/403 直接呈现 Google 服务器原话，不再替用户下结论；Key 真无效时服务器原话本身就会写明。
+- **新增回归测试**：断言识别 schema 里所有 enum 都不含空/空白字符串、且 subCategory 与 targetAccount 带 nullable 标记——这类只在 Google 服务器端才生效的规矩，CI 从此能提前拦住。
+- **其余不动**：呈现层、pending 单次消费幂等、金额合理性拦截、Keychain、设置页、AI 助手其他功能与数据模型均未改变；「识别账单」Version 参数默认更新为 1.2.3。
+
 ## [v1.2.2] - 2026-11-11
 
 ### 🎯 Highlights

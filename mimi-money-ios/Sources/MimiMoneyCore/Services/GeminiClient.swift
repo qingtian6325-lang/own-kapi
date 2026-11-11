@@ -119,9 +119,6 @@ case .httpStatus(let code, let message):
 if code == 429 {
 return "HTTP 429：免费额度已用完或请求过于频繁"
 }
-if code == 400 || code == 403 {
-return "HTTP \(code)：API Key 无效或请求被拒绝（\(message)）"
-}
 return "HTTP \(code)：\(message)"
 case .emptyResponse:
 return "Gemini 返回为空"
@@ -143,7 +140,7 @@ public var counterpartyKind: String // merchant | person
 public var account: String // 付款/收款账户名（App 现有账户之一）
 public var targetAccount: String? // 仅转账时：对方账户
 public var primaryCategory: String // 一级分类名（App 现有分类）
-public var subCategory: String // 二级分类名，可为空字符串
+public var subCategory: String? // 二级分类名，无二级时为 null
 public var occurredAt: String // "yyyy-MM-dd HH:mm"
 public var note: String // 备注（按规则生成）
 
@@ -155,7 +152,7 @@ counterpartyKind: String,
 account: String,
 targetAccount: String? = nil,
 primaryCategory: String,
-subCategory: String,
+subCategory: String? = nil,
 occurredAt: String,
 note: String
 ) {
@@ -191,9 +188,10 @@ primaryId = "transfer"
 subId = nil
 categoryDisplay = "转账"
 } else {
-let path = subCategory.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty
+let subName = subCategory ?? ""
+let path = subName.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty
 ? primaryCategory
-: "\(primaryCategory)-\(subCategory)"
+: "\(primaryCategory)-\(subName)"
 let resolved = DefaultCatalog.resolveCategoryIds(from: path, type: txType)
 primaryId = resolved.primaryId
 subId = resolved.subId
@@ -548,7 +546,7 @@ return """
 \(expenseLines)
 收入分类：
 \(incomeLines)
-判断示例：餐厅、餐馆、食堂、快餐店 → 餐饮-餐厅；咖啡店 → 餐饮-咖啡；奶茶/饮料店 → 餐饮-饮品；油站（Petronas、Shell、Caltex 等）加油 → 交通-加油充电；Grab/打车 → 交通-打车叫车；超市买日用品 → 购物-生活用品；话费/宽带充值 → 住房-话费网费；房租 → 住房-房租房贷；转钱给朋友/家人 → 资金往来-人情往来（到期还款则选 资金往来-还款）；收到别人转账 → 收入分类「别人转账」（无二级，subCategory 留空）。
+判断示例：餐厅、餐馆、食堂、快餐店 → 餐饮-餐厅；咖啡店 → 餐饮-咖啡；奶茶/饮料店 → 餐饮-饮品；油站（Petronas、Shell、Caltex 等）加油 → 交通-加油充电；Grab/打车 → 交通-打车叫车；超市买日用品 → 购物-生活用品；话费/宽带充值 → 住房-话费网费；房租 → 住房-房租房贷；转钱给朋友/家人 → 资金往来-人情往来（到期还款则选 资金往来-还款）；收到别人转账 → 收入分类「别人转账」（无二级，subCategory 填 null）。
 6. 备注 note 按规则生成，简洁一句、不带杂讯：向商家付款 → 「{商家名} 消费」；把钱转给个人 → 「转账给{姓名}」；收到个人转账 → 「{姓名} 转账」；本人账户间转账 → 「账户转账」。名字照截图原文，必须是你真正在截图里读到的商家名/姓名，读不到就把 counterparty 留空字符串，不许用数字碎片、编号或页面边角的零散文字凑名。
 7. occurredAt 输出 "yyyy-MM-dd HH:mm" 格式。
 8. 认真读细节：先把整个交易详情页从头到尾读完，再逐项填写，不要看到第一个数字就下结论。商家全名以页面上的商家/收款方字段为准（例如 Paid to、Merchant、收款方、Payment - 后面的店名抬头），不要拿页面其他位置的零散文字拼凑商家名。
@@ -572,9 +570,9 @@ return [
 "counterparty": ["type": "STRING"],
 "counterpartyKind": ["type": "STRING", "enum": ["merchant", "person"]],
 "account": ["type": "STRING", "enum": accountNames],
-"targetAccount": ["type": "STRING", "enum": accountNames + [""]],
+"targetAccount": ["type": "STRING", "enum": accountNames, "nullable": true],
 "primaryCategory": ["type": "STRING", "enum": allPrimary],
-"subCategory": ["type": "STRING", "enum": allSubs + [""]],
+"subCategory": ["type": "STRING", "enum": allSubs, "nullable": true],
 "occurredAt": ["type": "STRING"],
 "note": ["type": "STRING"]
 ],

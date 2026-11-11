@@ -117,6 +117,25 @@ let typeProp = properties?["type"] as? [String: Any]
 XCTAssertEqual(typeProp?["enum"] as? [String], ["expense", "income", "transfer"])
 }
 
+func testGeminiSchemaHasNoEmptyEnumValues() {
+// 回归（v1.2.3）：enum 里混空字符串会被 Google 以 HTTP 400 拒绝
+// （"enum[N]: cannot be empty"），v1.2.0–v1.2.2 的 subCategory/targetAccount 中招。
+let schema = GeminiClient.recognitionResponseSchema()
+let properties = schema["properties"] as? [String: Any]
+XCTAssertNotNil(properties)
+for (name, rawProp) in properties ?? [:] {
+guard let prop = rawProp as? [String: Any],
+let values = prop["enum"] as? [String] else { continue }
+XCTAssertFalse(values.contains(""), "schema enum \(name) 不得含空字符串")
+XCTAssertFalse(values.contains(where: { $0.trimmingCharacters(in:.whitespaces).isEmpty }), "schema enum \(name) 不得含空白字符串")
+}
+// 「可为空」的两个字段必须改走 nullable，而不是空 enum 值
+let sub = properties?["subCategory"] as? [String: Any]
+XCTAssertEqual(sub?["nullable"] as? Bool, true)
+let target = properties?["targetAccount"] as? [String: Any]
+XCTAssertEqual(target?["nullable"] as? Bool, true)
+}
+
 func testGeminiOccurredAtParsing() {
 let parsed = GeminiBillDTO.parseOccurredAt("2026-11-10 20:07")
 XCTAssertNotNil(parsed)
