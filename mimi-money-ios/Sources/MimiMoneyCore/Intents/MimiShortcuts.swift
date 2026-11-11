@@ -380,7 +380,7 @@ public struct ScreenshotResultSnippetView: View {
 /// 金额、账户 chip、备注 chip、时间、✓ 识别提示一行）。v1.1.3 起卡内不放任何
 /// 自制按钮——卡面下方只有系统渲染的一对按钮 View / Got it（requestConfirmation
 /// 的 actionName 改名而来，与 Kapi 一致）：Got it = 确认入账，View = 打开 App
-/// 改这笔（经 perform 的 catch 分支接成 opensIntent，见 ScanScreenshotIntent）。
+/// 改这笔（经 perform 的 catch 分支接成「转未确认记录＋前台打开 App」，见 ScanScreenshotIntent）。
 public struct ScanConfirmationCardView: View {
     public let transaction: TransactionItem
 
@@ -655,10 +655,17 @@ public struct ScanScreenshotIntent: AppIntent {
         // - 点「Got it」(accept)：requestConfirmation 正常返回 → 正式落盘 →
         //   返回空 .result()，无任何呈现，直接结束回原 App。
         // - 点「View」(deny) 或下滑关卡：系统以取消类错误抛回 perform，两者
-        //   无法区分，统一按「去修改」处理——不落正式账，返回 opensIntent
-        //   打开 OpenPendingScanForEditIntent（消费暂存→未确认记录→开 App
-        //   定位编辑页）。这推翻了 v1.1.2「取消不 catch」的官方默认指引，
-        //   是为实现 View 语义刻意为之（用户已知情：下滑也会打开 App）。
+        //   无法区分，统一按「去修改」处理——不落正式账，先把暂存消费为
+        //   未确认记录并定位编辑页（与 OpenPendingScanForEditIntent 同一逻辑），
+        //   再经 ForegroundContinuableIntent 请求系统把 App 带到前台打开。
+        //   这推翻了 v1.1.2「取消不 catch」的官方默认指引，是为实现 View
+        //   语义刻意为之（用户已知情：下滑也会打开 App）。
+        //   实现说明：原本想用 .result(opensIntent:) 打开编辑 Intent，但
+        //   IntentResult 的结果类型按目标 Intent 分型——同一 perform 里
+        //   .result() 与 opensIntent 结果、以及不同目标的 opensIntent 结果
+        //   都无法混用（CI 两次实证编译错误 #OpaqueTypeInference），
+        //   故改走前台继续这条路；OpenPendingScanForEditIntent 本身保留，
+        //   仍是 App 内/其他入口可复用的「转未确认＋定位编辑页」Intent。
         // - 其他错误：作废暂存，安静收尾，不落盘、不打开 App、不向上抛。
         let staged = ShortcutActionCoordinator.stageRecognizedDraft(draft, in: store)
         do {
@@ -666,7 +673,15 @@ public struct ScanScreenshotIntent: AppIntent {
         } catch {
             switch ScanConfirmationFollowUp.followUp(for: error) {
             case .openEditor:
-                return .result(opensIntent: OpenPendingScanForEditIntent(transactionId: staged.id))
+                _ = ShortcutActionCoordinator.consumePendingScanForEdit(id: staged.id, in: store)
+                if #available(iOS 17.0, macOS 14.0, *) {
+                    // 前台打开失败（系统拒绝/用户取消）也不要抛错：记录已安全
+                    // 转为未确认并标记定位，用户手动打开 App 也会直达编辑页。
+                    try? await requestToContinueInForeground(
+                        IntentDialog("打开「咪咪记账」修改这笔账单")
+                    ) { }
+                }
+                return .result()
             case .discard:
                 store.discardPendingScan(id: staged.id)
                 return .result()
@@ -708,6 +723,13 @@ public struct ScanScreenshotIntent: AppIntent {
         }
     }
 }
+
+/// 前台继续能力（v1.1.3）：「识别账单」在确认卡被点「View」/下滑取消后，
+/// 靠这个协议请求系统把 App 带到前台打开编辑页。协议本身 iOS 16.4 起可用，
+/// 故以带可用性标注的 extension 形式声明一致性，不抬高 Intent 本体的
+/// @available(iOS 16.0)（部署目标 17.0，实际运行不受影响）。
+@available(iOS 16.4, macOS 13.3, *)
+extension ScanScreenshotIntent: ForegroundContinuableIntent {}
 
 @available(iOS 16.0, macOS 13.0, *)
 public struct MimiAppShortcutsProvider: AppShortcutsProvider {

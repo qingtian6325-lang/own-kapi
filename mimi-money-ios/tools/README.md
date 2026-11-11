@@ -13,3 +13,6 @@ AppIntents const-gather 协议清单，供 CI 在 stage 1 收割 `.swiftconstval
 
 v1.1.2 追加：`SnippetIntent`（iOS 26 确认卡的驱动协议，不在上游清单里，
 为让 appintentsmetadataprocessor 能提取 ScanConfirmationSnippetIntent 而补入）。
+
+v1.1.3 追加：`ForegroundContinuableIntent`（「识别账单」的前台继续协议，
+点确认卡「View」后把 App 带到前台打开编辑页，同样不在上游清单里而补入）。
