@@ -1,15 +1,15 @@
-# Kapi Money（咔皮记账）iOS 1:1 原生全量复刻设计文档
+# Mimi Money（咪咪记账）iOS 1:1 原生全量复刻设计文档
 
 - **日期**：2026-11-10
 - **目标平台**：iPhone (iOS 16.0+，适配灵动岛与 Safe Area，支持 iOS 16/17/18+)
 - **开发工具链**：纯原生 Swift 6 + SwiftUI + Swift Package Manager (`Package.swift`) + `xtool` (`xtool.yml`)
-- **参考基准**：用户提供的 54 张 Kapi Money 真实机内截图（`IMG_2240.PNG` ~ `IMG_2294.PNG`）
+- **参考基准**：用户提供的 54 张 Mimi Money 真实机内截图（`IMG_2240.PNG` ~ `IMG_2294.PNG`）
 
 ---
 
 ## 1. 意图与背景 (Intent & Why)
 
-用户希望在 iPhone 上拥有一款与 **Kapi Money（咔皮记账）** 界面、配色、功能、分类体系和交互体验 **1:1 完全一致** 的纯原生记账 App，拒绝 Web App 包装，要求采用原生 SwiftUI 并通过 `xtool` 构建。
+用户希望在 iPhone 上拥有一款与 **Mimi Money（咪咪记账）** 界面、配色、功能、分类体系和交互体验 **1:1 完全一致** 的纯原生记账 App，拒绝 Web App 包装，要求采用原生 SwiftUI 并通过 `xtool` 构建。
 
 同时，由于用户日常记账“怕麻烦”，特别要求强化 **iOS 快捷指令（Shortcuts）自动截屏记账闭环**：在支付成功页（如 TNG eWallet、银行转账或微信/支付宝页面）触发快捷指令后，自动截屏并交由 App 识别，在屏幕顶部弹出识别结果卡片并提供 **「修改 (View)」** 和 **「确认 (Got it)」** 两个按钮——点「确认」直接后台入账，点「修改」则直接跳转到 App 内的账单详情/编辑页进行调整。
 
@@ -19,7 +19,7 @@
 
 ### 2.1 目标 (Goals)
 1. **1:1 视觉与交互还原（基于 `IMG_2240` ~ `IMG_2294`）**：
-   - 极简浅灰白背景（`#F5F6FA`）+ 纯白圆角卡片（`#FFFFFF`）+ **电光蓝支出色（`#2D5AF0`）** + **活力橙收入色（`#E8832E`）** + **翠绿结余色（`#36B37E`）** + 咔皮水豚吉祥物视觉元素。
+   - 极简浅灰白背景（`#F5F6FA`）+ 纯白圆角卡片（`#FFFFFF`）+ **电光蓝支出色（`#2D5AF0`）** + **活力橙收入色（`#E8832E`）** + **翠绿结余色（`#36B37E`）** + 咪咪水豚吉祥物视觉元素。
    - 默认主货币为 **马来西亚令吉 `RM (MYR)`**，同时支持多币种切换（`MYR / CNY / USD / SGD` 等）。
    - 预置用户截图中的真实账户（`现金`、`CIMB`、`TNGewallet`、`PBBank`）、默认账本 `Main Ledger` 及示例/初始结构。
 2. **全量核心页面与功能模块**：
@@ -28,7 +28,7 @@
    - **手动记账 ⇄ AI 助手双模底部大面板**（右上角一键互切；手动记账支持支出/收入/转账、一二级分类网格、日期/账本/账户/计入收支/标签胶囊、备注与相册/拍照多图附件、带 `+`/`-` 算术运算与「再记」的自定义数字键盘；AI 助手支持预设气泡、一句话拆多笔自然语言记账、图片识账及表格化财务问答）。
    - **账单详情与编辑弹窗**（实付金额、分类、备注+小票原图缩略图管理、账单时间、付款账户、所属账本、添加优惠、添加退款/返现、交易方、删除账单）。
    - **全部记录（日历热力视图）**（月支出/月收入/日均统计条、收支/支出筛选、回今天按钮、收入橙/支出蓝多级深浅热力月历网格、单日最大支出金币皇冠角标、选中日期下方联动展示当日明细）。
-   - **`Kapi` 图表统计页**（周/月/年/自定义四维切换、周维度招财水豚横幅与环比标签、支出分类构成环形图+进度条排行、每日支出/收入/结余柱状趋势图+均值虚线、单笔支出 Top 10 排行榜、按日账单汇总表含总计与日均）。
+   - **`Mimi` 图表统计页**（周/月/年/自定义四维切换、周维度招财水豚横幅与环比标签、支出分类构成环形图+进度条排行、每日支出/收入/结余柱状趋势图+均值虚线、单笔支出 Top 10 排行榜、按日账单汇总表含总计与日均）。
    - **资产管理与账户详情页**（净资产/资产/负债总览卡、待报销管理、账户列表与添加账户；账户详情页支持余额直接修改、记账/转账快捷入口，以及 **「📅 明细（带 `记`/`改`/`删` 操作审计标签与变动后实时余额）」⇄「🧾 账单（按月/按日分组流入流出）」** 双视图切换）。
    - **预算管理页**（月度总预算彩色分段进度条、已分类预算拖拽排序与进度条、未分类预算汇总、底部 **动态日预算日历** 展示已过日期实际支出与今日/未来每日动态可用额度，支持长按编辑日预算）。
    - **全量一二级分类方案管理与手绘图标库**（完整内置 11 个一级支出分类 + 66 个二级支出分类、9 个一级收入分类 + 20 个二级收入分类，以及用户自建的 `家用`、`车贷`、`别人转账`；支持新增/编辑/排序一二级分类、开启“首字作为图标（包含 emoji）”或从内置 100+ 卡通图标库中选择）。
@@ -52,8 +52,8 @@
 ## 3. 约束条件 (Constraints)
 
 1. **开发环境与跨平台构建约束**：
-   - 当前宿主环境为 Windows，工程必须严格遵循 `xtool` 标准目录结构（根目录包含 `Package.swift`、`xtool.yml` 及 `Sources/KapiMoney/`）。
-   - 同时提供 Windows WSL2 下的 `xtool` 构建辅助脚本与 `.github/workflows/build-kapi-ios.yml` 云端自动编译打包 `.ipa` 工作流。
+   - 当前宿主环境为 Windows，工程必须严格遵循 `xtool` 标准目录结构（根目录包含 `Package.swift`、`xtool.yml` 及 `Sources/MimiMoney/`）。
+   - 同时提供 Windows WSL2 下的 `xtool` 构建辅助脚本与 `.github/workflows/build-mimi-ios.yml` 云端自动编译打包 `.ipa` 工作流。
 2. **免费签名权限约束**：
    - 快捷指令 `AppIntents` 直接编译在主 App Target 内（In-App Intents，iOS 16+ 原生支持），这样快捷指令与主 App 共享同一个沙盒目录与 `UserDefaults.standard` / 本地存储文件，无需依赖付费开发者账号专属的 `App Groups` Entitlement，免费个人 Apple ID 也能 100% 正常使用快捷指令与主 App 数据互通。
 
@@ -67,7 +67,7 @@
 - **核心设计**：
   - 使用标准 SwiftPM (`Package.swift` + `xtool.yml`) 组织纯原生 SwiftUI 代码。
   - 将 `AppIntents`（快捷指令动作与 `SnippetIntent` 交互卡片）内置于主 Target 中，免除付费 App Group 权限限制。
-  - 提供 WSL2 `xtool` 构建脚本，同时配置 GitHub Actions (`macos-14`) 自动编译生成未签名/可自签名的 `KapiMoney.ipa` Release 产物。
+  - 提供 WSL2 `xtool` 构建脚本，同时配置 GitHub Actions (`macos-14`) 自动编译生成未签名/可自签名的 `MimiMoney.ipa` Release 产物。
 - **优势**：100% 满足原生 SwiftUI + `xtool` 要求，且无论用户本地是否立即配好 WSL2 + USB 转发，都能立刻拿到 `.ipa` 安装包在 iPhone 上安装使用。
 
 ### 方案 B（未采用）：仅使用本机 WSL2 + `xtool` 本地编译装机
@@ -130,18 +130,18 @@
 
 ### 5.4 快捷指令自动截屏 -> 确认/修改闭环（`IMG_2294` + 用户定制要求）
 - **快捷指令工作流**：
-  1. App 内置 `AppIntents` 动作 **`识别截屏记账 (ScanScreenshotIntent)`**，并在「自动记账 / 快捷记账」页面提供一键添加/配置系统「快捷指令（自动截屏并送入咔皮记账）」的引导说明。
+  1. App 内置 `AppIntents` 动作 **`识别截屏记账 (ScanScreenshotIntent)`**，并在「自动记账 / 快捷记账」页面提供一键添加/配置系统「快捷指令（自动截屏并送入咪咪记账）」的引导说明。
   2. 当用户在 TNG eWallet / PBBank / 微信 / 支付宝付款成功界面触发快捷指令（如轻点背面两下或按 Action Button）时：
      - 快捷指令自动截取当前屏幕并传给 `ScanScreenshotIntent`。
      - `ScanScreenshotIntent` 调用端侧 `Vision` OCR + 账单解析器提取：**金额**（如 `-RM5.90`）、**一级-二级分类**（如 `餐饮-零食甜品`）、**付款账户**（如识别出 `TNG eWallet` 自动匹配 `TNGewallet`）、**商户/交易方与备注**（如 `Near Me Voucher Eggette Lab`）、**账单时间**。
      - 立即在当前屏幕顶部弹出 `IMG_2294` 同款 `SnippetView` 交互卡片（或快捷指令双按钮弹窗）：
        - **点击右侧蓝色「确认 / Got it」按钮**：直接将该笔账单正式写入当前账本并更新账户余额与审计明细，收起弹窗，全程无需离开当前支付 App。
-       - **点击左侧灰色「修改 / View」按钮**：将该笔识别结果暂存为待编辑账单并通过 URL Scheme / `openAppWhenRun` 直接唤醒打开「咔皮记账」App，自动弹出该笔账单的「账单详情 / 编辑」弹窗（所有识别字段与原截图均已预填好），方便用户修改分类、金额或备注后保存。
+       - **点击左侧灰色「修改 / View」按钮**：将该笔识别结果暂存为待编辑账单并通过 URL Scheme / `openAppWhenRun` 直接唤醒打开「咪咪记账」App，自动弹出该笔账单的「账单详情 / 编辑」弹窗（所有识别字段与原截图均已预填好），方便用户修改分类、金额或备注后保存。
 
 ---
 
 ## 6. 留给实现者自行决定的细节 (Left to the Builder)
 
-1. **SwiftUI 代码目录拆分**：在 `Sources/KapiMoney/` 下按 `Models/`、`Services/`（Persistence、OCR、AIParser、AppIntents）、`Views/`（Home、Drawer、Calendar、Stats、Assets、Budget、Categories、RecordSheet、BillDetail）、`Components/` 模块化拆分文件。
+1. **SwiftUI 代码目录拆分**：在 `Sources/MimiMoney/` 下按 `Models/`、`Services/`（Persistence、OCR、AIParser、AppIntents）、`Views/`（Home、Drawer、Calendar、Stats、Assets、Budget、Categories、RecordSheet、BillDetail）、`Components/` 模块化拆分文件。
 2. **手绘卡通分类图标绘制方案**：采用高还原度自定义彩色矢量组合徽章（Custom Colored Canvas / SF Symbols + Emoji + 贴纸底板描边组件）1:1 复刻截图中带圆白底框和可爱的双色/三色卡通贴纸视觉质感，并完整支持“首字作为图标（包含 emoji）”模式。
 3. **预置演示数据**：首次安装启动时，可预置与用户截图一致的账户（`现金`、`CIMB`、`TNGewallet`、`PBBank`）、预算配置及示例账单（并在设置中提供“清空示例数据 / 恢复初始状态”按钮），方便用户一打开就能对照截图验收全部页面效果。

@@ -1,8 +1,21 @@
-# Changelog - 咔皮记账 (Kapi Money iOS)
+# Changelog - 咪咪记账 (Mimi Money iOS)
 
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [v1.0.8] - 2026-11-11
+
+### 🚀 Highlights
+- **全面完成「咪咪记账」(Mimi Money) 独立重构与去 Kapi 化**：
+  - 仓库迁移至专属仓库 `https://github.com/qingtian6325-lang/own-mimi`。
+  - 全局代码、架构模块、类名、协议、包名、文件夹全面重构更名为 `MimiMoney` 系列：
+    - 应用程序核心：`MimiMoneyApp`、`MimiMoneyCore`、`MimiMoneyTests`；
+    - 设计系统与状态：`MimiTheme`、`MimiStore`、`MimiModels`、`MimiRootContainerView`、`MimiStatsView`、`MimiStickerIconView`；
+    - 智能化与服务：`MimiAIEngine`、`MimiCSVService`、`MimiShortcuts`、`MimiAppShortcutsProvider`。
+  - URL Scheme 全面更名为 `mimimoney://`，系统深度链接与 Bundle ID 更新为 `com.jinghao.mimimoney`。
+  - 打包生成专属 `MimiScreenshotBookkeeping.shortcut` 快捷指令及 `MimiMoney-iOS.ipa`。
+  - 全工程完全清除所有历史遗留标识，实现 100% 独立纯净的「咪咪记账」。
 
 ## [v1.0.4] - 2026-11-10
 
@@ -10,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **支持浮窗交互式 Dialog：停留在当前 App，按确认静默记账不跳转，按修改才跳转**：
   - 重构 `ScreenshotResultSnippetView` 与 `AppIntents` 交互体系：在 iOS 系统级浮窗卡片中，按「确认 (Got it)」由 `ConfirmBillIntent` 执行，完全停留在当前银行/支付 App 静默平账入库，绝不跳转；只有用户点击「修改 (View)」才由 `OpenBillForEditIntent` 唤起 App 进行编辑。
   - 提供了快捷指令原生「从菜单中选取 (Choose from Menu)」对话框配置指南，解决苹果阻止导入未签名 `.shortcut` 文件的限制。
-- **修复负数余额被绝对值吞没的重大 Bug**：修复 `KapiTheme.formatRM` 错误调用 `abs(value)` 导致账户透支或负数金额（如 `-RM700.00`）错误显示为正数 `RM700.00` 的问题。若透支不够钱，严格显示 `-RM700.00` 并高亮红字警示。
+- **修复负数余额被绝对值吞没的重大 Bug**：修复 `MimiTheme.formatRM` 错误调用 `abs(value)` 导致账户透支或负数金额（如 `-RM700.00`）错误显示为正数 `RM700.00` 的问题。若透支不够钱，严格显示 `-RM700.00` 并高亮红字警示。
 - **重构并理清【期初起始资金 (Initial Capital)】全生命周期**：
   - 每个账户底层独立引入 `initialBalance`（全部记账前的初始资金）与 `balance`（当前实际余额）。
   - **正推法**：输入记账前的起始资金，系统结合历史流水净变动，自动计算当前真实余额。
@@ -21,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🚀 Highlights
 - **【自动记账】内置一键跳转添加快捷指令与离线集成**：
-  - 在【自动记账】页面新增高亮按钮“⚡ 一键跳转导入「咔皮截屏自动记账」快捷指令”，点击直接唤起 iOS Safari / 快捷指令 App 进行一键安装。
+  - 在【自动记账】页面新增高亮按钮“⚡ 一键跳转导入「咪咪截屏自动记账」快捷指令”，点击直接唤起 iOS Safari / 快捷指令 App 进行一键安装。
   - 新增“打开「快捷指令」App”与“离线发送至快捷指令 (ShareLink)”双重通道，将 1007 字节的标准快捷指令文件永久内置打包于 App 内部，断网也能导入。
   - 新增“📸 无需快捷指令 · 一键读取剪贴板截图直接记账”快捷按钮，手机截图复制后在 App 内点按直接调用 Apple Vision OCR 记账。
 
@@ -31,14 +44,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **支持在【设置】与【资产】中自定义设置各账户起始金额（期初余额）**：
   - 【通用设置】新增“💳 账户起始金额与开局资产设置”配置卡，每个账户均可直接输入开局金额并实时保存。
   - 【资产管理】新增“添加自定义资产账户”功能，支持创建 Maybank、GrabPay、加密钱包、备用金等自定义资金账户，并设定其初始开局余额。
-  - `KapiStore` 新增 `deleteAccount` 与账户审计全生命周期联动，日常记账、转账与改额实时平账。
+  - `MimiStore` 新增 `deleteAccount` 与账户审计全生命周期联动，日常记账、转账与改额实时平账。
 
 ## [v1.0.1] - 2026-11-10
 
 ### 🚀 Highlights
 - **100% 完整交互功能上线**：重构并连接了全部 11 个模块与抽屉页面的底层业务逻辑，去除所有死按钮与空状态提示。
 - **纯净空白初始状态 (Clean Empty State)**：新安装 App 打开后，总资产 `RM0.00`、净资产 `RM0.00`、记录天数 `0 天`、交易记录 `0 笔`，无任何伪造或默认演示数据。
-- **真实 iOS 快捷指令截屏记账**：快捷指令 `KapiScreenshotBookkeeping.shortcut` 配合 `ReceiptOCRService`（Apple Vision OCR），支持自动截屏识别金额与商户，无截图时自动降级读取系统剪贴板。
+- **真实 iOS 快捷指令截屏记账**：快捷指令 `MimiScreenshotBookkeeping.shortcut` 配合 `ReceiptOCRService`（Apple Vision OCR），支持自动截屏识别金额与商户，无截图时自动降级读取系统剪贴板。
 
 ### 🔧 Fixed & Improved
 - **编译修复**：修复 `TransactionItem` 便利构造器缺少 `tags` 参数的问题，确保 `RecordAndAISheetView` 自定义标签保存正常编译与运行。
@@ -54,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v1.0.0] - 2026-11-10
 
 ### Initial Release
-- 1:1 原生 SwiftUI 咔皮记账界面设计体系（KapiTheme、卡片设计、猫咪吉祥物插画、自研数字键盘）。
+- 1:1 原生 SwiftUI 咪咪记账界面设计体系（MimiTheme、卡片设计、猫咪吉祥物插画、自研数字键盘）。
 - 资产账户体系（Cash, Maybank, TNG eWallet, Touch 'n Go NFC）。
 - 离线优先无服务器架构，本地 JSON 与 SQLite 双层持久化支持。
 - 基础 GitHub Actions CI 跨平台编译流程。
