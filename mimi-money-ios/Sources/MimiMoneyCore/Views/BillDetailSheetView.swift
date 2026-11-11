@@ -14,8 +14,7 @@ public struct BillDetailSheetView: View {
     #if canImport(UIKit)
     @State private var pickerSourceType: UIKitImagePicker.SourceType = .photoLibrary
     #endif
-    @State private var selectedViewerImageData: Data? = nil
-    @State private var isViewerPresented = false
+    @State private var activeViewerItem: ReceiptViewerItem? = nil
 
     public init(
         store: MimiStore,
@@ -127,9 +126,8 @@ public struct BillDetailSheetView: View {
                                             }
                                             .contentShape(Rectangle())
                                             .onTapGesture {
-                                                if let data = imageData {
-                                                    selectedViewerImageData = data
-                                                    isViewerPresented = true
+                                                if let data = imageData ?? store.loadReceiptImageData(filename: path) {
+                                                    activeViewerItem = ReceiptViewerItem(imageData: data)
                                                 }
                                             }
 
@@ -311,15 +309,15 @@ public struct BillDetailSheetView: View {
             }
             #endif
             #if os(iOS)
-            .fullScreenCover(isPresented: $isViewerPresented) {
-                FullscreenReceiptViewer(imageData: selectedViewerImageData) {
-                    isViewerPresented = false
+            .fullScreenCover(item: $activeViewerItem) { item in
+                FullscreenReceiptViewer(imageData: item.imageData) {
+                    activeViewerItem = nil
                 }
             }
             #else
-            .sheet(isPresented: $isViewerPresented) {
-                FullscreenReceiptViewer(imageData: selectedViewerImageData) {
-                    isViewerPresented = false
+            .sheet(item: $activeViewerItem) { item in
+                FullscreenReceiptViewer(imageData: item.imageData) {
+                    activeViewerItem = nil
                 }
             }
             #endif

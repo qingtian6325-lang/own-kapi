@@ -47,6 +47,27 @@ final class AIEngineAndOCRTests: XCTestCase {
         XCTAssertEqual(comps.minute, 13)
     }
 
+    func testStatusBarBatteryAndNoiseIgnoredOverRinggitAmount() {
+        // Real user case: iPhone status bar "9:54 1 $ 79" was OCR'd as "$ 79" and mistakenly grabbed as RM 79.00
+        // The actual transaction amount was RM38.99 and merchant was YING LAI RESTAURANT
+        let pollutedOCR = """
+        9:54 1 $ 79 (RM38.99)
+        Payment Details    Payment - YING LAI RESTAURANT
+        Payment Method     eWallet Balance
+        Date/Time          10/11/2026 20:07:00
+        Wallet Ref         2026111010110000010000TNGOW3MY171298463730209
+        Status             Successful
+        Transaction No.    20261110TNGDMYNB030OQR0lhbeyts
+        """
+        let draft = ReceiptOCRService.parseReceiptText(pollutedOCR)
+        XCTAssertEqual(draft.amount, 38.99, accuracy: 0.001, "Must extract 38.99, not 79.00 from status bar battery")
+        XCTAssertEqual(draft.type, .expense)
+        XCTAssertEqual(draft.merchantOrNote, "YING LAI RESTAURANT")
+        XCTAssertFalse(draft.merchantOrNote.contains("9:54"))
+        XCTAssertFalse(draft.merchantOrNote.contains("79"))
+        XCTAssertEqual(draft.categoryDisplayName, "餐饮-餐厅")
+    }
+
     func testTransferReceiptRecipientAndDateExtraction() {
         let transferOCR = """
         DuitNow Transfer

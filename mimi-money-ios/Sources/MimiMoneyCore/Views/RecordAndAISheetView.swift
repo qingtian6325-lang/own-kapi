@@ -30,8 +30,7 @@ public struct RecordAndAISheetView: View {
     #if canImport(UIKit)
     @State private var pickerSourceType: UIKitImagePicker.SourceType = .photoLibrary
     #endif
-    @State private var selectedViewerImageData: Data? = nil
-    @State private var isViewerPresented: Bool = false
+    @State private var activeViewerItem: ReceiptViewerItem? = nil
 
     public init(
         store: MimiStore,
@@ -147,15 +146,15 @@ public struct RecordAndAISheetView: View {
         }
         #endif
         #if os(iOS)
-        .fullScreenCover(isPresented: $isViewerPresented) {
-            FullscreenReceiptViewer(imageData: selectedViewerImageData) {
-                isViewerPresented = false
+        .fullScreenCover(item: $activeViewerItem) { item in
+            FullscreenReceiptViewer(imageData: item.imageData) {
+                activeViewerItem = nil
             }
         }
         #else
-        .sheet(isPresented: $isViewerPresented) {
-            FullscreenReceiptViewer(imageData: selectedViewerImageData) {
-                isViewerPresented = false
+        .sheet(item: $activeViewerItem) { item in
+            FullscreenReceiptViewer(imageData: item.imageData) {
+                activeViewerItem = nil
             }
         }
         #endif
@@ -469,9 +468,8 @@ public struct RecordAndAISheetView: View {
                                     }
                                     .contentShape(Rectangle())
                                     .onTapGesture {
-                                        if let d = data {
-                                            selectedViewerImageData = d
-                                            isViewerPresented = true
+                                        if let d = data ?? store.loadReceiptImageData(filename: filename) {
+                                            activeViewerItem = ReceiptViewerItem(imageData: d)
                                         }
                                     }
 

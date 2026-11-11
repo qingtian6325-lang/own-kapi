@@ -238,4 +238,22 @@ final class StoreAndBudgetTests: XCTestCase {
         let exported = store.exportMimiCSV(startDate: yesterday, endDate: tomorrow)
         XCTAssertTrue(exported.contains("日期,时间,类型,金额,一级分类"))
     }
+
+    func testReceiptImageCrossSandboxBase64SaveAndLoad() {
+        let store = MimiStore(inMemory: true)
+        let sampleBytes: [UInt8] = [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46] // JPEG magic header
+        let rawData = Data(sampleBytes)
+
+        let label = store.saveReceiptImage(data: rawData)
+        XCTAssertTrue(label.hasPrefix("base64:"), "Lightweight receipt image should be stored with base64 prefix for guaranteed cross-sandbox persistence")
+
+        let loadedData = store.loadReceiptImageData(filename: label)
+        XCTAssertNotNil(loadedData)
+        XCTAssertEqual(loadedData, rawData)
+
+        // Also test bare base64 loading
+        let bare = rawData.base64EncodedString()
+        let loadedBare = store.loadReceiptImageData(filename: bare)
+        XCTAssertEqual(loadedBare, rawData)
+    }
 }

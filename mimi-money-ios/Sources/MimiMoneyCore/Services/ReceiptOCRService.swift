@@ -65,9 +65,10 @@ public final class ReceiptOCRService: Sendable {
     public init() {}
 
     /// Parses raw OCR text from TNG eWallet (`IMG_2294`), PBBank, CIMB, WeChat/Alipay, or general store receipts.
-    /// Explicitly strips long reference numbers (12+ digits) and timestamps before extracting currency amounts.
+    /// Explicitly strips status bar clock/battery artifacts, long reference numbers (12+ digits) and timestamps before extracting currency amounts.
     public static func parseReceiptText(_ rawText: String, now: Date = Date()) -> ParsedDraftBill {
-        let lines = rawText
+        let cleanedRaw = cleanRawOCRText(rawText)
+        let lines = cleanedRaw
             .components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
@@ -80,14 +81,15 @@ public final class ReceiptOCRService: Sendable {
                     && !lower.contains("transaction no")
                     && !lower.contains("reference")
                     && !lower.contains("date/time")
+                    && !lower.contains("date & time")
             }
             .joined(separator: "\n")
 
-        let amount = extractPrimaryAmount(from: sanitizedForAmount) ?? extractPrimaryAmount(from: rawText) ?? 0.0
-        let (accountId, accountName) = detectAccount(from: rawText)
-        let merchantOrRecipient = detectRecipientOrMerchant(from: lines, rawText: rawText)
-        let parsedDate = detectTimestamp(from: rawText) ?? now
-        let isIncome = detectIsIncome(lines: lines, rawText: rawText)
+        let amount = extractPrimaryAmount(from: sanitizedForAmount) ?? extractPrimaryAmount(from: cleanedRaw) ?? 0.0
+        let (accountId, accountName) = detectAccount(from: cleanedRaw)
+        let merchantOrRecipient = detectRecipientOrMerchant(from: lines, rawText: cleanedRaw)
+        let parsedDate = detectTimestamp(from: cleanedRaw) ?? now
+        let isIncome = detectIsIncome(lines: lines, rawText: cleanedRaw)
 
         let primaryId: String
         let subId: String?
@@ -241,29 +243,117 @@ public final class ReceiptOCRService: Sendable {
     }
     #endif
 
-    private static func extractPrimaryAmount(from text: String) -> Double? {
-        // 1. Prefer explicit currency prefix: RM5.90, -RM38.78, MYR 11.60, ¥150.00
-        let currencyPattern = #"(?:RM|MYR|¥|\$)\s*([0-9]{1,6}(?:\.[0-9]{1,2})?)"#
-        if let regex = try? NSRegularExpression(pattern: currencyPattern, options: [.caseInsensitive]) {
-            let nsRange = NSRange(text.startIndex..<text.endIndex, in: text)
-            if let match = regex.firstMatch(in: text, options: [], range: nsRange),
-               let valRange = Range(match.range(at: 1), in: text),
-               let val = Double(text[valRange]), val > 0 {
-                return val
+    /// Strips iOS/Android status bar artifacts (clock, battery, 5G/Wi-Fi icons)
+    /// which frequently get OCR'd as "$ 79", "9:54 1 $ 79", "694", etc.
+    public static func cleanRawOCRText(_ text: String) -> String {
+        let lines = text.components(separatedBy: .newlines)
+        var cleanedLines: [String] = []
+
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+
+            // 1. Pure status bar lines: e.g. "9:54", "9:54 1", "9:54 1 $ 79", "10:00 79%", "5G  79%"
+            // If the line consists only of clock/battery/signal/arrows without transaction keywords
+            let isPureStatusBar = trimmed.range(
+                of: #"^(?:(?:[012]?[0-9]:[0-5][0-9](?:\s*(?:AM|PM))?)|[\$\d\s%🔋⚡\.\-—•/\\\|>]|(?:5g|4g|lte|wifi|wi-fi|safari|carrier))+$"#,
+                options: [.regularExpression, .caseInsensitive]
+            ) != nil
+
+            if isPureStatusBar {
+                // If it contains "RM" or "MYR", do not drop it! But if it's just numbers, $, %, times, drop it.
+                if !trimmed.localizedCaseInsensitiveContains("rm") && !trimmed.localizedCaseInsensitiveContains("myr") {
+                    continue
+                }
+            }
+
+            // 2. Line starts with a status bar prefix followed by bill content, e.g. "9:54 1 $ 79 (RM38.99)" or "9:54 -RM38.99"
+            var sanitizedLine = trimmed
+            let statusBarPrefixPattern = #"^(?:[012]?[0-9]:[0-5][0-9](?:\s*(?:AM|PM))?)\s*(?:[1-9]\b)?\s*(?:\$\s*\d{1,3}\b|\d{1,3}%\b)?\s*"#
+            if let regex = try? NSRegularExpression(pattern: statusBarPrefixPattern, options: [.caseInsensitive]) {
+                let nsRange = NSRange(sanitizedLine.startIndex..<sanitizedLine.endIndex, in: sanitizedLine)
+                if let match = regex.firstMatch(in: sanitizedLine, options: [], range: nsRange), match.range.length > 0 {
+                    if let range = Range(match.range, in: sanitizedLine) {
+                        let remainder = String(sanitizedLine[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !remainder.isEmpty {
+                            sanitizedLine = remainder
+                        }
+                    }
+                }
+            }
+
+            if !sanitizedLine.isEmpty {
+                cleanedLines.append(sanitizedLine)
             }
         }
 
-        // 2. Fallback to decimal numbers with 1-2 decimal places not adjacent to slashes/colons
-        let decimalPattern = #"(?<![0-9/:])([0-9]{1,5}\.[0-9]{1,2})(?![0-9/:])"#
-        if let regex = try? NSRegularExpression(pattern: decimalPattern) {
+        return cleanedLines.joined(separator: "\n")
+    }
+
+    private struct ScoredAmountCandidate {
+        let value: Double
+        let score: Int
+    }
+
+    public static func extractPrimaryAmount(from text: String) -> Double? {
+        var candidates: [ScoredAmountCandidate] = []
+
+        // Pattern 1: High priority - explicit Malaysian Ringgit currency symbol (RM / MYR)
+        // Matches: "-RM38.99", "RM 10.30", "+RM5.00", "MYR38.99", "(RM38.99)", "RM38.99"
+        let rmPattern = #"(?i)(?:[-+])?\s*(?:RM|MYR)\s*([0-9]{1,6}(?:\.[0-9]{1,2})?)"#
+        if let regex = try? NSRegularExpression(pattern: rmPattern) {
             let nsRange = NSRange(text.startIndex..<text.endIndex, in: text)
-            if let match = regex.firstMatch(in: text, options: [], range: nsRange),
-               let valRange = Range(match.range(at: 1), in: text),
-               let val = Double(text[valRange]), val > 0 {
-                return val
+            let matches = regex.matches(in: text, options: [], range: nsRange)
+            for m in matches {
+                if let valRange = Range(m.range(at: 1), in: text),
+                   let val = Double(text[valRange]), val > 0 {
+                    var score = 100 // Base score for explicit RM/MYR
+                    let matchedStr = (text as NSString).substring(with: m.range)
+                    if matchedStr.contains(".") {
+                        score += 80 // Has decimal places (.99, .30) -> High likelihood of transaction total
+                    }
+                    if matchedStr.contains("-") || matchedStr.contains("+") {
+                        score += 30 // Has transaction sign
+                    }
+                    candidates.append(ScoredAmountCandidate(value: val, score: score))
+                }
             }
         }
-        return nil
+
+        // Pattern 2: Contextual amount following keywords like "Amount", "Total", "Paid", "实付", "金额"
+        let keywordAmountPattern = #"(?i)(?:total|amount|paid|实付|付款|金额|合计|支出)[:\s]+(?:RM|MYR|¥|\$)?\s*([0-9]{1,6}(?:\.[0-9]{1,2})?)"#
+        if let regex = try? NSRegularExpression(pattern: keywordAmountPattern) {
+            let nsRange = NSRange(text.startIndex..<text.endIndex, in: text)
+            let matches = regex.matches(in: text, options: [], range: nsRange)
+            for m in matches {
+                if let valRange = Range(m.range(at: 1), in: text),
+                   let val = Double(text[valRange]), val > 0 {
+                    var score = 90
+                    let matchedStr = (text as NSString).substring(with: m.range)
+                    if matchedStr.contains(".") { score += 40 }
+                    candidates.append(ScoredAmountCandidate(value: val, score: score))
+                }
+            }
+        }
+
+        // Pattern 3: Fallback decimals (e.g. "38.99", "10.30") not adjacent to dates/times
+        let decimalPattern = #"(?<![0-9/:])([0-9]{1,5}\.[0-9]{2})(?![0-9/:])"#
+        if let regex = try? NSRegularExpression(pattern: decimalPattern) {
+            let nsRange = NSRange(text.startIndex..<text.endIndex, in: text)
+            let matches = regex.matches(in: text, options: [], range: nsRange)
+            for m in matches {
+                if let valRange = Range(m.range(at: 1), in: text),
+                   let val = Double(text[valRange]), val > 0 {
+                    candidates.append(ScoredAmountCandidate(value: val, score: 50))
+                }
+            }
+        }
+
+        // NOTE: We deliberately DO NOT parse bare "$ <integer>" like "$ 79" as a transaction amount,
+        // because iOS battery percentage icons in the status bar are consistently OCR'd as "$ <battery%|79|69>".
+
+        // Return the candidate with the highest confidence score
+        return candidates.max(by: { $0.score < $1.score })?.value
     }
 
     private static func detectAccount(from text: String) -> (String?, String) {
@@ -453,14 +543,38 @@ public final class ReceiptOCRService: Sendable {
         let purpose = detectPaymentPurpose(from: lines, rawText: rawText)
         let counterparty = extractCounterpartyOnly(from: lines, rawText: rawText)
 
+        var result: String
         if let purpose = purpose, !purpose.isEmpty {
             if let counterparty = counterparty, !counterparty.isEmpty, counterparty != "转账付款", counterparty.lowercased() != purpose.lowercased() {
-                return "\(counterparty) (\(purpose))"
+                result = "\(counterparty) (\(purpose))"
+            } else {
+                result = purpose
             }
-            return purpose
+        } else {
+            result = counterparty ?? "餐饮消费"
         }
 
-        return counterparty ?? "转账付款"
+        return sanitizeMerchantOrNote(result)
+    }
+
+    private static func sanitizeMerchantOrNote(_ text: String) -> String {
+        var str = text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Strip status bar remnants: "9:54", "$ 79", "79%", etc.
+        let statusNoisePattern = #"(?i)\b\d{1,2}:\d{2}\b|\$\s*\d{1,3}\b|\b\d{1,3}%\b"#
+        str = str.replacingOccurrences(of: statusNoisePattern, with: "", options: .regularExpression)
+
+        // Strip parenthesized amounts e.g. "(RM38.99)" or "(RM 38.99)"
+        let amountParenPattern = #"(?i)\(?\s*(?:RM|MYR)\s*[0-9]{1,6}(?:\.[0-9]{1,2})?\s*\)?"#
+        str = str.replacingOccurrences(of: amountParenPattern, with: "", options: .regularExpression)
+
+        // Clean leftover symbols
+        str = str.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: "():-—_ ")))
+
+        if str.isEmpty || str == "1" || str.count < 2 {
+            return "餐饮消费"
+        }
+        return str
     }
 
     private static func extractCounterpartyOnly(from lines: [String], rawText: String) -> String? {
@@ -515,8 +629,11 @@ public final class ReceiptOCRService: Sendable {
             if lower.contains("successful") || lower.contains("reference") || lower.contains("transaction") {
                 continue
             }
-            // Ignore lines that look purely like battery percentage, clock, or numbers
-            if trimmed.range(of: #"^[0-9:\s%./-]+$"#, options: .regularExpression) != nil {
+            // Ignore lines that contain status bar clock (e.g. 9:54) or pure numbers/symbols
+            if trimmed.range(of: #"\b\d{1,2}:\d{2}\b"#, options: .regularExpression) != nil {
+                continue
+            }
+            if trimmed.range(of: #"^[\$\d\s%./\-—():]+$"#, options: .regularExpression) != nil {
                 continue
             }
             if trimmed.count >= 2 && trimmed.count <= 48 {
@@ -556,6 +673,8 @@ public final class ReceiptOCRService: Sendable {
         let lower = str.lowercased()
         if lower.contains("transaction") || lower.contains("successful") || lower.contains("reference") { return false }
         if lower.contains("duitnow transfer") || lower.contains("payment details") || lower.contains("ewallet balance") { return false }
+        if str.range(of: #"\b\d{1,2}:\d{2}\b"#, options: .regularExpression) != nil { return false }
+        if str.range(of: #"^\$?\s*\d+"#, options: .regularExpression) != nil { return false }
         if str.range(of: #"^[0-9A-Za-z]{12,}$"#, options: .regularExpression) != nil { return false }
         return true
     }

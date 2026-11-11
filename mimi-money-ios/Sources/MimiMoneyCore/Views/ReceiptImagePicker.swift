@@ -59,9 +59,23 @@ public struct UIKitImagePicker: UIViewControllerRepresentable {
 }
 #endif
 
+public struct ReceiptViewerItem: Identifiable, Sendable {
+    public let id = UUID()
+    public let imageData: Data
+
+    public init(imageData: Data) {
+        self.imageData = imageData
+    }
+}
+
 public struct FullscreenReceiptViewer: View {
     public let imageData: Data?
     public var onClose: () -> Void
+
+    @State private var scale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
+    @State private var offset: CGSize = .zero
+    @State private var lastOffset: CGSize = .zero
 
     public init(imageData: Data?, onClose: @escaping () -> Void) {
         self.imageData = imageData
@@ -77,6 +91,50 @@ public struct FullscreenReceiptViewer: View {
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFit()
+                    .scaleEffect(scale)
+                    .offset(offset)
+                    .gesture(
+                        MagnificationGesture()
+                            .onChanged { val in
+                                let delta = val / lastScale
+                                lastScale = val
+                                scale = min(max(scale * delta, 1.0), 4.0)
+                            }
+                            .onEnded { _ in
+                                lastScale = 1.0
+                                if scale < 1.0 {
+                                    withAnimation(.spring()) {
+                                        scale = 1.0
+                                        offset = .zero
+                                    }
+                                }
+                            }
+                    )
+                    .simultaneousGesture(
+                        scale > 1.0 ?
+                        DragGesture()
+                            .onChanged { val in
+                                offset = CGSize(
+                                    width: lastOffset.width + val.translation.width,
+                                    height: lastOffset.height + val.translation.height
+                                )
+                            }
+                            .onEnded { _ in
+                                lastOffset = offset
+                            }
+                        : nil
+                    )
+                    .onTapGesture(count: 2) {
+                        withAnimation(.spring()) {
+                            if scale > 1.0 {
+                                scale = 1.0
+                                offset = .zero
+                                lastOffset = .zero
+                            } else {
+                                scale = 2.0
+                            }
+                        }
+                    }
                     .padding()
             } else {
                 VStack(spacing: 12) {
@@ -84,6 +142,7 @@ public struct FullscreenReceiptViewer: View {
                         .font(.system(size: 48))
                         .foregroundColor(.white.opacity(0.6))
                     Text("无法加载小票大图")
+                        .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white.opacity(0.8))
                 }
             }

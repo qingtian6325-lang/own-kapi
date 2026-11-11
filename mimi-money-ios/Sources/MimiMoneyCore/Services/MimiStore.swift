@@ -35,6 +35,7 @@ public final class MimiStore: ObservableObject {
 
     private let inMemory: Bool
     private let storageURL: URL
+    private static var receiptMemoryCache: [String: Data] = [:]
 
     // MARK: - Receipt Image Persistence
     public var receiptsDirectoryURL: URL {
@@ -47,28 +48,126 @@ public final class MimiStore: ObservableObject {
         return receiptsURL
     }
 
+    /// Saves receipt image with cross-sandbox resilience.
+    /// If image data is reasonably sized (<= 350KB), stores inline base64 string
+    /// so AppIntents / Shortcuts running in external extension sandboxes NEVER lose
+    /// access to the image when viewed in the main app.
     public func saveReceiptImage(data: Data) -> String {
+        var finalData = data
+        #if canImport(UIKit)
+        if data.count > 180_000, let uiImg = UIImage(data: data) {
+            // Resize and compress for lightweight persistence
+            let maxDim: CGFloat = 1200
+            let size = uiImg.size
+            if size.width > maxDim || size.height > maxDim {
+                let ratio = min(maxDim / size.width, maxDim / size.height)
+                let newSize = CGSize(width: size.width * ratio, height: size.height * ratio)
+                let renderer = UIGraphicsImageRenderer(size: newSize)
+                let resized = renderer.image { _ in
+                    uiImg.draw(in: CGRect(origin: .zero, size: newSize))
+                }
+                if let compressed = resized.jpegData(compressionQuality: 0.65) {
+                    finalData = compressed
+                }
+            } else if let compressed = uiImg.jpegData(compressionQuality: 0.70) {
+                finalData = compressed
+            }
+        }
+        #endif
+
         let filename = "receipt_\(UUID().uuidString.prefix(12)).jpg"
         let fileURL = receiptsDirectoryURL.appendingPathComponent(filename)
-        try? data.write(to: fileURL, options: .atomic)
+        try? finalData.write(to: fileURL, options: .atomic)
+        Self.receiptMemoryCache[filename] = finalData
+
+        // Also write to temporary and caches directory as fallback
+        let tempURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(filename)
+        try? finalData.write(to: tempURL, options: .atomic)
+
+        // For guaranteed cross-sandbox / shortcut persistence, return base64 if <= 350KB
+        if finalData.count <= 350_000 {
+            let base64String = "base64:\(finalData.base64EncodedString())"
+            Self.receiptMemoryCache[base64String] = finalData
+            return base64String
+        }
+
         return filename
     }
 
+    /// Robust loader for receipt images: supports base64 inline, memory cache,
+    /// documents folder, temporary directories, caches, and app group containers.
     public func loadReceiptImageData(filename: String) -> Data? {
         let clean = filename.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !clean.isEmpty else { return nil }
-        if clean.hasPrefix("/") || clean.contains(":\\") {
-            return try? Data(contentsOf: URL(fileURLWithPath: clean))
+
+        // 1. Direct Base64 prefix
+        if clean.hasPrefix("base64:") {
+            let base64Payload = String(clean.dropFirst(7))
+            if let decoded = Data(base64Encoded: base64Payload, options: .ignoreUnknownCharacters) {
+                return decoded
+            }
         }
-        let fileURL = receiptsDirectoryURL.appendingPathComponent(clean)
-        return try? Data(contentsOf: fileURL)
+        if clean.hasPrefix("data:image/") && clean.contains(";base64,") {
+            let components = clean.components(separatedBy: ";base64,")
+            if components.count == 2, let decoded = Data(base64Encoded: components[1], options: .ignoreUnknownCharacters) {
+                return decoded
+            }
+        }
+
+        // 2. Memory cache
+        if let cached = Self.receiptMemoryCache[clean] {
+            return cached
+        }
+
+        // 3. Absolute path on disk
+        if clean.hasPrefix("/") || clean.contains(":\\") {
+            if let diskData = try? Data(contentsOf: URL(fileURLWithPath: clean)) {
+                Self.receiptMemoryCache[clean] = diskData
+                return diskData
+            }
+        }
+
+        // 4. Standard receipts directory
+        let standardURL = receiptsDirectoryURL.appendingPathComponent(clean)
+        if let diskData = try? Data(contentsOf: standardURL) {
+            Self.receiptMemoryCache[clean] = diskData
+            return diskData
+        }
+
+        // 5. Look up by lastPathComponent in documents, temp, caches, app group
+        let lastComponent = URL(fileURLWithPath: clean).lastPathComponent
+        let candidateURLs = [
+            receiptsDirectoryURL.appendingPathComponent(lastComponent),
+            URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(lastComponent),
+            FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?.appendingPathComponent(lastComponent),
+            FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(lastComponent),
+            FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.mimi.money")?.appendingPathComponent("Receipts/\(lastComponent)")
+        ].compactMap { $0 }
+
+        for cand in candidateURLs {
+            if let diskData = try? Data(contentsOf: cand) {
+                Self.receiptMemoryCache[clean] = diskData
+                return diskData
+            }
+        }
+
+        // 6. Last resort: if the string itself is bare base64 (>= 100 chars)
+        if clean.count >= 100, let bareDecoded = Data(base64Encoded: clean, options: .ignoreUnknownCharacters) {
+            Self.receiptMemoryCache[clean] = bareDecoded
+            return bareDecoded
+        }
+
+        return nil
     }
 
     public func deleteReceiptImage(filename: String) {
         let clean = filename.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !clean.isEmpty else { return }
-        let fileURL = clean.hasPrefix("/") ? URL(fileURLWithPath: clean) : receiptsDirectoryURL.appendingPathComponent(clean)
-        try? FileManager.default.removeItem(at: fileURL)
+        Self.receiptMemoryCache.removeValue(forKey: clean)
+        if !clean.hasPrefix("base64:") {
+            let fileURL = clean.hasPrefix("/") ? URL(fileURLWithPath: clean) : receiptsDirectoryURL.appendingPathComponent(clean)
+            try? FileManager.default.removeItem(at: fileURL)
+        }
     }
 
     public init(inMemory: Bool = false) {
