@@ -76,7 +76,7 @@ final class PureAIRecognitionTests: XCTestCase {
             _ = try await SmartReceiptRecognizer.recognize(imageData: Data([0xFF, 0xD8]))
             XCTFail("超时时识别必须抛错")
         } catch let failure as ReceiptRecognitionFailure {
-            XCTAssertEqual(failure, .failed(reason: "请求超时（8 秒）"))
+            XCTAssertEqual(failure, .failed(reason: "请求超时（30 秒）"))
         } catch {
             XCTFail("应抛 ReceiptRecognitionFailure，实际为：\(error)")
         }

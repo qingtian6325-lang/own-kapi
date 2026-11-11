@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.2.2] - 2026-11-11
+
+### 🎯 Highlights
+- **修复问账必超时**：真机暴露——设置页「测试连接」成功，但 AI 助手问账每次都回「网络请求失败（请求超时）」。根因在问账这条真实 generateContent 路径（带最长 6000 字账目上下文、模型默认带思考，首字延迟高）被短超时掐死。本版给三条路径分开配超时：**问账/聊天 60 秒**（独立长超时）、**识别 30 秒**（原 8 秒，失败文案同步更新）、测试连接探针 30 秒。
+- **识别与问账压低思考**：两条路径的 generationConfig 都带思考抑制（按模型世代选字段：Gemini 3 系用 thinkingLevel、2.5 系用 thinkingBudget），账单识别与查账不需要长思考，优先速度与稳定；若接口拒绝该字段（HTTP 400），会自动去掉该字段重发一次，不因思考配置失败而误报。
+- **测试连接改成真验证**：在原「查模型详情」之后，追加一次最小 generateContent（让模型只回复 OK），生成成功才显示「连接成功（已实际生成验证）」；状态文案能区分「模型存在但实际生成失败」与真成功——设置页显示成功就等于真实路径可用。
+- **聊天等待态**：发送问账后、回复到达前，聊天里显示「正在查账…」＋转圈的等待气泡，回复或报错后自动替换消失，不再对着空白干等。
+- **其余不动**：数据、呈现层、Keychain、分类/备注逻辑、金额合理性拦截、失败不落账原则均未改变；「识别账单」Version 参数默认更新为 1.2.2。
+
 ## [v1.2.1] - 2026-11-11
 
 ### 🎯 Highlights

@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - 智能识别门面：纯 Gemini 单引擎（v1.2.1 起彻底移除本地 OCR）
 //
-// 识别只走 Gemini，没有任何 OCR 兜底。失败（没填 key、无网络、超时 8 秒、
+// 识别只走 Gemini，没有任何 OCR 兜底。失败（没填 key、无网络、超时 30 秒、
 // HTTP/额度错误、返回无法解析）一律抛 ReceiptRecognitionFailure：不暂存、
 // 不落账、不生成草稿，由调用方把失败原因如实告诉用户。
 // 金额合理性检查保持不变：可疑金额由调用方只进未确认/待确认口径。
@@ -81,7 +81,7 @@ public enum SmartReceiptRecognizer {
         } catch {
             let reason: String
             if let urlError = error as? URLError, urlError.code == .timedOut {
-                reason = "请求超时（8 秒）"
+                reason = "请求超时（\(Int(GeminiClient.recognitionTimeoutSeconds)) 秒）"
             } else {
                 reason = error.localizedDescription
             }

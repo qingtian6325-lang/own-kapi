@@ -269,6 +269,47 @@ XCTAssertTrue(context.contains("【预算】"))
 XCTAssertLessThanOrEqual(context.count, LedgerContextBuilder.maxCharacters + 32)
 }
 
+// MARK: - v1.2.2 超时按路径区分（问账长超时与识别不再共用）
+
+func testTimeoutConfigurationPerPath() {
+XCTAssertEqual(GeminiClient.recognitionTimeoutSeconds, 30)
+XCTAssertEqual(GeminiClient.chatTimeoutSeconds, 60)
+XCTAssertEqual(GeminiClient.testConnectionProbeTimeoutSeconds, 30)
+}
+
+// MARK: - v1.2.2 测试连接探针：走 generateContent 的最小请求形状
+
+func testConnectionProbeBodyShape() {
+let body = GeminiClient.testConnectionProbeBody(model: "gemini-3.8-flash")
+let contents = body["contents"] as? [[String: Any]]
+let parts = contents?.first?["parts"] as? [[String: Any]]
+XCTAssertEqual(parts?.first?["text"] as? String, "请只回复：OK")
+let generationConfig = body["generationConfig"] as? [String: Any]
+XCTAssertNotNil(generationConfig?["thinkingConfig"], "探针应带思考抑制，与真实调用走同一条路")
+XCTAssertNil(body["systemInstruction"], "探针是最小请求，不带系统提示/账目数据")
+}
+
+// MARK: - v1.2.2 思考抑制按模型世代选字段 + 400 剥离回退
+
+func testThinkingSuppressionPerModelFamily() {
+let for3x = GeminiClient.thinkingSuppressionConfig(forModel: "gemini-3.8-flash")
+XCTAssertEqual(for3x["thinkingLevel"] as? String, "minimal")
+XCTAssertNil(for3x["thinkingBudget"])
+let for25 = GeminiClient.thinkingSuppressionConfig(forModel: "gemini-2.5-flash")
+XCTAssertEqual(for25["thinkingBudget"] as? Int, 0)
+XCTAssertNil(for25["thinkingLevel"])
+}
+
+func testBodyByRemovingThinkingConfig() {
+let body: [String: Any] = ["generationConfig": ["temperature": 0.2, "thinkingConfig": ["thinkingLevel": "minimal"]]]
+let stripped = GeminiClient.bodyByRemovingThinkingConfig(body)
+let config = stripped?["generationConfig"] as? [String: Any]
+XCTAssertNil(config?["thinkingConfig"])
+XCTAssertEqual(config?["temperature"] as? Double, 0.2)
+XCTAssertNil(GeminiClient.bodyByRemovingThinkingConfig(["generationConfig": ["temperature": 0.2]]))
+XCTAssertNil(GeminiClient.bodyByRemovingThinkingConfig(["contents": []]))
+}
+
 // MARK: - Helpers
 
 private func decodeDTO(fromGenerateContentResponse jsonText: String) throws -> GeminiBillDTO {

@@ -1014,6 +1014,20 @@ public struct RecordAndAISheetView: View {
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(Array(message.blocks.enumerated()), id: \.offset) { _, block in
                     switch block {
+                    case .pendingAnswer:
+                        HStack(spacing: 8) {
+                            ProgressView()
+                                .controlSize(.small)
+                            Text("正在查账…")
+                                .font(.system(size: 14))
+                                .foregroundColor(MimiTheme.textSecondary)
+                        }
+                        .padding(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(Color.white)
+                        )
+
                     case .text(let text):
                         Text(text)
                             .font(.system(size: 14))

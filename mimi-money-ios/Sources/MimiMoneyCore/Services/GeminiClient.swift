@@ -244,7 +244,36 @@ return nil
 // MARK: - Gemini REST Client
 
 public enum GeminiClient {
-public static let recognitionTimeoutSeconds: TimeInterval = 8
+/// 识别调用超时（v1.2.2：8 → 30 秒。纯 AI 无兜底，图大/网慢时 8 秒太紧）。
+public static let recognitionTimeoutSeconds: TimeInterval = 30
+/// 问账/聊天调用独立长超时（带最长 6000 字账目上下文，首字延迟远高于识别）。
+public static let chatTimeoutSeconds: TimeInterval = 60
+/// 测试连接的最小生成探针超时（内容极小，30 秒足够判通断）。
+public static let testConnectionProbeTimeoutSeconds: TimeInterval = 30
+
+/// 思考抑制配置：识别与查账都不需要长思考，默认思考会显著拖慢首字延迟。
+/// 字段按模型世代区分（官方文档 ai.google.dev/gemini-api/docs/thinking）：
+/// Gemini 2.5 系用 thinkingBudget（0 = 关闭）；Gemini 3 系改用 thinkingLevel，
+/// 给 3 系传 thinkingBudget 会直接 400。若接口仍拒绝该字段，performRequest
+/// 会在 400 时自动去掉 thinkingConfig 重发一次（见 bodyByRemovingThinkingConfig）。
+public static func thinkingSuppressionConfig(forModel model: String) -> [String: Any] {
+if model.contains("2.5") {
+return ["thinkingBudget": 0]
+}
+return ["thinkingLevel": "minimal"]
+}
+
+/// 返回去掉 generationConfig.thinkingConfig 的请求体副本；原本没有该字段时返回 nil。
+public static func bodyByRemovingThinkingConfig(_ body: [String: Any]) -> [String: Any]? {
+guard var generationConfig = body["generationConfig"] as? [String: Any],
+generationConfig["thinkingConfig"] != nil else {
+return nil
+}
+generationConfig.removeValue(forKey: "thinkingConfig")
+var copy = body
+copy["generationConfig"] = generationConfig
+return copy
+}
 
 private static func endpoint(model: String, action: String) -> URL? {
 let encoded = model.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? model
@@ -252,6 +281,25 @@ return URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(en
 }
 
 private static func performRequest(
+model: String,
+body: [String: Any],
+timeout: TimeInterval
+) async throws -> [String: Any] {
+do {
+return try await performSingleRequest(model: model, body: body, timeout: timeout)
+} catch let error as GeminiError {
+// thinkingConfig 若被该模型/接口拒绝（HTTP 400），去掉后重发一次；
+// key 无效同为 400，但文案可区分，不做无谓重发。
+guard case .httpStatus(let code, let message) = error, code == 400,
+!message.lowercased().contains("api key"),
+let stripped = bodyByRemovingThinkingConfig(body) else {
+throw error
+}
+return try await performSingleRequest(model: model, body: stripped, timeout: timeout)
+}
+}
+
+private static func performSingleRequest(
 model: String,
 body: [String: Any],
 timeout: TimeInterval
@@ -308,7 +356,26 @@ throw GeminiError.emptyResponse
 return text
 }
 
-// MARK: 测试连接（查模型详情，最小成本验证 key 与模型名）
+// MARK: 测试连接（先查模型详情确认 key/模型名，再发一次最小 generateContent 真验证）
+//
+// v1.2.2：只查模型详情太轻——模型存在不等于真实生成路径可用（真机曾出现
+// 「测试连接成功但问账每次超时」）。故 GET 通过后追加一次最小生成探针，
+// 成功才算连接成功；文案区分「模型不存在/key 无效」与「模型存在但生成失败」。
+
+/// 测试连接第二步的最小生成请求体（让模型只回复 OK），供单测验请求形状。
+public static func testConnectionProbeBody(model: String) -> [String: Any] {
+return [
+"contents": [[
+"role": "user",
+"parts": [["text": "请只回复：OK"]]
+]],
+"generationConfig": [
+"temperature": 0,
+"maxOutputTokens": 64,
+"thinkingConfig": thinkingSuppressionConfig(forModel: model)
+]
+]
+}
 
 public static func testConnection() async -> (success: Bool, message: String) {
 guard let apiKey = GeminiSettings.apiKey else {
@@ -326,18 +393,34 @@ request.setValue(apiKey, forHTTPHeaderField: "x-goog-api-key")
 do {
 let (data, response) = try await URLSession.shared.data(for: request)
 if let http = response as? HTTPURLResponse {
-if (200...299).contains(http.statusCode) {
-GeminiSettings.recordCallStatus(success: true, message: "测试连接成功（\(model)）")
-return (true, "连接成功，模型 \(model) 可用")
-}
+guard (200...299).contains(http.statusCode) else {
 let message = extractErrorMessage(from: data)
 GeminiSettings.recordCallStatus(success: false, message: "测试连接 HTTP \(http.statusCode)")
 return (false, GeminiError.httpStatus(http.statusCode, message).description)
 }
+} else {
 return (false, "无 HTTP 响应")
+}
 } catch {
 GeminiSettings.recordCallStatus(success: false, message: "测试连接网络失败")
 return (false, "网络请求失败（\(error.localizedDescription)）")
+}
+// 模型存在，再真发一次最小生成——真实问账/识别走的就是这条路。
+do {
+let json = try await performRequest(
+model: model,
+body: testConnectionProbeBody(model: model),
+timeout: testConnectionProbeTimeoutSeconds
+)
+_ = try extractText(from: json)
+GeminiSettings.recordCallStatus(success: true, message: "测试连接成功（\(model)，已实际生成验证）")
+return (true, "连接成功，模型 \(model) 可用（已实际生成验证）")
+} catch let error as GeminiError {
+GeminiSettings.recordCallStatus(success: false, message: "测试连接生成失败：\(error.description)")
+return (false, "模型 \(model) 存在，但实际生成失败：\(error.description)")
+} catch {
+GeminiSettings.recordCallStatus(success: false, message: "测试连接生成失败：\(error.localizedDescription)")
+return (false, "模型 \(model) 存在，但实际生成失败：\(error.localizedDescription)")
 }
 }
 
@@ -359,7 +442,8 @@ let body: [String: Any] = [
 "generationConfig": [
 "temperature": 0.1,
 "responseMimeType": "application/json",
-"responseSchema": recognitionResponseSchema()
+"responseSchema": recognitionResponseSchema(),
+"thinkingConfig": thinkingSuppressionConfig(forModel: model)
 ]
 ]
 
@@ -464,9 +548,12 @@ let body: [String: Any] = [
 "role": "user",
 "parts": [["text": "【账目数据】\n\(context)\n\n【我的问题】\n\(question)"]]
 ]],
-"generationConfig": ["temperature": 0.2]
+"generationConfig": [
+"temperature": 0.2,
+"thinkingConfig": thinkingSuppressionConfig(forModel: model)
 ]
-let json = try await performRequest(model: model, body: body, timeout: 30)
+]
+let json = try await performRequest(model: model, body: body, timeout: chatTimeoutSeconds)
 return try extractText(from: json).trimmingCharacters(in:.whitespacesAndNewlines)
 }
 }

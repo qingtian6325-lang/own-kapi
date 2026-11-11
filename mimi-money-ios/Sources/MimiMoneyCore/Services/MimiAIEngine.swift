@@ -15,6 +15,8 @@ public struct AICategoryTableRow: Identifiable, Equatable, Sendable {
 
 public enum AIChatResponseBlock: Equatable, Sendable {
     case text(String)
+    /// 问账等待态：回复到达前显示「正在查账…」＋转圈，回复/报错后被整块替换。
+    case pendingAnswer
     case draftBills([ParsedDraftBill])
     case categoryTable(expenseRows: [(String, String)], incomeRows: [(String, String)], customNote: String)
     case spendingSummary(title: String, amount: Double, count: Int, details: String)
@@ -27,6 +29,8 @@ public enum AIChatResponseBlock: Equatable, Sendable {
         switch (lhs, rhs) {
         case let (.text(a), .text(b)):
             return a == b
+        case (.pendingAnswer, .pendingAnswer):
+            return true
         case let (.draftBills(a), .draftBills(b)):
             return a == b
         case let (.categoryTable(ea, ia, na), .categoryTable(eb, ib, nb)):
@@ -204,7 +208,7 @@ public final class MimiAIEngine: ObservableObject {
             return
         }
 
-        let placeholder = AIChatMessageItem(isUser: false, userText: "", blocks: [.text("咪咪正在翻账本…")])
+        let placeholder = AIChatMessageItem(isUser: false, userText: "", blocks: [.pendingAnswer])
         messages.append(placeholder)
         saveHistory()
         let placeholderId = placeholder.id
@@ -403,6 +407,9 @@ public final class MimiAIEngine: ObservableObject {
                 switch block {
                 case .text(let text):
                     texts.append(text)
+                case .pendingAnswer:
+                    // 等待态不按原样持久化：若 App 在等待中被杀，重开后显示未完成提示而非永久转圈
+                    texts.append("（上次问账没有完成，请重新问一次）")
                 case .draftBills(let bills):
                     drafts.append(contentsOf: bills)
                 case .categoryTable(let expenseRows, let incomeRows, let customNote):
