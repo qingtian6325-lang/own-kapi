@@ -36,17 +36,29 @@ jobs:
         run: |
           IOS_SDK_PATH="$(xcrun --sdk iphoneos --show-sdk-path)"
           echo "IOS_SDK_PATH=${IOS_SDK_PATH}" >> "$GITHUB_ENV"
-          # -emit-const-values: make the compiler emit .swiftconstvalues files.
-          # appintentsmetadataprocessor (Xcode 26) extracts AppIntents metadata
-          # exclusively from those const values; without them it extracts nothing.
+          # Step 1: compile the package normally (produces the executable).
           swift build -c release --product MimiMoneyApp \
             --triple arm64-apple-ios17.0 \
             -Xswiftc -sdk -Xswiftc "${IOS_SDK_PATH}" \
-            -Xswiftc -emit-const-values \
             -Xcc -isysroot -Xcc "${IOS_SDK_PATH}"
           BIN_PATH="$(find .build -path "*/release/MimiMoneyApp" -type f | head -n 1)"
           echo "BIN_PATH=${BIN_PATH}" >> "$GITHUB_ENV"
           echo "Built executable: ${BIN_PATH}"
+          # Step 2: a dedicated whole-module pass over MimiMoneyCore sources
+          # that ONLY emits the .swiftconstvalues sidecars which
+          # appintentsmetadataprocessor consumes. (The swiftc -c build does
+          # not emit them per-file; this manual pass is the equivalent of
+          # Xcode's SWIFT_ENABLE_EMIT_CONST_VALUES build setting.)
+          mkdir -p constvals module
+          xcrun --sdk iphoneos swiftc \
+            -target arm64-apple-ios17.0 \
+            -sdk "${IOS_SDK_PATH}" \
+            -module-name MimiMoneyCore \
+            -emit-module -emit-module-path module/MimiMoneyCore.swiftmodule \
+            -emit-const-values-path constvals/MimiMoneyCore.swiftconstvalues \
+            -parse-as-library \
+            -O \
+            $(find Sources/MimiMoneyCore -name '*.swift' | sort)
 
       - name: Extract AppIntents metadata (appintentsmetadataprocessor)
         run: |
@@ -84,7 +96,7 @@ jobs:
           echo "Xcode version: ${XCODE_VERSION}"
 
           find "${PWD}/Sources/MimiMoneyCore" -name '*.swift' | sort > source-file-list.txt
-          find .build -name '*.swiftconstvalues' | sort | sed "s|^\.build|${PWD}/.build|" > swift-const-vals-list.txt
+          find "${PWD}/constvals" .build -name '*.swiftconstvalues' 2>/dev/null | sort > swift-const-vals-list.txt
           echo "--- source-file-list ($(wc -l < source-file-list.txt) files) ---"
           cat source-file-list.txt
           echo "--- swift-const-vals-list ($(wc -l < swift-const-vals-list.txt) files) ---"
