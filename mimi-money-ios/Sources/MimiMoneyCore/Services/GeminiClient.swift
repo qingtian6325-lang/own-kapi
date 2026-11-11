@@ -11,14 +11,14 @@ private static let account = "gemini_api_key"
 
 public static func saveGeminiAPIKey(_ key: String?) {
 #if canImport(Security)
-let trimmed = key?.trimmingCharacters(in:.whitespacesAndNewlines)?? ""
+let trimmed = key?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 let query: [String: Any] = [
 kSecClass as String: kSecClassGenericPassword,
 kSecAttrService as String: service,
 kSecAttrAccount as String: account
 ]
 SecItemDelete(query as CFDictionary)
-guard!trimmed.isEmpty, let data = trimmed.data(using:.utf8) else { return}
+guard !trimmed.isEmpty, let data = trimmed.data(using:.utf8) else { return}
 var attributes = query
 attributes[kSecValueData as String] = data
 attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
@@ -113,9 +113,9 @@ case transport(String)
 
 public var description: String {
 switch self {
-case.missingAPIKey:
+case .missingAPIKey:
 return "尚未填写 Gemini API Key"
-case.httpStatus(let code, let message):
+case .httpStatus(let code, let message):
 if code == 429 {
 return "HTTP 429：免费额度已用完或请求过于频繁"
 }
@@ -123,11 +123,11 @@ if code == 400 || code == 403 {
 return "HTTP \(code)：API Key 无效或请求被拒绝（\(message)）"
 }
 return "HTTP \(code)：\(message)"
-case.emptyResponse:
+case .emptyResponse:
 return "Gemini 返回为空"
-case.decodingFailed(let detail):
+case .decodingFailed(let detail):
 return "Gemini 返回内容无法解析（\(detail)）"
-case.transport(let detail):
+case .transport(let detail):
 return "网络请求失败（\(detail)）"
 }
 }
@@ -221,13 +221,13 @@ categoryDisplayName: categoryDisplay,
 accountId: accountId,
 accountDisplayName: accountName,
 merchantOrNote: note.isEmpty ? counterparty : note,
-occurredAt: GeminiBillDTO.parseOccurredAt(occurredAt)?? now
+occurredAt: GeminiBillDTO.parseOccurredAt(occurredAt) ?? now
 )
 }
 
 public static func parseOccurredAt(_ text: String) -> Date? {
 let trimmed = text.trimmingCharacters(in:.whitespacesAndNewlines)
-guard!trimmed.isEmpty else { return nil}
+guard !trimmed.isEmpty else { return nil}
 let formatter = DateFormatter()
 formatter.locale = Locale(identifier: "en_US_POSIX")
 formatter.timeZone = TimeZone.current
@@ -247,7 +247,7 @@ public enum GeminiClient {
 public static let recognitionTimeoutSeconds: TimeInterval = 8
 
 private static func endpoint(model: String, action: String) -> URL? {
-let encoded = model.addingPercentEncoding(withAllowedCharacters:.urlPathAllowed)?? model
+let encoded = model.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? model
 return URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(encoded):\(action)")
 }
 
@@ -302,7 +302,7 @@ let parts = content["parts"] as? [[String: Any]] else {
 throw GeminiError.emptyResponse
 }
 let text = parts.compactMap { $0["text"] as? String}.joined()
-guard!text.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty else {
+guard !text.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty else {
 throw GeminiError.emptyResponse
 }
 return text
@@ -315,7 +315,7 @@ guard let apiKey = GeminiSettings.apiKey else {
 return (false, "尚未填写 Gemini API Key")
 }
 let model = GeminiSettings.modelName
-let encoded = model.addingPercentEncoding(withAllowedCharacters:.urlPathAllowed)?? model
+let encoded = model.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? model
 guard let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(encoded)") else {
 return (false, "模型名无效")
 }

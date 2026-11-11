@@ -17,14 +17,14 @@ let name = counterparty.trimmingCharacters(in:.whitespacesAndNewlines)
 if let modelNote, isCleanNote(modelNote) {
 return modelNote.trimmingCharacters(in:.whitespacesAndNewlines)
 }
-guard!name.isEmpty else { return ""}
+guard !name.isEmpty else { return ""}
 let isPerson = counterpartyKind.lowercased() == "person"
 switch type {
-case.expense:
+case .expense:
 return isPerson ? "转账给\(name)" : "\(name) 消费"
-case.income:
+case .income:
 return isPerson ? "\(name) 转账" : "\(name) 收入"
-case.transfer:
+case .transfer:
 return "账户转账"
 }
 }
@@ -32,7 +32,7 @@ return "账户转账"
 /// 干净备注：一句话、无换行、无链接/百分比杂讯、长度合理。
 public static func isCleanNote(_ note: String) -> Bool {
 let trimmed = note.trimmingCharacters(in:.whitespacesAndNewlines)
-guard!trimmed.isEmpty, trimmed.count <= 30 else { return false}
+guard !trimmed.isEmpty, trimmed.count <= 30 else { return false}
 if trimmed.contains("\n") || trimmed.contains("http") || trimmed.contains("%") {
 return false
 }
@@ -86,11 +86,11 @@ public static let questionMarkers: [String] = [
 
 public static func classify(_ message: String, draftCount: Int) -> BillMessageKind {
 let trimmed = message.trimmingCharacters(in:.whitespacesAndNewlines)
-guard!trimmed.isEmpty else { return.question}
+guard !trimmed.isEmpty else { return .question }
 if questionMarkers.contains(where: { trimmed.contains($0)}) {
-return.question
+return .question
 }
-return draftCount > 0?.billDraft:.question
+return draftCount > 0 ? .billDraft : .question
 }
 }
 
@@ -127,10 +127,10 @@ $0.type == .expense && $0.includeInStats
 && cal.component(.year, from: $0.date) == year
 && cal.component(.month, from: $0.date) == month
 }
-if!monthExpenses.isEmpty {
+if !monthExpenses.isEmpty {
 var byCategory: [String: Double] = [:]
 for tx in monthExpenses {
-let primary = tx.categoryPath.components(separatedBy: "-").first?? tx.categoryPath
+let primary = tx.categoryPath.components(separatedBy: "-").first ?? tx.categoryPath
 byCategory[primary, default: 0] += tx.amount
 }
 let sorted = byCategory.sorted { $0.value > $1.value}
@@ -144,7 +144,7 @@ lines.append("\(name)：\(formatRM(total))")
 let budgetTotal = store.monthlyBudgetTotal
 let spent = store.monthlyExpenseTotal(year: year, month: month)
 lines.append("本月总预算 \(formatRM(budgetTotal))，已支出 \(formatRM(spent))，剩余 \(formatRM(max(0, budgetTotal - spent)))。")
-if!store.categoryBudgets.isEmpty {
+if !store.categoryBudgets.isEmpty {
 let parts = store.categoryBudgets.map { item in
 let used = store.categorySpent(for: item.categoryName, year: year, month: month)
 return "\(item.categoryName) 剩 \(formatRM(max(0, item.monthlyLimit - used)))/\(formatRM(item.monthlyLimit))"
@@ -153,14 +153,14 @@ lines.append("分类预算剩余：" + parts.joined(separator: "；"))
 }
 
 // 账户余额
-if!store.accounts.isEmpty {
+if !store.accounts.isEmpty {
 let parts = store.accounts.map { "\($0.name) \(formatRM($0.balance))"}
 lines.append("" + parts.joined(separator: "；") + "；净资产 \(formatRM(store.netWorth))。")
 }
 
 // 相关记录明细（带上限）
 let relevant = relevantTransactions(from: transactions, question: question, now: now)
-if!relevant.isEmpty {
+if !relevant.isEmpty {
 lines.append("")
 let itemFormatter = DateFormatter()
 itemFormatter.locale = Locale(identifier: "en_US_POSIX")
@@ -189,7 +189,7 @@ let m = cal.component(.month, from: monthDate)
 let inMonth = transactions.filter {
 cal.component(.year, from: $0.date) == y && cal.component(.month, from: $0.date) == m
 }
-guard!inMonth.isEmpty else { continue}
+guard !inMonth.isEmpty else { continue}
 let expense = inMonth.filter { $0.type == .expense && $0.includeInStats}.reduce(0) { $0 + $1.amount}
 let income = inMonth.filter { $0.type == .income && $0.includeInStats}.reduce(0) { $0 + $1.amount}
 let count = inMonth.filter { $0.includeInStats}.count
@@ -207,7 +207,7 @@ let keywords = DefaultCatalog.standardExpenseCategories().map(\.name)
 + DefaultCatalog.standardIncomeCategories().map(\.name)
 let matchedKeywords = keywords.filter { question.contains($0)}
 var picked: [TransactionItem] = []
-if!matchedKeywords.isEmpty {
+if !matchedKeywords.isEmpty {
 picked = sorted.filter { tx in
 matchedKeywords.contains(where: { tx.categoryPath.contains($0) || tx.note.contains($0)})
 }

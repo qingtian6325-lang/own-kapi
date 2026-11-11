@@ -91,11 +91,11 @@ func testGeminiSchemaConstrainsCategoriesAndAccounts() {
 let schema = GeminiClient.recognitionResponseSchema()
 let properties = schema["properties"] as? [String: Any]
 let primary = properties?["primaryCategory"] as? [String: Any]
-let primaryEnum = primary?["enum"] as? [String]?? []
+let primaryEnum = primary?["enum"] as? [String] ?? []
 XCTAssertTrue(primaryEnum.contains("餐饮"))
 XCTAssertTrue(primaryEnum.contains("别人转账"))
 let account = properties?["account"] as? [String: Any]
-let accountEnum = account?["enum"] as? [String]?? []
+let accountEnum = account?["enum"] as? [String] ?? []
 XCTAssertTrue(accountEnum.contains("TNGewallet"))
 XCTAssertTrue(accountEnum.contains("PBBank"))
 let typeProp = properties?["type"] as? [String: Any]
