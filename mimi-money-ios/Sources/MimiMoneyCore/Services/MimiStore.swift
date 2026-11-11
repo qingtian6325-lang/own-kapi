@@ -119,41 +119,44 @@ public final class MimiStore: ObservableObject {
             return cached
         }
 
-        // 3. Absolute path on disk
-        if clean.hasPrefix("/") || clean.contains(":\\") {
+        // 3. Absolute path on disk (must actually exist on filesystem)
+        if (clean.hasPrefix("/") || clean.contains(":\\")) && FileManager.default.fileExists(atPath: clean) {
             if let diskData = try? Data(contentsOf: URL(fileURLWithPath: clean)) {
                 Self.receiptMemoryCache[clean] = diskData
                 return diskData
             }
         }
 
-        // 4. Standard receipts directory
+        // 4. Standard receipts directory (must actually exist)
         let standardURL = receiptsDirectoryURL.appendingPathComponent(clean)
-        if let diskData = try? Data(contentsOf: standardURL) {
+        if FileManager.default.fileExists(atPath: standardURL.path),
+           let diskData = try? Data(contentsOf: standardURL) {
             Self.receiptMemoryCache[clean] = diskData
             return diskData
         }
 
-        // 5. Look up by lastPathComponent in documents, temp, caches, app group
+        // 5. Look up by lastPathComponent in documents, temp, caches, app group if it looks like a filename
         let lastComponent = URL(fileURLWithPath: clean).lastPathComponent
-        let candidateURLs = [
-            receiptsDirectoryURL.appendingPathComponent(lastComponent),
-            URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(lastComponent),
-            FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?.appendingPathComponent(lastComponent),
-            FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(lastComponent),
-            FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.mimi.money")?.appendingPathComponent("Receipts/\(lastComponent)")
-        ].compactMap { $0 }
+        if lastComponent.contains(".") {
+            let candidateURLs = [
+                receiptsDirectoryURL.appendingPathComponent(lastComponent),
+                URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(lastComponent),
+                FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?.appendingPathComponent(lastComponent),
+                FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(lastComponent),
+                FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.mimi.money")?.appendingPathComponent("Receipts/\(lastComponent)")
+            ].compactMap { $0 }
 
-        for cand in candidateURLs {
-            if let diskData = try? Data(contentsOf: cand) {
-                Self.receiptMemoryCache[clean] = diskData
-                return diskData
+            for cand in candidateURLs {
+                if FileManager.default.fileExists(atPath: cand.path),
+                   let diskData = try? Data(contentsOf: cand) {
+                    Self.receiptMemoryCache[clean] = diskData
+                    return diskData
+                }
             }
         }
 
-        // 6. Last resort: if the string itself is bare base64 (not a standard filename or path)
-        if !clean.contains(".") && !clean.contains("/") && !clean.contains("\\"),
-           let bareDecoded = Data(base64Encoded: clean, options: .ignoreUnknownCharacters), !bareDecoded.isEmpty {
+        // 6. Base64 fallback (supports bare Base64 including standard JPEG /9j/ headers)
+        if let bareDecoded = Data(base64Encoded: clean, options: .ignoreUnknownCharacters), !bareDecoded.isEmpty {
             Self.receiptMemoryCache[clean] = bareDecoded
             return bareDecoded
         }
