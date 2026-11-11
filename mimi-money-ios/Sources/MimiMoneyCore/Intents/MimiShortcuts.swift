@@ -794,7 +794,7 @@ public struct ScanScreenshotIntent: AppIntent {
     @Parameter(title: "类型", default: 2)
     public var type: Int?
 
-    @Parameter(title: "版本", default: "1.1.4")
+    @Parameter(title: "版本", default: "1.2.0")
     public var version: String?
 
     public init() {}
@@ -803,12 +803,18 @@ public struct ScanScreenshotIntent: AppIntent {
     public func perform() async throws -> some IntentResult & OpensIntent {
         let store = MimiStore.shared
         let draft: ParsedDraftBill
+        var amountIsSuspicious = false
         if let file = content {
-            draft = await ReceiptOCRService.recognizeAndParseImageData(file.data)
+            // v1.2.0：截图识别走智能门面 — Gemini 单引擎优先，失败静默回退本地 OCR
+            let result = await SmartReceiptRecognizer.recognize(imageData: file.data)
+            draft = result.draft
+            amountIsSuspicious = result.isSuspiciousAmount
         } else {
             #if canImport(UIKit)
             if let image = UIPasteboard.general.image, let pngData = image.pngData() {
-                draft = await ReceiptOCRService.recognizeAndParseImageData(pngData)
+                let result = await SmartReceiptRecognizer.recognize(imageData: pngData)
+                draft = result.draft
+                amountIsSuspicious = result.isSuspiciousAmount
             } else if let clip = UIPasteboard.general.string, !clip.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 draft = ReceiptOCRService.parseReceiptText(clip)
             } else {
@@ -840,6 +846,13 @@ public struct ScanScreenshotIntent: AppIntent {
         // v1.1.3 两次 CI 实证）。旧系统路径的收尾动作仍在 perform 内完成，
         // 返回的 opensIntent 只是无操作占位，行为与 v1.1.3 的空 .result() 等价。
         let staged = ShortcutActionCoordinator.stageRecognizedDraft(draft, in: store)
+        if amountIsSuspicious {
+            // 金额合理性拦截：金额 <=0、离谱大额或与状态栏电量百分比同值等明显误读，
+            // 只进未确认口径 — 暂存转未确认记录等用户在 App 里核对修改，
+            // 不走正常入账呈现（不弹选项卡/确认卡）。
+            _ = ShortcutActionCoordinator.consumePendingScanForEdit(id: staged.id, in: store)
+            return .result(opensIntent: ScanChoiceFollowUpIntent(opensEditor: false, transactionId: staged.id))
+        }
         if #available(iOS 26.0, macOS 26.0, *) {
             return try await performScanChoice(staged: staged, store: store)
         }

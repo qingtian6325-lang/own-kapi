@@ -15,6 +15,9 @@ public struct MimiRootContainerView: View {
     @State private var showBudgetManager: Bool = false
     @State private var showCategoryManager: Bool = false
     @State private var activeSettingsTitle: String?
+    @State private var showHomeAlbumPicker: Bool = false
+    @State private var showHomeCameraPicker: Bool = false
+    @State private var homeRecognizedDraft: ParsedDraftBill?
 
     @MainActor
     public init(store: MimiStore = .shared) {
@@ -48,6 +51,15 @@ public struct MimiRootContainerView: View {
                 },
                 onOpenAssetsManager: {
                     showAssetsManager = true
+                },
+                onPickFromAlbum: {
+                    showHomeAlbumPicker = true
+                },
+                onTakePhoto: {
+                    showHomeCameraPicker = true
+                },
+                onOpenImportExport: {
+                    activeSettingsTitle = DrawerDestination.importExport.rawValue
                 }
             )
 
@@ -109,6 +121,45 @@ public struct MimiRootContainerView: View {
                 }
             }
 
+            // 问账条面板（相册/拍照）识别出的账单草稿：App 内确认后才入账
+            if let homeDraft = homeRecognizedDraft {
+                ZStack(alignment: .top) {
+                    Color.black.opacity(0.18)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            homeRecognizedDraft = nil
+                        }
+
+                    ScreenshotResultSnippetView(
+                        transaction: TransactionItem(
+                            type: homeDraft.type,
+                            categoryPath: homeDraft.categoryPath,
+                            iconName: homeDraft.iconName,
+                            amount: homeDraft.amount,
+                            accountName: homeDraft.accountName,
+                            note: homeDraft.note,
+                            date: homeDraft.date
+                        ),
+                        onModifyTapped: {
+                            let saved = ShortcutActionCoordinator.recordRecognizedDraft(homeDraft, in: store)
+                            homeRecognizedDraft = nil
+                            activeBillForEdit = saved
+                        },
+                        onConfirmTapped: {
+                            _ = ShortcutActionCoordinator.recordRecognizedDraft(homeDraft, in: store)
+                            homeRecognizedDraft = nil
+                        },
+                        onCloseTapped: {
+                            homeRecognizedDraft = nil
+                        }
+                    )
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                }
+                .transition(.opacity)
+                .zIndex(25)
+            }
+
             if isDrawerOpen {
                 SideDrawerMenuView(
                     store: store,
@@ -142,6 +193,12 @@ public struct MimiRootContainerView: View {
                     showRecordSheet = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                         activeBillForEdit = savedTx
+                    }
+                },
+                onOpenImportExport: {
+                    showRecordSheet = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        activeSettingsTitle = DrawerDestination.importExport.rawValue
                     }
                 }
             )
@@ -225,6 +282,20 @@ public struct MimiRootContainerView: View {
                 }
             )
         }
+        #if canImport(UIKit)
+        .sheet(isPresented: $showHomeAlbumPicker) {
+            PHPickerImageView { imageData in
+                recognizeHomeImage(imageData)
+            }
+        }
+        .sheet(isPresented: $showHomeCameraPicker) {
+            UIKitImagePicker(sourceType: .camera) { image in
+                if let data = image.jpegData(compressionQuality: 0.85) {
+                    recognizeHomeImage(data)
+                }
+            }
+        }
+        #endif
         .onChange(of: store.pendingEditTransactionId) { _, newId in
             if let id = newId,
                let match = store.transactions.first(where: { $0.id == id }) {
@@ -243,6 +314,16 @@ public struct MimiRootContainerView: View {
                let id = store.pendingEditTransactionId,
                let match = store.transactions.first(where: { $0.id == id }) {
                 activeBillForEdit = match
+            }
+        }
+    }
+
+    /// 首页问账条面板选图/拍照后的识别：Gemini 优先、静默回退本地 OCR，结果以草稿卡等待确认。
+    private func recognizeHomeImage(_ imageData: Data) {
+        Task {
+            let result = await SmartReceiptRecognizer.recognize(imageData: imageData)
+            await MainActor.run {
+                homeRecognizedDraft = result.draft
             }
         }
     }

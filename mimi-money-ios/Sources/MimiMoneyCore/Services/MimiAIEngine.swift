@@ -61,11 +61,27 @@ public struct AIChatMessageItem: Identifiable, Equatable, Sendable {
         self.blocks = blocks
         self.createdAt = createdAt
     }
+
+    public var hasDraftBills: Bool {
+        blocks.contains(where: { block in
+            if case .draftBills = block { return true }
+            return false
+        })
+    }
+
+    public var draftBills: [ParsedDraftBill] {
+        blocks.flatMap { block -> [ParsedDraftBill] in
+            if case .draftBills(let drafts) = block { return drafts }
+            return []
+        }
+    }
 }
 
 @MainActor
 public final class MimiAIEngine: ObservableObject {
     @Published public var messages: [AIChatMessageItem] = []
+
+    // 旧版自定义大模型设置（保留兼容，v1.2.0 起识别/问账统一走 Gemini 设置）
     @Published public var apiKey: String = UserDefaults.standard.string(forKey: "mimi_llm_api_key") ?? ""
     @Published public var apiBaseURL: String = UserDefaults.standard.string(forKey: "mimi_llm_base_url") ?? "https://api.deepseek.com/v1"
     @Published public var apiModel: String = UserDefaults.standard.string(forKey: "mimi_llm_model") ?? "deepseek-chat"
@@ -86,7 +102,16 @@ public final class MimiAIEngine: ObservableObject {
         "怎样加入共享账本？"
     ]
 
-    public init() {}
+    /// Kapi 式示例问题气泡（点即发送）
+    public static let exampleQuestions: [String] = [
+        "查询本月单笔消费超过200块的账单",
+        "我本周支出最高的一笔是什么？",
+        "我最近一次购物买了什么？"
+    ]
+
+    public init() {
+        loadHistory()
+    }
 
     public func saveAPISettings(key: String, baseURL: String, model: String) {
         self.apiKey = key.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -96,6 +121,8 @@ public final class MimiAIEngine: ObservableObject {
         UserDefaults.standard.set(self.apiBaseURL, forKey: "mimi_llm_base_url")
         UserDefaults.standard.set(self.apiModel, forKey: "mimi_llm_model")
     }
+
+    // MARK: - Natural Language Bill Parsing
 
     /// Splits a single natural-language input into one or more `ParsedDraftBill` items ("一句话记多笔").
     /// Supports both punctuation delimiters ("，,；;\n") and whitespace between an amount and the next keyword (e.g. "午饭 24.5 咖啡 12.9 打车 18").
@@ -136,26 +163,133 @@ public final class MimiAIEngine: ObservableObject {
         return drafts
     }
 
-    @MainActor
+    // MARK: - Chat Flow (UI 入口)
+
+    /// 聊天发送主流程：
+    /// 1. 明确记账句 → 生成草稿卡（确认才入账）
+    /// 2. 本地可答的问题（分类表/退款/报销/本月汇总）→ 离线直接答
+    /// 3. 其余问账 → 带账目上下文问 Gemini；无 key/无网时在聊天里明说不可用，不编答案
     public func handleUserMessage(_ message: String, store: MimiStore) {
         let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         messages.append(
             AIChatMessageItem(isUser: true, userText: trimmed, blocks: [.text(trimmed)])
         )
-        let replyBlocks = buildReplyBlocks(for: trimmed, in: store)
-        messages.append(
-            AIChatMessageItem(isUser: false, userText: "", blocks: replyBlocks)
-        )
+
+        let drafts = parseNaturalLanguageBills(trimmed)
+        if BillMessageClassifier.classify(trimmed, draftCount: drafts.count) == .billDraft {
+            messages.append(
+                AIChatMessageItem(isUser: false, userText: "", blocks: [
+                    .text("小金主，咪咪已为你识别出 \(drafts.count) 笔账单草稿，核对无误后点「确认记账」才会入账："),
+                    .draftBills(drafts)
+                ])
+            )
+            saveHistory()
+            return
+        }
+
+        if let local = localAnswerBlocks(for: trimmed, in: store) {
+            messages.append(AIChatMessageItem(isUser: false, userText: "", blocks: local))
+            saveHistory()
+            return
+        }
+
+        guard GeminiSettings.hasAPIKey else {
+            messages.append(
+                AIChatMessageItem(isUser: false, userText: "", blocks: [
+                    .text("小金主，这个问题要联网查账才能答：请先到「设置 → AI 识别引擎」填入你的 Gemini API Key（在 Google AI Studio 免费申请），填好后就能问我「本月单笔超过 200 的账单」「本周最贵的一笔」这类问题了 🐱")
+                ])
+            )
+            saveHistory()
+            return
+        }
+
+        let placeholder = AIChatMessageItem(isUser: false, userText: "", blocks: [.text("咪咪正在翻账本…")])
+        messages.append(placeholder)
+        saveHistory()
+        let placeholderId = placeholder.id
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let answer = try await GeminiClient.answerQuestion(trimmed, store: store)
+                GeminiSettings.recordCallStatus(success: true, message: "问账成功（Gemini）")
+                self.replaceMessageBlocks(id: placeholderId, blocks: [.text(answer)])
+            } catch {
+                let reason = (error as? GeminiError)?.description ?? error.localizedDescription
+                GeminiSettings.recordCallStatus(success: false, message: "问账失败：\(reason)")
+                self.replaceMessageBlocks(id: placeholderId, blocks: [
+                    .text("问账暂时不可用：\(reason)。请检查网络，或到「设置 → AI 识别引擎」点测试连接；也可以直接问我「有哪些分类」「这个月花了多少」，或用一句话记账（如：午餐 38）。")
+                ])
+            }
+            self.saveHistory()
+        }
     }
 
+    /// 兼容旧调用：只返回本地应答块（分类表/本地汇总/记账草稿/兜底提示），不发网络请求。
     public func handleUserMessage(_ message: String, in store: MimiStore) async -> [AIChatResponseBlock] {
         let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }
         return buildReplyBlocks(for: trimmed, in: store)
     }
 
+    // MARK: - Draft Confirm / Cancel（确认才入账）
+
+    public func confirmDrafts(messageId: UUID, in store: MimiStore) {
+        guard let idx = messages.firstIndex(where: { $0.id == messageId }) else { return }
+        let drafts = messages[idx].draftBills
+        guard !drafts.isEmpty else { return }
+        var summaries: [String] = []
+        for draft in drafts {
+            let saved = ShortcutActionCoordinator.recordRecognizedDraft(draft, in: store)
+            summaries.append("\(saved.categoryPath) \(MimiTheme.formatRM(saved.amount))")
+        }
+        messages[idx].blocks = [.text("✅ 已记账：\(summaries.joined(separator: "；"))")]
+        saveHistory()
+    }
+
+    public func cancelDrafts(messageId: UUID) {
+        guard let idx = messages.firstIndex(where: { $0.id == messageId }) else { return }
+        guard messages[idx].hasDraftBills else { return }
+        messages[idx].blocks = [.text("已取消，这笔草稿没有入账。")]
+        saveHistory()
+    }
+
+    /// 相册/拍照识别出的草稿进入聊天，同样走确认才入账。
+    public func appendRecognizedDraft(_ draft: ParsedDraftBill, sourceLabel: String) {
+        messages.append(
+            AIChatMessageItem(isUser: false, userText: "", blocks: [
+                .text("小金主，已从\(sourceLabel)识别出这笔账单草稿，核对无误后点「确认记账」才会入账："),
+                .draftBills([draft])
+            ])
+        )
+        saveHistory()
+    }
+
+    private func replaceMessageBlocks(id: UUID, blocks: [AIChatResponseBlock]) {
+        guard let idx = messages.firstIndex(where: { $0.id == id }) else { return }
+        messages[idx].blocks = blocks
+    }
+
+    // MARK: - Local Answers
+
     private func buildReplyBlocks(for trimmed: String, in store: MimiStore) -> [AIChatResponseBlock] {
+        if let local = localAnswerBlocks(for: trimmed, in: store) {
+            return local
+        }
+        let drafts = parseNaturalLanguageBills(trimmed)
+        if !drafts.isEmpty {
+            return [
+                .text("小金主，咪咪已为你识别并拆分出 \(drafts.count) 笔账单，点击下方确认即可入账："),
+                .draftBills(drafts)
+            ]
+        }
+        return [
+            .text("你可以直接对我说“今天午饭吃餐厅8.30，TNG打麻将28”来一句话记多笔，或者问我“这个月花了多少”、“可以增加或删除某个分类吗？” 🐱")
+        ]
+    }
+
+    /// 本地可直接回答的问题；答不了返回 nil（交给 Gemini 问账）。
+    private func localAnswerBlocks(for trimmed: String, in store: MimiStore) -> [AIChatResponseBlock]? {
         // 1. Exact category table answer from IMG_2247 & IMG_2248
         if trimmed.contains("分类") && (trimmed.contains("增加") || trimmed.contains("删除") || trimmed.contains("标准") || trimmed.contains("哪些")) {
             let expenseRows: [(String, String)] = [
@@ -205,14 +339,22 @@ public final class MimiAIEngine: ObservableObject {
             return [.text("你可以在首页左上角点击「☰」打开侧边菜单 → 选择「账本管理」创建新账本，或通过「导入导出」一键分享账本数据给家人伴侣。")]
         }
 
-        // 3. Spending query (e.g. "这个月花了多少", "餐饮花了多少")
+        // 3. Spending query (e.g. "这个月花了多少", "餐饮花了多少") — 按当前真实年月统计
         if trimmed.contains("多少") || trimmed.contains("统计") || trimmed.contains("分析") || trimmed.contains("复盘") {
-            let monthSpent = store.monthlyExpenseTotal(year: 2026, month: 11)
-            let monthIncome = store.monthlyIncomeTotal(year: 2026, month: 11)
-            let count = store.transactions.filter { $0.type == .expense && $0.includeInStats }.count
+            let now = Date()
+            let cal = Calendar(identifier: .gregorian)
+            let year = cal.component(.year, from: now)
+            let month = cal.component(.month, from: now)
+            let monthSpent = store.monthlyExpenseTotal(year: year, month: month)
+            let monthIncome = store.monthlyIncomeTotal(year: year, month: month)
+            let count = store.transactions.filter {
+                $0.type == .expense && $0.includeInStats
+                    && cal.component(.year, from: $0.date) == year
+                    && cal.component(.month, from: $0.date) == month
+            }.count
             return [
                 .spendingSummary(
-                    title: "2026年11月 收支复盘",
+                    title: "\(year)年\(month)月 收支复盘",
                     amount: monthSpent,
                     count: count,
                     details: "本月共支出 RM\(String(format: "%.2f", monthSpent))（\(count)笔），总收入 RM\(String(format: "%.2f", monthIncome))，月预算剩余 RM\(String(format: "%.2f", max(0, store.currentLedger.monthlyBudget - monthSpent)))。"
@@ -220,19 +362,93 @@ public final class MimiAIEngine: ObservableObject {
             ]
         }
 
-        // 4. Multi-bill natural language bookkeeping
-        let drafts = parseNaturalLanguageBills(trimmed)
-        if !drafts.isEmpty {
-            return [
-                .text("小金主，咪咪已为你识别并拆分出 \(drafts.count) 笔账单，点击下方确认即可入账："),
-                .draftBills(drafts)
-            ]
-        }
-
-        return [
-            .text("你可以直接对我说“今天午饭吃餐厅8.30，TNG打麻将28”来一句话记多笔，或者问我“这个月花了多少”、“可以增加或删除某个分类吗？” 🐱")
-        ]
+        return nil
     }
+
+    // MARK: - Chat History Persistence（本地文件，杀进程重开还在）
+
+    private struct PersistedChatMessage: Codable {
+        var isUser: Bool
+        var text: String
+        var drafts: [ParsedDraftBill]
+        var createdAt: Date
+    }
+
+    private var historyFileURL: URL {
+        let docDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSTemporaryDirectory())
+        return docDir.appendingPathComponent("mimi_ai_chat_history_v1.json")
+    }
+
+    public func clearHistory() {
+        messages = []
+        try? FileManager.default.removeItem(at: historyFileURL)
+    }
+
+    private func saveHistory() {
+        let persisted: [PersistedChatMessage] = messages.suffix(100).map { message in
+            var texts: [String] = []
+            var drafts: [ParsedDraftBill] = []
+            for block in message.blocks {
+                switch block {
+                case .text(let text):
+                    texts.append(text)
+                case .draftBills(let bills):
+                    drafts.append(contentsOf: bills)
+                case .categoryTable(let expenseRows, let incomeRows, let customNote):
+                    var tableText = "标准支出分类如下："
+                    for row in expenseRows {
+                        tableText += "\n\(row.0)：\(row.1)"
+                    }
+                    if !incomeRows.isEmpty {
+                        tableText += "\n标准收入分类如下："
+                        for row in incomeRows {
+                            tableText += "\n\(row.0)：\(row.1)"
+                        }
+                    }
+                    if !customNote.isEmpty {
+                        tableText += "\n\(customNote)"
+                    }
+                    texts.append(tableText)
+                case .spendingSummary(let title, let amount, let count, let details):
+                    texts.append("\(title)\n总支出 \(MimiTheme.formatRM(amount)) · 共 \(count) 笔\n\(details)")
+                }
+            }
+            return PersistedChatMessage(
+                isUser: message.isUser,
+                text: message.isUser ? message.userText : texts.joined(separator: "\n"),
+                drafts: drafts,
+                createdAt: message.createdAt
+            )
+        }
+        if let data = try? JSONEncoder().encode(persisted) {
+            try? data.write(to: historyFileURL, options: .atomic)
+        }
+    }
+
+    private func loadHistory() {
+        guard let data = try? Data(contentsOf: historyFileURL),
+              let persisted = try? JSONDecoder().decode([PersistedChatMessage].self, from: data) else {
+            return
+        }
+        messages = persisted.map { item in
+            var blocks: [AIChatResponseBlock] = []
+            if !item.text.isEmpty {
+                blocks.append(.text(item.text))
+            }
+            if !item.drafts.isEmpty {
+                blocks.append(.draftBills(item.drafts))
+            }
+            return AIChatMessageItem(
+                isUser: item.isUser,
+                userText: item.isUser ? item.text : "",
+                blocks: blocks,
+                createdAt: item.createdAt
+            )
+        }
+    }
+
+    // MARK: - Natural Language Parsing Helpers
 
     private func extractAmount(from clause: String) -> Double? {
         let pattern = #"(?:RM|MYR|¥|\$)?\s*([0-9]+(?:\.[0-9]{1,2})?)"#

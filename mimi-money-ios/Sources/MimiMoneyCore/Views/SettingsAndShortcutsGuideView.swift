@@ -46,6 +46,12 @@ public struct SettingsAndShortcutsGuideView: View {
     // General settings
     @State private var editingNickname: String = ""
 
+    // Gemini AI 识别引擎设置（key 只存 iOS Keychain，界面状态仅作编辑缓冲）
+    @State private var geminiKeyInput: String = GeminiSettings.apiKey ?? ""
+    @State private var geminiModelInput: String = GeminiSettings.modelName
+    @State private var geminiTestStatus: String? = nil
+    @State private var geminiIsTesting: Bool = false
+
     public init(
         store: MimiStore,
         aiEngine: MimiAIEngine,
@@ -785,27 +791,86 @@ public struct SettingsAndShortcutsGuideView: View {
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
     }
 
-    // MARK: - AI Engine Settings Card
+    // MARK: - AI Engine Settings Card (Gemini 单引擎：识别 + 问账)
 
     private var aiEngineCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("🦫 AI 助手引擎设置")
+            Text("🤖 AI 识别引擎（Gemini）")
                 .font(.system(size: 15, weight: .bold))
                 .foregroundColor(MimiTheme.textPrimary)
 
-            Text("已内置离线多笔拆单、Vision 账单 OCR 与财务官问答引擎（开箱即用，无需配置）。如需接入自定义大模型，可在下方填写：")
+            Text("填入 Google AI Studio 的免费 Gemini API Key 后，截图识别与 AI 问账优先走 Gemini（分类与备注更准）；未填、没网或额度用完时，会静默回退到本机 Vision OCR，不会丢账。Key 只保存在 iOS 钥匙串里，不会上传到任何其他地方。请注意：Google 免费层条款说明，提交的内容可能被用于改进其产品。")
                 .font(.system(size: 12))
                 .foregroundColor(MimiTheme.textSecondary)
 
-            TextField("API Base URL (可选)", text: $aiEngine.customAPIBaseURL)
+            SecureField("Gemini API Key（在 aistudio.google.com 免费申请）", text: $geminiKeyInput)
                 .font(.system(size: 13))
                 .padding(10)
                 .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                .autocorrectionDisabled(true)
+                #if os(iOS)
+                .textInputAutocapitalization(.never)
+                #endif
 
-            SecureField("OpenAI / DeepSeek API Key (可选)", text: $aiEngine.customAPIKey)
-                .font(.system(size: 13))
-                .padding(10)
-                .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+            HStack(spacing: 10) {
+                TextField("模型名", text: $geminiModelInput)
+                    .font(.system(size: 13))
+                    .padding(10)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                    .autocorrectionDisabled(true)
+                    #if os(iOS)
+                    .textInputAutocapitalization(.never)
+                    #endif
+
+                Button {
+                    GeminiSettings.saveAPIKey(geminiKeyInput)
+                    GeminiSettings.modelName = geminiModelInput
+                    geminiTestStatus = "已保存到钥匙串"
+                } label: {
+                    Text("保存")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Capsule().fill(MimiTheme.expenseBlue))
+                }
+                .buttonStyle(.plain)
+            }
+
+            HStack(spacing: 10) {
+                Button {
+                    GeminiSettings.saveAPIKey(geminiKeyInput)
+                    GeminiSettings.modelName = geminiModelInput
+                    geminiIsTesting = true
+                    geminiTestStatus = "正在测试连接…"
+                    Task {
+                        let result = await GeminiClient.testConnection()
+                        await MainActor.run {
+                            geminiIsTesting = false
+                            geminiTestStatus = result.message
+                        }
+                    }
+                } label: {
+                    Text(geminiIsTesting ? "测试中…" : "测试连接")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(MimiTheme.expenseBlue)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                }
+                .buttonStyle(.plain)
+                .disabled(geminiIsTesting)
+
+                if let geminiTestStatus {
+                    Text(geminiTestStatus)
+                        .font(.system(size: 12))
+                        .foregroundColor(MimiTheme.textSecondary)
+                }
+            }
+
+            Text("最近一次调用状态：\(GeminiSettings.lastCallStatusText ?? "暂无调用记录")")
+                .font(.system(size: 12))
+                .foregroundColor(MimiTheme.textMuted)
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))

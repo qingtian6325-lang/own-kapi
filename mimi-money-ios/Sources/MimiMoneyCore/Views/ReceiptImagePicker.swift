@@ -57,6 +57,60 @@ public struct UIKitImagePicker: UIViewControllerRepresentable {
         }
     }
 }
+
+#if canImport(PhotosUI)
+import PhotosUI
+
+/// PHPicker 选图（系统相册选择器，无需相册权限），回调返回图片 Data。
+public struct PHPickerImageView: UIViewControllerRepresentable {
+    public let onImagePicked: (Data) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    public init(onImagePicked: @escaping (Data) -> Void) {
+        self.onImagePicked = onImagePicked
+    }
+
+    public func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    public func makeUIViewController(context: Context) -> PHPickerViewController {
+        var configuration = PHPickerConfiguration(photoLibrary: .shared())
+        configuration.filter = .images
+        configuration.selectionLimit = 1
+        let picker = PHPickerViewController(configuration: configuration)
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    public func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {}
+
+    public class Coordinator: NSObject, PHPickerViewControllerDelegate {
+        let parent: PHPickerImageView
+
+        init(_ parent: PHPickerImageView) {
+            self.parent = parent
+        }
+
+        public func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+            parent.dismiss()
+            guard let provider = results.first?.itemProvider,
+                  provider.canLoadObject(ofClass: UIImage.self) else {
+                return
+            }
+            provider.loadObject(ofClass: UIImage.self) { object, _ in
+                guard let image = object as? UIImage,
+                      let data = image.jpegData(compressionQuality: 0.85) else {
+                    return
+                }
+                DispatchQueue.main.async {
+                    self.parent.onImagePicked(data)
+                }
+            }
+        }
+    }
+}
+#endif
 #endif
 
 public struct ReceiptViewerItem: Identifiable, Sendable {

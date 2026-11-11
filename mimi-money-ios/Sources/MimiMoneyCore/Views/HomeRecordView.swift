@@ -9,8 +9,12 @@ public struct HomeRecordView: View {
     public var onSelectTransaction: (TransactionItem) -> Void
     public var onOpenBudgetManager: () -> Void
     public var onOpenAssetsManager: () -> Void
+    public var onPickFromAlbum: () -> Void = {}
+    public var onTakePhoto: () -> Void = {}
+    public var onOpenImportExport: () -> Void = {}
 
     @State private var isAmountsHidden: Bool = false
+    @State private var isAskPanelExpanded: Bool = false
     @State private var isCategoryBudgetExpanded: Bool = false
     @State private var isNetWorthExpanded: Bool = true
     @State private var showPageSwitcherMenu: Bool = false
@@ -24,7 +28,10 @@ public struct HomeRecordView: View {
         onOpenRecordSheet: @escaping (Bool) -> Void,
         onSelectTransaction: @escaping (TransactionItem) -> Void,
         onOpenBudgetManager: @escaping () -> Void,
-        onOpenAssetsManager: @escaping () -> Void
+        onOpenAssetsManager: @escaping () -> Void,
+        onPickFromAlbum: @escaping () -> Void = {},
+        onTakePhoto: @escaping () -> Void = {},
+        onOpenImportExport: @escaping () -> Void = {}
     ) {
         self.store = store
         self.onOpenDrawer = onOpenDrawer
@@ -34,6 +41,9 @@ public struct HomeRecordView: View {
         self.onSelectTransaction = onSelectTransaction
         self.onOpenBudgetManager = onOpenBudgetManager
         self.onOpenAssetsManager = onOpenAssetsManager
+        self.onPickFromAlbum = onPickFromAlbum
+        self.onTakePhoto = onTakePhoto
+        self.onOpenImportExport = onOpenImportExport
     }
 
     private var currentYear: Int { 2026 }
@@ -599,48 +609,75 @@ public struct HomeRecordView: View {
         return "\(m)月\(d)日 (\(wName))"
     }
 
-    // MARK: - Floating Bottom Bar (🦫 任何事情都能问我 + Blue +)
+    // MARK: - Floating Bottom Bar (🐱 任何事情都能问我 [＋/✕] + 展开面板)
 
     private var floatingBottomBar: some View {
-        HStack(spacing: 12) {
-            Button {
-                onOpenRecordSheet(true)
-            } label: {
-                HStack(spacing: 8) {
-                    Text("🐱")
-                        .font(.system(size: 20))
-                    Text("任何事情都能问我")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(MimiTheme.textSecondary)
-                    Spacer()
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 13))
-                        .foregroundColor(MimiTheme.expenseBlue)
-                }
-                .padding(.horizontal, 16)
-                .frame(height: 50)
+        VStack(spacing: 10) {
+            if isAskPanelExpanded {
+                AIAttachmentPanelView(
+                    onPickFromAlbum: {
+                        isAskPanelExpanded = false
+                        onPickFromAlbum()
+                    },
+                    onTakePhoto: {
+                        isAskPanelExpanded = false
+                        onTakePhoto()
+                    },
+                    onOpenImportExport: {
+                        isAskPanelExpanded = false
+                        onOpenImportExport()
+                    }
+                )
+                .padding(12)
                 .background(
-                    Capsule()
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .fill(Color.white)
                         .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 4)
                 )
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
-            .buttonStyle(.plain)
 
-            Button {
-                onOpenRecordSheet(false)
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(width: 50, height: 50)
-                    .background(
-                        Circle()
-                            .fill(MimiTheme.expenseBlue)
-                            .shadow(color: MimiTheme.expenseBlue.opacity(0.35), radius: 10, x: 0, y: 4)
-                    )
+            HStack(spacing: 8) {
+                Button {
+                    onOpenRecordSheet(true)
+                } label: {
+                    HStack(spacing: 8) {
+                        Text("🐱")
+                            .font(.system(size: 20))
+                        Text("任何事情都能问我")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(MimiTheme.textSecondary)
+                        Spacer()
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                        isAskPanelExpanded.toggle()
+                    }
+                } label: {
+                    Image(systemName: isAskPanelExpanded ? "xmark" : "plus")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(width: 34, height: 34)
+                        .background(
+                            Circle()
+                                .fill(MimiTheme.expenseBlue)
+                                .shadow(color: MimiTheme.expenseBlue.opacity(0.35), radius: 8, x: 0, y: 3)
+                        )
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
+            .padding(.leading, 16)
+            .padding(.trailing, 8)
+            .frame(height: 50)
+            .background(
+                Capsule()
+                    .fill(Color.white)
+                    .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 4)
+            )
         }
     }
 

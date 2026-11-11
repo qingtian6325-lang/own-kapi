@@ -7,6 +7,7 @@ public struct RecordAndAISheetView: View {
     public var onDismiss: () -> Void
     public var onOpenCategorySettings: () -> Void
     public var onEditRecognizedTransaction: (TransactionItem) -> Void
+    public var onOpenImportExport: () -> Void = {}
 
     @State private var isAIMode: Bool
     @State private var selectedTab: TransactionType = .expense
@@ -31,6 +32,12 @@ public struct RecordAndAISheetView: View {
     @State private var pickerSourceType: UIKitImagePicker.SourceType = .photoLibrary
     #endif
     @State private var activeViewerItem: ReceiptViewerItem? = nil
+    @State private var showChatAttachmentPanel: Bool = false
+    @State private var showChatAlbumPicker: Bool = false
+    @State private var showChatCameraPicker: Bool = false
+    #if canImport(Speech) && canImport(AVFoundation)
+    @StateObject private var speechTranscriber = SpeechTranscriber()
+    #endif
 
     public init(
         store: MimiStore,
@@ -38,7 +45,8 @@ public struct RecordAndAISheetView: View {
         initialAIMode: Bool = false,
         onDismiss: @escaping () -> Void,
         onOpenCategorySettings: @escaping () -> Void,
-        onEditRecognizedTransaction: @escaping (TransactionItem) -> Void
+        onEditRecognizedTransaction: @escaping (TransactionItem) -> Void,
+        onOpenImportExport: @escaping () -> Void = {}
     ) {
         self.store = store
         self.aiEngine = aiEngine
@@ -46,6 +54,7 @@ public struct RecordAndAISheetView: View {
         self.onDismiss = onDismiss
         self.onOpenCategorySettings = onOpenCategorySettings
         self.onEditRecognizedTransaction = onEditRecognizedTransaction
+        self.onOpenImportExport = onOpenImportExport
         _isAIMode = State(initialValue: initialAIMode)
     }
 
@@ -81,14 +90,17 @@ public struct RecordAndAISheetView: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            sheetTopHeader
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 8)
-
             if isAIMode {
+                aiChatTopHeader
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 8)
                 aiAssistantBody
             } else {
+                sheetTopHeader
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 8)
                 manualBookkeepingBody
             }
         }
@@ -136,11 +148,23 @@ public struct RecordAndAISheetView: View {
                     let filename = store.saveReceiptImage(data: data)
                     attachedReceiptFilenames.append(filename)
                     Task {
-                        let draft = await ReceiptOCRService.recognizeAndParseImageData(data)
+                        let result = await SmartReceiptRecognizer.recognize(imageData: data)
                         await MainActor.run {
-                            applyDraft(draft)
+                            applyDraft(result.draft)
                         }
                     }
+                }
+            }
+        }
+        .sheet(isPresented: $showChatAlbumPicker) {
+            PHPickerImageView { imageData in
+                recognizeChatImage(imageData, sourceLabel: "相册")
+            }
+        }
+        .sheet(isPresented: $showChatCameraPicker) {
+            UIKitImagePicker(sourceType: .camera) { pickedImage in
+                if let data = pickedImage.jpegData(compressionQuality: 0.85) {
+                    recognizeChatImage(data, sourceLabel: "拍照")
                 }
             }
         }
@@ -161,6 +185,72 @@ public struct RecordAndAISheetView: View {
     }
 
     // MARK: - Top Header with ⇄ Mode Switcher (IMG_2245 & IMG_2247)
+
+    // MARK: - AI Chat Header (Kapi 布局：[猫头像] 记账查账，问问题 [⇌ 手动记账] [✕])
+
+    private var aiChatTopHeader: some View {
+        HStack(spacing: 10) {
+            ZStack {
+                Circle().fill(Color(hex: 0xFFE8CC)).frame(width: 34, height: 34)
+                Text("🐱").font(.system(size: 18))
+            }
+
+            Text("记账查账，问问题")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(MimiTheme.textPrimary)
+
+            Spacer()
+
+            Button {
+                aiEngine.clearHistory()
+            } label: {
+                Text("清空")
+                    .font(.system(size: 12))
+                    .foregroundColor(MimiTheme.textMuted)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 6)
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                    isAIMode = false
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.left.arrow.right")
+                        .font(.system(size: 11, weight: .bold))
+                    Text("手动记账")
+                        .font(.system(size: 12, weight: .semibold))
+                }
+                .foregroundColor(MimiTheme.expenseBlue)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+            }
+            .buttonStyle(.plain)
+
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(MimiTheme.textSecondary)
+                    .frame(width: 32, height: 32)
+                    .background(Circle().fill(Color(hex: 0xF2F4F8)))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    /// 聊天层相册/拍照选图后：Gemini 优先识别，草稿进聊天等确认。
+    private func recognizeChatImage(_ imageData: Data, sourceLabel: String) {
+        showChatAttachmentPanel = false
+        Task {
+            let result = await SmartReceiptRecognizer.recognize(imageData: imageData)
+            await MainActor.run {
+                aiEngine.appendRecognizedDraft(result.draft, sourceLabel: sourceLabel)
+            }
+        }
+    }
 
     private var sheetTopHeader: some View {
         HStack {
@@ -643,8 +733,53 @@ public struct RecordAndAISheetView: View {
 
     private var aiAssistantBody: some View {
         VStack(spacing: 0) {
+            // 示例问题气泡：飘在聊天层上方，点即发送（尚无用户消息时显示）
+            if !aiEngine.messages.contains(where: { $0.isUser }) {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(MimiAIEngine.exampleQuestions, id: \.self) { question in
+                        Button {
+                            aiEngine.handleUserMessage(question, store: store)
+                        } label: {
+                            Text(question)
+                                .font(.system(size: 13))
+                                .foregroundColor(MimiTheme.textPrimary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .fill(Color.white)
+                                        .shadow(color: Color.black.opacity(0.06), radius: 6, x: 0, y: 2)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.top, 4)
+                .padding(.bottom, 8)
+                .background(MimiTheme.background)
+            }
+
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 14) {
+                    if aiEngine.messages.isEmpty {
+                        HStack(alignment: .top, spacing: 8) {
+                            ZStack {
+                                Circle().fill(Color(hex: 0xFFE8CC)).frame(width: 30, height: 30)
+                                Text("🐱").font(.system(size: 16))
+                            }
+                            Text("你好，我是咪咪 🐱 任何事都能问我：直接说一句「午餐 38」就能记账，也可以问我「本月花了多少」「哪一笔最贵」。")
+                                .font(.system(size: 14))
+                                .foregroundColor(MimiTheme.textPrimary)
+                                .padding(12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(Color.white)
+                                )
+                            Spacer(minLength: 12)
+                        }
+                    }
                     ForEach(aiEngine.messages) { msg in
                         chatBubbleView(for: msg)
                     }
@@ -656,17 +791,10 @@ public struct RecordAndAISheetView: View {
             // Quick Prompt Chips (有哪些分类 | 怎么记退款 | 怎么记报销 | 一句话记多笔)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(["有哪些分类", "怎么记退款", "怎么记报销", "一句话记多笔", "识别付款截图"], id: \.self) { chip in
+                    ForEach(["有哪些分类", "怎么记退款", "怎么记报销", "一句话记多笔"], id: \.self) { chip in
                         Button {
                             if chip == "一句话记多笔" {
                                 aiEngine.handleUserMessage("午饭 24.5 咖啡 12.9 打车 18", store: store)
-                            } else if chip == "识别付款截图" {
-                                let draft = ReceiptOCRService.parseReceiptText(
-                                    "-RM5.90\nPayment - TNGD\nNear Me Voucher Eggette Lab\n08/11/2026 16:56:34"
-                                )
-                                aiEngine.messages.append(
-                                    AIChatMessage(isUser: false, blocks: [.draftBills([draft])])
-                                )
                             } else {
                                 aiEngine.handleUserMessage(chip, store: store)
                             }
@@ -686,30 +814,152 @@ public struct RecordAndAISheetView: View {
             }
             .background(Color.white)
 
-            // Bottom Input Bar
+            // ＋ 展开面板（相册 / 拍照 / 导入导出），与问账条面板同行为
+            if showChatAttachmentPanel {
+                AIAttachmentPanelView(
+                    onPickFromAlbum: { showChatAlbumPicker = true },
+                    onTakePhoto: { showChatCameraPicker = true },
+                    onOpenImportExport: {
+                        showChatAttachmentPanel = false
+                        onOpenImportExport()
+                    }
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, 10)
+                .background(Color.white)
+            }
+
+            #if canImport(Speech) && canImport(AVFoundation)
+            if speechTranscriber.isRecording {
+                Text("🎙 正在聆听：\(speechTranscriber.partialText)")
+                    .font(.system(size: 12))
+                    .foregroundColor(MimiTheme.expenseBlue)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 6)
+                    .background(Color.white)
+            } else if !speechTranscriber.statusText.isEmpty {
+                Text(speechTranscriber.statusText)
+                    .font(.system(size: 12))
+                    .foregroundColor(MimiTheme.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 6)
+                    .background(Color.white)
+            }
+            #endif
+
+            // Bottom Input Bar: [＋] 发消息或按住说话... [🎙 / 蓝色↑]
             HStack(spacing: 10) {
-                TextField("点此输入文字（如：早茶15 地铁4.5）", text: $aiInputText)
+                Button {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                        showChatAttachmentPanel.toggle()
+                    }
+                } label: {
+                    Image(systemName: showChatAttachmentPanel ? "xmark.circle.fill" : "plus.circle.fill")
+                        .font(.system(size: 26))
+                        .foregroundColor(MimiTheme.textSecondary)
+                }
+                .buttonStyle(.plain)
+
+                TextField("发消息或按住说话...", text: $aiInputText)
                     .font(.system(size: 14))
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
                     .background(Capsule().fill(Color(hex: 0xF5F6FA)))
 
-                Button {
-                    guard !aiInputText.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-                    let prompt = aiInputText
-                    aiInputText = ""
-                    aiEngine.handleUserMessage(prompt, store: store)
-                } label: {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.system(size: 30))
-                        .foregroundColor(MimiTheme.expenseBlue)
+                if aiInputText.trimmingCharacters(in: .whitespaces).isEmpty {
+                    #if canImport(Speech) && canImport(AVFoundation)
+                    Image(systemName: speechTranscriber.isRecording ? "mic.fill" : "mic")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(speechTranscriber.isRecording ? MimiTheme.dangerRed : MimiTheme.expenseBlue)
+                        .frame(width: 30, height: 30)
+                        .contentShape(Rectangle())
+                        .onLongPressGesture(minimumDuration: 0.25, maximumDistance: 60, pressing: { isPressing in
+                            if isPressing {
+                                Task {
+                                    if await speechTranscriber.requestAuthorization() {
+                                        speechTranscriber.startRecording()
+                                    }
+                                }
+                            } else if speechTranscriber.isRecording {
+                                let recognized = speechTranscriber.stopRecording()
+                                if !recognized.trimmingCharacters(in: .whitespaces).isEmpty {
+                                    aiInputText = recognized
+                                }
+                            }
+                        }, perform: {})
+                    #endif
+                } else {
+                    Button {
+                        let prompt = aiInputText
+                        aiInputText = ""
+                        aiEngine.handleUserMessage(prompt, store: store)
+                    } label: {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(MimiTheme.expenseBlue)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 14)
             .background(Color.white)
         }
+    }
+
+    /// 聊天里的账单草稿卡：确认记账 / 取消，确认才入账。
+    private func chatDraftCard(message: AIChatMessage, drafts: [ParsedDraftBill]) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(drafts) { draft in
+                HStack(spacing: 10) {
+                    Text(draft.iconName)
+                        .font(.system(size: 20))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(draft.categoryPath)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(MimiTheme.textPrimary)
+                        Text("\(draft.accountName) · \(draft.note)")
+                            .font(.system(size: 12))
+                            .foregroundColor(MimiTheme.textSecondary)
+                            .lineLimit(1)
+                    }
+                    Spacer()
+                    Text((draft.type == .income ? "+" : "-") + MimiTheme.formatRM(draft.amount))
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundColor(draft.type == .income ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
+                }
+            }
+
+            HStack(spacing: 10) {
+                Button {
+                    aiEngine.cancelDrafts(messageId: message.id)
+                } label: {
+                    Text("取消")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(MimiTheme.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 9)
+                        .background(Capsule().fill(Color(hex: 0xF2F4F8)))
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    aiEngine.confirmDrafts(messageId: message.id, in: store)
+                } label: {
+                    Text("确认记账")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 9)
+                        .background(Capsule().fill(MimiTheme.expenseBlue))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.white))
     }
 
     @ViewBuilder
@@ -774,29 +1024,7 @@ public struct RecordAndAISheetView: View {
                         .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
 
                     case .draftBills(let drafts):
-                        VStack(spacing: 10) {
-                            ForEach(drafts) { draft in
-                                let tempTx = TransactionItem(
-                                    type: draft.type,
-                                    categoryPath: draft.categoryPath,
-                                    iconName: draft.iconName,
-                                    amount: draft.amount,
-                                    accountName: draft.accountName,
-                                    note: draft.note,
-                                    date: draft.date
-                                )
-                                ScreenshotResultSnippetView(
-                                    transaction: tempTx,
-                                    onModifyTapped: {
-                                        let saved = ShortcutActionCoordinator.recordRecognizedDraft(draft, in: store)
-                                        onEditRecognizedTransaction(saved)
-                                    },
-                                    onConfirmTapped: {
-                                        _ = ShortcutActionCoordinator.recordRecognizedDraft(draft, in: store)
-                                    }
-                                )
-                            }
-                        }
+                        chatDraftCard(message: message, drafts: drafts)
                     }
                 }
             }
