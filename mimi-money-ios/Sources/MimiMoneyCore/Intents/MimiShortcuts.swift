@@ -623,7 +623,7 @@ public struct ScanScreenshotIntent: AppIntent {
     public init() {}
 
     @MainActor
-    public func perform() async throws -> some IntentResult & OpensIntent {
+    public func perform() async throws -> some IntentResult {
         let store = MimiStore.shared
         let draft: ParsedDraftBill
         if let file = content {
@@ -653,8 +653,7 @@ public struct ScanScreenshotIntent: AppIntent {
         //
         // v1.1.3：卡上只剩系统渲染的一对按钮 View / Got it（actionName 改名）。
         // - 点「Got it」(accept)：requestConfirmation 正常返回 → 正式落盘 →
-        //   以 opensIntent 收尾（ConfirmBillIntent 是 openAppWhenRun=false 的
-        //   静默收尾 Intent，不打开 App、无任何呈现）。
+        //   返回空 .result()，无任何呈现，直接结束回原 App。
         // - 点「View」(deny) 或下滑关卡：系统以取消类错误抛回 perform，两者
         //   无法区分，统一按「去修改」处理——不落正式账，返回 opensIntent
         //   打开 OpenPendingScanForEditIntent（消费暂存→未确认记录→开 App
@@ -670,11 +669,11 @@ public struct ScanScreenshotIntent: AppIntent {
                 return .result(opensIntent: OpenPendingScanForEditIntent(transactionId: staged.id))
             case .discard:
                 store.discardPendingScan(id: staged.id)
-                return .result(opensIntent: ConfirmBillIntent(transactionId: staged.id))
+                return .result()
             }
         }
         _ = ShortcutActionCoordinator.finalizePendingScan(id: staged.id, in: store)
-        return .result(opensIntent: ConfirmBillIntent(transactionId: staged.id))
+        return .result()
     }
 
     /// 按系统版本分层弹确认卡，按钮文案统一改名为 View / Got it（与 Kapi 一致）：
