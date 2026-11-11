@@ -4,6 +4,21 @@ import XCTest
 @MainActor
 final class GeminiAndChatTests: XCTestCase {
 
+private var originalExecutor: (@Sendable (String, [String: Any], TimeInterval) async throws -> [String: Any])!
+private var originalBackoff: (@Sendable () -> TimeInterval)!
+
+override func setUp() {
+super.setUp()
+originalExecutor = GeminiClient.singleRequestExecutor
+originalBackoff = GeminiClient.retryBackoffSeconds
+}
+
+override func tearDown() {
+GeminiClient.singleRequestExecutor = originalExecutor
+GeminiClient.retryBackoffSeconds = originalBackoff
+super.tearDown()
+}
+
 // MARK: - Gemini 结构化输出 fixtures 解析
 
 func testGeminiFixtureExpenseRestaurantTNG() throws {
@@ -292,12 +307,21 @@ XCTAssertNil(body["systemInstruction"], "探针是最小请求，不带系统提
 // MARK: - v1.2.2 思考抑制按模型世代选字段 + 400 剥离回退
 
 func testThinkingSuppressionPerModelFamily() {
-let for3x = GeminiClient.thinkingSuppressionConfig(forModel: "gemini-3.8-flash")
-XCTAssertEqual(for3x["thinkingLevel"] as? String, "minimal")
-XCTAssertNil(for3x["thinkingBudget"])
+// 官方文档定案：gemini-3.8-flash 只支持 low/medium/high，没有 minimal、不能关思考
+let for38 = GeminiClient.thinkingSuppressionConfig(forModel: "gemini-3.8-flash")
+XCTAssertEqual(for38["thinkingLevel"] as? String, "low")
+XCTAssertNil(for38["thinkingBudget"])
+// 3.x Lite 系列支持 minimal
+let forLite = GeminiClient.thinkingSuppressionConfig(forModel: "gemini-3.1-flash-lite")
+XCTAssertEqual(forLite["thinkingLevel"] as? String, "minimal")
+XCTAssertNil(forLite["thinkingBudget"])
+// 2.5 系用 thinkingBudget: 0 关闭（含 2.5 Lite：2.5 规则优先于 lite 规则）
 let for25 = GeminiClient.thinkingSuppressionConfig(forModel: "gemini-2.5-flash")
 XCTAssertEqual(for25["thinkingBudget"] as? Int, 0)
 XCTAssertNil(for25["thinkingLevel"])
+let for25Lite = GeminiClient.thinkingSuppressionConfig(forModel: "gemini-2.5-flash-lite")
+XCTAssertEqual(for25Lite["thinkingBudget"] as? Int, 0)
+XCTAssertNil(for25Lite["thinkingLevel"])
 }
 
 func testBodyByRemovingThinkingConfig() {
@@ -308,6 +332,82 @@ XCTAssertNil(config?["thinkingConfig"])
 XCTAssertEqual(config?["temperature"] as? Double, 0.2)
 XCTAssertNil(GeminiClient.bodyByRemovingThinkingConfig(["generationConfig": ["temperature": 0.2]]))
 XCTAssertNil(GeminiClient.bodyByRemovingThinkingConfig(["contents": []]))
+}
+
+// MARK: - v1.2.2 瞬时错误重试（429/5xx/超时，最多一次，带退避）
+
+func testRetryableErrorClassification() {
+XCTAssertTrue(GeminiClient.isRetryable(.httpStatus(429, "rate")))
+XCTAssertTrue(GeminiClient.isRetryable(.httpStatus(500, "boom")))
+XCTAssertTrue(GeminiClient.isRetryable(.httpStatus(503, "unavailable")))
+XCTAssertTrue(GeminiClient.isRetryable(.transport("请求超时")))
+XCTAssertFalse(GeminiClient.isRetryable(.httpStatus(400, "bad request")))
+XCTAssertFalse(GeminiClient.isRetryable(.httpStatus(403, "forbidden")))
+XCTAssertFalse(GeminiClient.isRetryable(.missingAPIKey))
+XCTAssertFalse(GeminiClient.isRetryable(.emptyResponse))
+XCTAssertFalse(GeminiClient.isRetryable(.decodingFailed("x")))
+}
+
+func testPerformRequestRetriesTransientFailureExactlyOnce() async {
+final class Counter { var value = 0 }
+let counter = Counter()
+GeminiClient.retryBackoffSeconds = { 0 }
+GeminiClient.singleRequestExecutor = { _, _, _ in
+counter.value += 1
+throw GeminiError.httpStatus(429, "rate limited")
+}
+do {
+_ = try await GeminiClient.performRequest(model: "gemini-3.8-flash", body: ["contents": []], timeout: 1)
+XCTFail("持续 429 应最终抛错")
+} catch let error as GeminiError {
+guard case .httpStatus(let code, _) = error else {
+XCTFail("应抛 HTTP 错误，实际：\(error)")
+return
+}
+XCTAssertEqual(code, 429)
+} catch {
+XCTFail("不应抛其他错误：\(error)")
+}
+XCTAssertEqual(counter.value, 2, "瞬时错误只重试一次：首发 + 1 次重试")
+}
+
+func testPerformRequestSucceedsAfterOneTransientRetry() async throws {
+final class Counter { var value = 0 }
+let counter = Counter()
+GeminiClient.retryBackoffSeconds = { 0 }
+GeminiClient.singleRequestExecutor = { _, _, _ in
+counter.value += 1
+if counter.value == 1 {
+throw GeminiError.transport("请求超时")
+}
+return ["candidates": []]
+}
+let json = try await GeminiClient.performRequest(model: "gemini-3.8-flash", body: ["contents": []], timeout: 1)
+XCTAssertNotNil(json["candidates"])
+XCTAssertEqual(counter.value, 2)
+}
+
+func testPerformRequestDoesNotRetryClientErrors() async {
+final class Counter { var value = 0 }
+let counter = Counter()
+GeminiClient.retryBackoffSeconds = { 0 }
+GeminiClient.singleRequestExecutor = { _, _, _ in
+counter.value += 1
+throw GeminiError.httpStatus(403, "forbidden")
+}
+do {
+_ = try await GeminiClient.performRequest(model: "gemini-3.8-flash", body: ["contents": []], timeout: 1)
+XCTFail("403 应直接抛错")
+} catch let error as GeminiError {
+guard case .httpStatus(let code, _) = error else {
+XCTFail("应抛 HTTP 错误，实际：\(error)")
+return
+}
+XCTAssertEqual(code, 403)
+} catch {
+XCTFail("不应抛其他错误：\(error)")
+}
+XCTAssertEqual(counter.value, 1, "客户端错误不重试")
 }
 
 // MARK: - Helpers

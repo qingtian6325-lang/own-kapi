@@ -325,23 +325,29 @@ jobs:
           ls -la build/Payload/MimiMoneyApp.app/Metadata.appintents/
           grep -a -o "ScanScreenshotIntent" "${ACTIONS_DATA}" | head -n 1
 
-      - name: Package IPA
+      - name: Package IPA (versioned asset name)
         run: |
-          cd build && zip -qry MimiMoney-iOS.ipa Payload
+          # 资产文件名带版本号（取自 VERSION），下载到电脑后一眼分清版本。
+          APP_VERSION="$(cat VERSION 2>/dev/null || echo "1.0.1")"
+          IPA_NAME="MimiMoney-iOS-v${APP_VERSION}.ipa"
+          echo "IPA_NAME=${IPA_NAME}" >> "$GITHUB_ENV"
+          cd build && zip -qry "${IPA_NAME}" Payload
+          echo "Packaged IPA: build/${IPA_NAME}"
 
-      - name: Upload MimiMoney-iOS.ipa Artifact
+      - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: MimiMoney-iOS-IPA
-          path: mimi-money-ios/build/MimiMoney-iOS.ipa
+          path: mimi-money-ios/build/${{ env.IPA_NAME }}
 
-      - name: Publish MimiMoney-iOS.ipa to GitHub Releases
+      - name: Publish IPA to GitHub Releases
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           APP_VERSION="$(cat VERSION 2>/dev/null || echo "1.0.1")"
           export RELEASE_TAG="v${APP_VERSION}"
+          export IPA_FILE="MimiMoney-iOS-v${APP_VERSION}.ipa"
           echo "Publishing release for ${RELEASE_TAG}..."
 
           git config user.name "github-actions[bot]"
@@ -365,19 +371,21 @@ jobs:
             if (!content) {
               content = '## [' + tag + ']\n\n- 咪咪记账 iOS ' + tag + ' 自动化发布版本';
             }
-            content += '\n\n### 📦 资产下载\n- **MimiMoney-iOS.ipa**：App 安装包（建议使用 Sideloadly / AltStore 签名安装）\n- 快捷指令无需下载任何文件：安装 App 后在系统「快捷指令」中添加内置动作「识别账单」即可（App 内「自动记账」页有四种触发方式的图文教程）';
+            content += '\n\n### 📦 资产下载\n- **' + (process.env.IPA_FILE || 'MimiMoney-iOS.ipa') + '**：App 安装包（建议使用 Sideloadly / AltStore 签名安装）\n- 快捷指令无需下载任何文件：安装 App 后在系统「快捷指令」中添加内置动作「识别账单」即可（App 内「自动记账」页有四种触发方式的图文教程）';
             fs.writeFileSync('RELEASE_NOTES.md', content);
           "
 
           if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
-            gh release upload "${RELEASE_TAG}" build/MimiMoney-iOS.ipa --clobber
-            gh release edit "${RELEASE_TAG}" --title "咪咪记账 iOS ${RELEASE_TAG} (MimiMoney-iOS.ipa)" --notes-file RELEASE_NOTES.md
+            gh release upload "${RELEASE_TAG}" "build/${IPA_FILE}" --clobber
+            gh release edit "${RELEASE_TAG}" --title "咪咪记账 iOS ${RELEASE_TAG} (${IPA_FILE})" --notes-file RELEASE_NOTES.md
           else
-            gh release create "${RELEASE_TAG}" build/MimiMoney-iOS.ipa \
-              --title "咪咪记账 iOS ${RELEASE_TAG} (MimiMoney-iOS.ipa)" \
+            gh release create "${RELEASE_TAG}" "build/${IPA_FILE}" \
+              --title "咪咪记账 iOS ${RELEASE_TAG} (${IPA_FILE})" \
               --notes-file RELEASE_NOTES.md
           fi
 
           if gh release view v1.0.0 >/dev/null 2>&1; then
+            # 兼容旧行为：v1.0.0 仍以固定名持有一份最新构建
+            cp "build/${IPA_FILE}" build/MimiMoney-iOS.ipa
             gh release upload v1.0.0 build/MimiMoney-iOS.ipa --clobber
           fi

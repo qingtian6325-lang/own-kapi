@@ -252,15 +252,22 @@ public static let chatTimeoutSeconds: TimeInterval = 60
 public static let testConnectionProbeTimeoutSeconds: TimeInterval = 30
 
 /// 思考抑制配置：识别与查账都不需要长思考，默认思考会显著拖慢首字延迟。
-/// 字段按模型世代区分（官方文档 ai.google.dev/gemini-api/docs/thinking）：
-/// Gemini 2.5 系用 thinkingBudget（0 = 关闭）；Gemini 3 系改用 thinkingLevel，
-/// 给 3 系传 thinkingBudget 会直接 400。若接口仍拒绝该字段，performRequest
-/// 会在 400 时自动去掉 thinkingConfig 重发一次（见 bodyByRemovingThinkingConfig）。
+/// 字段与取值按 Google 官方文档定案（ai.google.dev/gemini-api/docs/thinking）：
+/// - Gemini 2.5 系用 thinkingBudget，Flash/Lite 可设 0 完全关闭思考；
+/// - Gemini 3 系改用 thinkingLevel（给 3 系传 thinkingBudget 会直接 400），
+///   其中 3.x Lite 系列支持 minimal，其余 3.x（含默认的 gemini-3.8-flash）
+///   只支持 low/medium/high、没有 minimal、也不能完全关思考，最低给 low。
+/// 若接口仍拒绝该字段，performRequest 会在 400 时自动去掉 thinkingConfig
+/// 重发一次（见 bodyByRemovingThinkingConfig）。
 public static func thinkingSuppressionConfig(forModel model: String) -> [String: Any] {
-if model.contains("2.5") {
+let name = model.lowercased()
+if name.contains("2.5") {
 return ["thinkingBudget": 0]
 }
+if name.contains("lite") {
 return ["thinkingLevel": "minimal"]
+}
+return ["thinkingLevel": "low"]
 }
 
 /// 返回去掉 generationConfig.thinkingConfig 的请求体副本；原本没有该字段时返回 nil。
@@ -280,13 +287,40 @@ let encoded = model.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed
 return URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(encoded):\(action)")
 }
 
-private static func performRequest(
+/// 单次网络执行体（默认走真实 URLSession）；单测可替换以离线统计重试次数。
+static var singleRequestExecutor: @Sendable (String, [String: Any], TimeInterval) async throws -> [String: Any] = { model, body, timeout in
+try await performNetworkRequest(model: model, body: body, timeout: timeout)
+}
+
+/// 瞬时错误重试的退避时长（秒）。官方 troubleshooting 建议对 429/5xx/超时
+/// 做带 jitter 的指数退避重试；这里每条请求最多只重试一次，取约 1 秒短
+/// 退避＋随机抖动，避免把识别（30s）/问账（60s）的总等待明显拉长。
+/// 单测可覆写为 { 0 } 即时执行。
+static var retryBackoffSeconds: @Sendable () -> TimeInterval = {
+1.0 + Double.random(in: 0...0.5)
+}
+
+/// 是否值得重试一次：429（限流）、5xx（服务端错误）、传输层错误
+/// （含 URLSession 超时，超时在执行体里归入 .transport）。
+/// 400/403 等客户端错误、缺 key、空响应、解析失败重试也没有用，不重试。
+static func isRetryable(_ error: GeminiError) -> Bool {
+switch error {
+case .httpStatus(let code, _):
+return code == 429 || (500...599).contains(code)
+case .transport:
+return true
+case .missingAPIKey, .emptyResponse, .decodingFailed:
+return false
+}
+}
+
+static func performRequest(
 model: String,
 body: [String: Any],
 timeout: TimeInterval
 ) async throws -> [String: Any] {
 do {
-return try await performSingleRequest(model: model, body: body, timeout: timeout)
+return try await performWithTransientRetry(model: model, body: body, timeout: timeout)
 } catch let error as GeminiError {
 // thinkingConfig 若被该模型/接口拒绝（HTTP 400），去掉后重发一次；
 // key 无效同为 400，但文案可区分，不做无谓重发。
@@ -295,11 +329,31 @@ guard case .httpStatus(let code, let message) = error, code == 400,
 let stripped = bodyByRemovingThinkingConfig(body) else {
 throw error
 }
-return try await performSingleRequest(model: model, body: stripped, timeout: timeout)
+return try await performWithTransientRetry(model: model, body: stripped, timeout: timeout)
 }
 }
 
-private static func performSingleRequest(
+/// 首发一次；命中 429/5xx/超时等瞬时错误时，短退避后最多再发一次。
+private static func performWithTransientRetry(
+model: String,
+body: [String: Any],
+timeout: TimeInterval
+) async throws -> [String: Any] {
+do {
+return try await singleRequestExecutor(model, body, timeout)
+} catch let error as GeminiError {
+guard isRetryable(error) else {
+throw error
+}
+let backoff = retryBackoffSeconds()
+if backoff > 0 {
+try? await Task.sleep(nanoseconds: UInt64(backoff * 1_000_000_000))
+}
+return try await singleRequestExecutor(model, body, timeout)
+}
+}
+
+private static func performNetworkRequest(
 model: String,
 body: [String: Any],
 timeout: TimeInterval

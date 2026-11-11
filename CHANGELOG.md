@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **识别与问账压低思考**：两条路径的 generationConfig 都带思考抑制（按模型世代选字段：Gemini 3 系用 thinkingLevel、2.5 系用 thinkingBudget），账单识别与查账不需要长思考，优先速度与稳定；若接口拒绝该字段（HTTP 400），会自动去掉该字段重发一次，不因思考配置失败而误报。
 - **测试连接改成真验证**：在原「查模型详情」之后，追加一次最小 generateContent（让模型只回复 OK），生成成功才显示「连接成功（已实际生成验证）」；状态文案能区分「模型存在但实际生成失败」与真成功——设置页显示成功就等于真实路径可用。
 - **聊天等待态**：发送问账后、回复到达前，聊天里显示「正在查账…」＋转圈的等待气泡，回复或报错后自动替换消失，不再对着空白干等。
+- **思考档位按 Google 官方文档定案**：核对官方 thinking 文档后修正——默认模型 `gemini-3.8-flash` 用 `thinkingLevel: low`（该型号只支持 low/medium/high，没有 minimal、也不能完全关思考，先前给的 minimal 是错的）；3.x Lite 系列用 `minimal`；2.5 系继续用 `thinkingBudget: 0` 关闭思考。
+- **瞬时错误自动重试一次**：问账与识别遇到 HTTP 429、5xx 或请求超时，会带随机抖动的短退避（约 1 秒）自动重试一次；400/403、缺 Key 等客户端错误不重试。
+- **IPA 资产文件名带版本号**：从本版起 Release 资产名为 `MimiMoney-iOS-v1.2.2.ipa` 这种格式（版本号取自 VERSION 文件、CI 发版自动生成，往后每版都带），下载到电脑后一眼分清是哪一版，不再装错。
 - **其余不动**：数据、呈现层、Keychain、分类/备注逻辑、金额合理性拦截、失败不落账原则均未改变；「识别账单」Version 参数默认更新为 1.2.2。
 
 ## [v1.2.1] - 2026-11-11

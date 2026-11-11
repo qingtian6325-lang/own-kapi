@@ -403,7 +403,7 @@ function verifyTask7() {
   }
   const ciContent = fs.readFileSync(ciFile, 'utf8');
   assertContains(ciContent, 'swift test', '.github/workflows/build-mimi-ios.yml');
-  assertContains(ciContent, 'MimiMoney-iOS.ipa', '.github/workflows/build-mimi-ios.yml');
+  assertContains(ciContent, 'MimiMoney-iOS-v', '.github/workflows/build-mimi-ios.yml');
   assertContains(ciContent, 'NSCameraUsageDescription', '.github/workflows/build-mimi-ios.yml');
 
   // Cross-layer API contract verification (Models/Store/Services <-> Views/Intents)

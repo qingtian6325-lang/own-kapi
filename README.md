@@ -13,7 +13,7 @@
 ## 如何下载并安装 .ipa 到 iPhone
 1. 打开本仓库顶部的 **[Actions](https://github.com/qingtian6325-lang/own-mimi/actions)** 标签页。
 2. 点进最新一条成功的 **Build Mimi Money iOS (.ipa)** 任务，在页面底部 **Artifacts** 区域下载 MimiMoney-iOS-IPA。
-3. 解压得到 MimiMoney-iOS.ipa，使用 **Sideloadly** 或 **AltStore / SideStore** 输入免费 Apple ID 签名安装到 iPhone。
+3. 解压得到带版本号的安装包（如 `MimiMoney-iOS-v1.2.2.ipa`，文件名里的版本号与 Release 版本一致），使用 **Sideloadly** 或 **AltStore / SideStore** 输入免费 Apple ID 签名安装到 iPhone。
 
 ## 截屏自动记账设置（快捷指令 + AppIntents）
 
