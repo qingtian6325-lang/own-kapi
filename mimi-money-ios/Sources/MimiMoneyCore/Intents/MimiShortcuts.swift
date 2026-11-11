@@ -175,7 +175,7 @@ public struct ScreenshotResultSnippetView: View {
             // White recognized bill card inside blue-white gradient popup (IMG_2294 & user feedback)
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 10) {
-                    MimiStickerIconView(name: transaction.iconName, size: 28)
+                    MimiStickerIconView(iconName: transaction.iconName, size: 28)
 
                     Text(transaction.categoryPath)
                         .font(.system(size: 15, weight: .bold))

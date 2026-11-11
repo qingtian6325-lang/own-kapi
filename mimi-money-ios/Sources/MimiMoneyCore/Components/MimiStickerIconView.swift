@@ -24,6 +24,10 @@ public struct MimiStickerIconView: View {
         self.isSelected = isSelected
     }
 
+    public init(name: String, size: CGFloat = 38) {
+        self.init(iconName: name, size: size)
+    }
+
     private var firstCharText: String {
         let trimmed = categoryName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let first = trimmed.first else {
