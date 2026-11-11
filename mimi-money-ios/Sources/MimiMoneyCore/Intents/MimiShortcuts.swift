@@ -145,20 +145,23 @@ public struct ScreenshotResultSnippetView: View {
     public let transaction: TransactionItem
     public var onModifyTapped: (() -> Void)?
     public var onConfirmTapped: (() -> Void)?
+    public var onCloseTapped: (() -> Void)?
 
     public init(
         transaction: TransactionItem,
         onModifyTapped: (() -> Void)? = nil,
-        onConfirmTapped: (() -> Void)? = nil
+        onConfirmTapped: (() -> Void)? = nil,
+        onCloseTapped: (() -> Void)? = nil
     ) {
         self.transaction = transaction
         self.onModifyTapped = onModifyTapped
         self.onConfirmTapped = onConfirmTapped
+        self.onCloseTapped = onCloseTapped
     }
 
     private var formattedTimestamp: String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy/MM/dd HH:mm"
+        formatter.dateFormat = "yyyy-MM-dd HH:mm"
         return formatter.string(from: transaction.date)
     }
 
@@ -168,17 +171,11 @@ public struct ScreenshotResultSnippetView: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            // White recognized bill card inside blue-white gradient popup (IMG_2294)
+        VStack(alignment: .leading, spacing: 12) {
+            // White recognized bill card inside blue-white gradient popup (IMG_2294 & user feedback)
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 10) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Color(hex: 0xFFF3E0))
-                            .frame(width: 34, height: 34)
-                        Text("🍮")
-                            .font(.system(size: 18))
-                    }
+                    MimiStickerIconView(name: transaction.iconName, size: 28)
 
                     Text(transaction.categoryPath)
                         .font(.system(size: 15, weight: .bold))
@@ -187,10 +184,19 @@ public struct ScreenshotResultSnippetView: View {
                     Spacer()
 
                     Text(signedAmountText)
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .font(.system(size: 17, weight: .bold, design: .rounded))
                         .foregroundColor(
                             transaction.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange
                         )
+
+                    if let onClose = onCloseTapped {
+                        Button(action: onClose) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(MimiTheme.textMuted.opacity(0.7))
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
 
                 HStack(spacing: 6) {
@@ -233,13 +239,13 @@ public struct ScreenshotResultSnippetView: View {
             HStack(spacing: 6) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 13))
-                    .foregroundColor(MimiTheme.balanceGreen)
+                    .foregroundColor(MimiTheme.expenseBlue)
                 Text("已识别记录以上信息，打开「咪咪记账」查看更多")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(MimiTheme.textSecondary)
             }
 
-            // Two-Button Action Row: 修改 (View) & 确认 (Got it)
+            // Two-Button Action Row: View (修改) & Got it (确认) - matches user screenshot
             #if canImport(AppIntents)
             if #available(iOS 16.0, *) {
                 HStack(spacing: 12) {
@@ -277,13 +283,13 @@ public struct ScreenshotResultSnippetView: View {
         .padding(16)
         .background(
             LinearGradient(
-                colors: [Color(hex: 0xE8F0FE), Color.white],
+                colors: [Color(hex: 0xDEF0FE), Color(hex: 0xF6F9FE)],
                 startPoint: .top,
                 endPoint: .bottom
             )
         )
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .shadow(color: Color.black.opacity(0.10), radius: 16, x: 0, y: 6)
+        .shadow(color: Color.black.opacity(0.12), radius: 18, x: 0, y: 6)
     }
 
     private var fallbackTwoButtons: some View {

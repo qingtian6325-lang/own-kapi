@@ -1,6 +1,7 @@
 import SwiftUI
 
 public enum DrawerDestination: String, Identifiable, Sendable {
+    case calendar = "全部记录"
     case stats = "图表统计"
     case assets = "资产管理"
     case ledgers = "账本管理"
@@ -74,36 +75,96 @@ public struct SideDrawerMenuView: View {
                     }
                     .padding(.top, 12)
 
-                    // November 2026 Check-in Heatmap & Stats Card (IMG_2249)
-                    VStack(alignment: .leading, spacing: 14) {
-                        HStack {
-                            Text("November 2026")
-                                .font(.system(size: 13, weight: .bold, design: .rounded))
-                                .foregroundColor(MimiTheme.textPrimary)
-                            Spacer()
-                            // Mini 5x6 dot check-in matrix
-                            HStack(spacing: 3) {
-                                ForEach(0..<10, id: \.self) { idx in
-                                    Circle()
-                                        .fill(idx >= 7 ? MimiTheme.expenseBlue : Color(hex: 0xDCE4F7))
-                                        .frame(width: 6, height: 6)
+                    // November 2026 Heatmap & Stats Card (IMG_2249 + User Requested Calendar Entry)
+                    Button {
+                        onSelectDestination(.calendar)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("November 2026")
+                                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                                    .foregroundColor(MimiTheme.textPrimary)
+
+                                Spacer()
+
+                                HStack(spacing: 2) {
+                                    Text("全部记录")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundColor(MimiTheme.expenseBlue)
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundColor(MimiTheme.expenseBlue)
                                 }
                             }
-                        }
 
-                        HStack(spacing: 0) {
-                            statColumn(value: "\(store.recordedDaysCount)", label: "记录天数")
-                            Divider().frame(height: 28)
-                            statColumn(value: "\(store.totalRecordsCount)", label: "总记录")
-                            Divider().frame(height: 28)
-                            statColumn(value: "\(store.streakDaysCount)", label: "连续天数")
+                            // Mini Month Calendar Heatmap (1-30 days, deep/light blue & orange)
+                            VStack(spacing: 4) {
+                                HStack(spacing: 0) {
+                                    ForEach(["一", "二", "三", "四", "五", "六", "日"], id: \.self) { w in
+                                        Text(w)
+                                            .font(.system(size: 9, weight: .medium))
+                                            .foregroundColor(MimiTheme.textMuted)
+                                            .frame(maxWidth: .infinity)
+                                    }
+                                }
+
+                                let cells = DynamicBudgetEngine.buildMonthDayCells(year: 2026, month: 11, transactions: store.transactions)
+                                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 3), count: 7), spacing: 3) {
+                                    // 2026年11月1日是周日，周一开始排前面空6格
+                                    ForEach(0..<6, id: \.self) { _ in
+                                        Color.clear
+                                            .frame(height: 18)
+                                    }
+                                    ForEach(cells) { cell in
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 3, style: .continuous)
+                                                .fill(heatmapMiniColor(for: cell))
+                                                .frame(height: 18)
+
+                                            Text("\(cell.day)")
+                                                .font(.system(size: 9, weight: cell.isToday ? .bold : .regular, design: .rounded))
+                                                .foregroundColor(cell.isToday ? MimiTheme.expenseBlue : (cell.expenseAmount > 0 || cell.incomeAmount > 0 ? MimiTheme.textPrimary : MimiTheme.textMuted))
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
+
+                            // Heatmap Legend Indicator
+                            HStack(spacing: 4) {
+                                Text("收入多")
+                                    .font(.system(size: 9))
+                                    .foregroundColor(MimiTheme.textMuted)
+                                RoundedRectangle(cornerRadius: 1.5).fill(Color(hex: 0xFFD8B5)).frame(width: 8, height: 6)
+                                RoundedRectangle(cornerRadius: 1.5).fill(Color(hex: 0xFFEBD9)).frame(width: 8, height: 6)
+                                RoundedRectangle(cornerRadius: 1.5).fill(Color(hex: 0xF0F2F6)).frame(width: 8, height: 6)
+                                RoundedRectangle(cornerRadius: 1.5).fill(Color(hex: 0xDDE9FD)).frame(width: 8, height: 6)
+                                RoundedRectangle(cornerRadius: 1.5).fill(Color(hex: 0x90B8F8)).frame(width: 8, height: 6)
+                                Text("支出多")
+                                    .font(.system(size: 9))
+                                    .foregroundColor(MimiTheme.textMuted)
+
+                                Spacer()
+                            }
+
+                            Divider().opacity(0.6)
+
+                            HStack(spacing: 0) {
+                                statColumn(value: "\(store.recordedDaysCount)", label: "记录天数")
+                                Divider().frame(height: 24)
+                                statColumn(value: "\(store.totalRecordsCount)", label: "总记录")
+                                Divider().frame(height: 24)
+                                statColumn(value: "\(store.streakDaysCount)", label: "连续天数")
+                            }
                         }
+                        .padding(14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .fill(Color.white)
+                                .shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 2)
+                        )
                     }
-                    .padding(16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(Color.white)
-                    )
+                    .buttonStyle(.plain)
 
                     // 更多功能 (7-item grid matching IMG_2249)
                     VStack(alignment: .leading, spacing: 12) {
@@ -178,6 +239,19 @@ public struct SideDrawerMenuView: View {
                 .foregroundColor(MimiTheme.textSecondary)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private func heatmapMiniColor(for cell: CalendarDaySummary) -> Color {
+        if cell.incomeAmount > 0 && cell.expenseAmount == 0 {
+            if cell.incomeAmount > 500 { return Color(hex: 0xFFD8B5) }
+            return Color(hex: 0xFFEBD9)
+        }
+        if cell.expenseAmount > 0 {
+            if cell.expenseAmount > 200 { return Color(hex: 0x90B8F8) }
+            if cell.expenseAmount > 30 { return Color(hex: 0xC3D7FD) }
+            return Color(hex: 0xDDE9FD)
+        }
+        return Color(hex: 0xF5F7FA)
     }
 
     private func drawerGridButton(icon: String, title: String, dest: DrawerDestination) -> some View {

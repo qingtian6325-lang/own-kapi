@@ -85,12 +85,28 @@ public final class ReceiptOCRService: Sendable {
 
         let amount = extractPrimaryAmount(from: sanitizedForAmount) ?? extractPrimaryAmount(from: rawText) ?? 0.0
         let (accountId, accountName) = detectAccount(from: rawText)
-        let (primaryId, subId, categoryDisplay) = detectCategory(from: rawText)
         let merchantOrRecipient = detectRecipientOrMerchant(from: lines, rawText: rawText)
         let parsedDate = detectTimestamp(from: rawText) ?? now
+        let isIncome = detectIsIncome(lines: lines, rawText: rawText)
+
+        let primaryId: String
+        let subId: String?
+        let categoryDisplay: String
+        if isIncome {
+            let lowerAll = rawText.lowercased()
+            if lowerAll.contains("refund") || lowerAll.contains("退款") || lowerAll.contains("cashback") || lowerAll.contains("返现") {
+                (primaryId, subId, categoryDisplay) = ("inc_refund", nil, "退款返还")
+            } else {
+                (primaryId, subId, categoryDisplay) = ("inc_custom_transfer", nil, "别人转账")
+            }
+        } else {
+            // Classify by the merchant / purpose first (precise), then fall back to the whole
+            // screen text (which contains lots of app chrome noise).
+            (primaryId, subId, categoryDisplay) = detectCategory(focused: merchantOrRecipient, fullText: rawText)
+        }
 
         return ParsedDraftBill(
-            type: .expense,
+            type: isIncome ? .income : .expense,
             amount: amount,
             currency: .myr,
             primaryCategoryId: primaryId,
@@ -103,62 +119,127 @@ public final class ReceiptOCRService: Sendable {
         )
     }
 
-    public static func recognizeAndParseImageData(_ data: Data, now: Date = Date()) async -> ParsedDraftBill {
-        #if canImport(Vision) && canImport(UIKit)
-        if let uiImage = UIImage(data: data), let cgImage = uiImage.cgImage {
-            let recognizedText = await withCheckedContinuation { (continuation: CheckedContinuation<String, Never>) in
-                let request = VNRecognizeTextRequest { req, _ in
-                    let observations = (req.results as? [VNRecognizedTextObservation]) ?? []
-                    let text = observations
-                        .compactMap { $0.topCandidates(1).first?.string }
-                        .joined(separator: "\n")
-                    continuation.resume(returning: text)
-                }
-                request.recognitionLevel = .accurate
-                request.recognitionLanguages = ["zh-Hans", "zh-Hant", "en-US", "ms-MY"]
-                request.usesLanguageCorrection = true
-                let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-                try? handler.perform([request])
-            }
-            if !recognizedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                var draft = parseReceiptText(recognizedText, now: now)
-                draft.rawImageData = data
-                return draft
-            }
+    /// Income screens: amount shown with "+RM", or "Received from"/"Receive Money"/"收款" labels.
+    private static func detectIsIncome(lines: [String], rawText: String) -> Bool {
+        for line in lines {
+            let compact = line.replacingOccurrences(of: " ", with: "").lowercased()
+            if compact.hasPrefix("+rm") || compact.hasPrefix("+myr") { return true }
+            if compact.hasPrefix("-rm") || compact.hasPrefix("-myr") { return false }
         }
-        #endif
-        // Fallback sample matching IMG_2294 if image data is synthetic in unit tests
+        let lower = rawText.lowercased()
+        return lower.contains("received from") || lower.contains("receive from") || lower.contains("receive money") || lower.contains("money received") || lower.contains("已收款") || lower.contains("收到转账")
+    }
+
+    /// Returns a dummy draft only on non-iOS hosts (unit tests); on device an unreadable
+    /// image yields an empty draft (amount 0) instead of a fake bill.
+    private static func unreadableImageDraft(_ data: Data, now: Date) -> ParsedDraftBill {
+        #if canImport(UIKit)
+        return ParsedDraftBill(
+            type: .expense,
+            amount: 0,
+            primaryCategoryId: "exp_other",
+            categoryDisplayName: "其他支出",
+            accountId: nil,
+            accountDisplayName: "TNGewallet",
+            merchantOrNote: "",
+            occurredAt: now,
+            rawImageData: data
+        )
+        #else
         var fallback = parseReceiptText("-RM5.90\nNear Me Voucher Eggette Lab\nPayment - TNGD\n08/11/2026 16:56:34", now: now)
         fallback.rawImageData = data
         return fallback
+        #endif
+    }
+
+    public static func recognizeAndParseImageData(_ data: Data, now: Date = Date()) async -> ParsedDraftBill {
+        let text = await Task.detached(priority: .userInitiated) {
+            recognizeText(in: data)
+        }.value
+        if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            var draft = parseReceiptText(text, now: now)
+            draft.rawImageData = data
+            return draft
+        }
+        return unreadableImageDraft(data, now: now)
     }
 
     public static func recognizeAndParseImageSync(_ data: Data, now: Date = Date()) -> ParsedDraftBill {
-        #if canImport(Vision) && canImport(UIKit)
-        if let uiImage = UIImage(data: data), let cgImage = uiImage.cgImage {
-            var recognizedText = ""
-            let request = VNRecognizeTextRequest { req, _ in
-                let observations = (req.results as? [VNRecognizedTextObservation]) ?? []
-                recognizedText = observations
-                    .compactMap { $0.topCandidates(1).first?.string }
-                    .joined(separator: "\n")
-            }
-            request.recognitionLevel = .accurate
-            request.recognitionLanguages = ["zh-Hans", "zh-Hant", "en-US", "ms-MY"]
-            request.usesLanguageCorrection = true
-            let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-            try? handler.perform([request])
-            if !recognizedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                var draft = parseReceiptText(recognizedText, now: now)
-                draft.rawImageData = data
-                return draft
-            }
+        let text = recognizeText(in: data)
+        if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            var draft = parseReceiptText(text, now: now)
+            draft.rawImageData = data
+            return draft
         }
-        #endif
-        var fallback = parseReceiptText("-RM5.90\nNear Me Voucher Eggette Lab\nPayment - TNGD\n08/11/2026 16:56:34", now: now)
-        fallback.rawImageData = data
-        return fallback
+        return unreadableImageDraft(data, now: now)
     }
+
+    /// Runs Apple Vision OCR synchronously and rebuilds visual rows, so that two-column
+    /// receipts ("Date/Time      10/11/2026 12:13:53") become a single "label value" line.
+    public static func recognizeText(in data: Data) -> String {
+        #if canImport(Vision) && canImport(UIKit)
+        guard let uiImage = UIImage(data: data), let cgImage = uiImage.cgImage else { return "" }
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        // NOTE: only use languages Vision supports; an unsupported code (e.g. "ms-MY")
+        // makes the whole request fail and returns no text at all.
+        request.recognitionLanguages = ["en-US", "zh-Hans", "zh-Hant"]
+        request.usesLanguageCorrection = true
+        let handler = VNImageRequestHandler(cgImage: cgImage, orientation: cgOrientation(uiImage.imageOrientation), options: [:])
+        do {
+            try handler.perform([request])
+        } catch {
+            // Retry with English only in case the language set is rejected on this OS.
+            request.recognitionLanguages = ["en-US"]
+            try? handler.perform([request])
+        }
+        let observations = request.results ?? []
+        return buildRows(from: observations.compactMap { obs -> (CGRect, String)? in
+            guard let s = obs.topCandidates(1).first?.string else { return nil }
+            return (obs.boundingBox, s)
+        })
+        #else
+        return ""
+        #endif
+    }
+
+    /// Groups OCR fragments into visual rows (top→bottom, left→right).
+    static func buildRows(from items: [(CGRect, String)]) -> String {
+        guard !items.isEmpty else { return "" }
+        // Vision uses normalized coordinates with origin at bottom-left.
+        let sorted = items.sorted { $0.0.midY > $1.0.midY }
+        var rows: [[(CGRect, String)]] = []
+        for item in sorted {
+            if var last = rows.last, let ref = last.first {
+                let tolerance = max(ref.0.height, item.0.height) * 0.6
+                if abs(ref.0.midY - item.0.midY) <= tolerance {
+                    last.append(item)
+                    rows[rows.count - 1] = last
+                    continue
+                }
+            }
+            rows.append([item])
+        }
+        return rows
+            .map { row in row.sorted { $0.0.minX < $1.0.minX }.map { $0.1 }.joined(separator: "  ") }
+            .joined(separator: "\n")
+    }
+
+    #if canImport(UIKit)
+    private static func cgOrientation(_ o: UIImage.Orientation) -> CGImagePropertyOrientation {
+        switch o {
+        case .up: return .up
+        case .down: return .down
+        case .left: return .left
+        case .right: return .right
+        case .upMirrored: return .upMirrored
+        case .downMirrored: return .downMirrored
+        case .leftMirrored: return .leftMirrored
+        case .rightMirrored: return .rightMirrored
+        @unknown default: return .up
+        }
+    }
+    #endif
 
     private static func extractPrimaryAmount(from text: String) -> Double? {
         // 1. Prefer explicit currency prefix: RM5.90, -RM38.78, MYR 11.60, ¥150.00
@@ -460,18 +541,52 @@ public final class ReceiptOCRService: Sendable {
 
     private static func cleanCandidate(_ str: String) -> String {
         var res = str.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: ":-—_")))
-        if res.lowercased().hasPrefix("to ") {
+        let lower = res.lowercased()
+        if lower.hasPrefix("payment - ") {
+            res = String(res.dropFirst(10)).trimmingCharacters(in: .whitespacesAndNewlines)
+        } else if lower.hasPrefix("payment -") {
+            res = String(res.dropFirst(9)).trimmingCharacters(in: .whitespacesAndNewlines)
+        } else if lower.hasPrefix("payment : ") {
+            res = String(res.dropFirst(10)).trimmingCharacters(in: .whitespacesAndNewlines)
+        } else if lower.hasPrefix("payment ") {
+            res = String(res.dropFirst(8)).trimmingCharacters(in: .whitespacesAndNewlines)
+        } else if lower.hasPrefix("transfer to ") {
+            res = String(res.dropFirst(12)).trimmingCharacters(in: .whitespacesAndNewlines)
+        } else if lower.hasPrefix("to ") {
             res = String(res.dropFirst(3)).trimmingCharacters(in: .whitespacesAndNewlines)
+        } else if lower.hasPrefix("paid to ") {
+            res = String(res.dropFirst(8)).trimmingCharacters(in: .whitespacesAndNewlines)
         }
-        return res
+        return res.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: ":-—_ ")))
     }
 
     private static func isValidCounterparty(_ str: String) -> Bool {
         guard str.count >= 2 && str.count <= 50 else { return false }
         let lower = str.lowercased()
         if lower.contains("transaction") || lower.contains("successful") || lower.contains("reference") { return false }
-        if lower.contains("duitnow transfer") || lower.contains("payment details") { return false }
+        if lower.contains("duitnow transfer") || lower.contains("payment details") || lower.contains("ewallet balance") { return false }
+        if str.range(of: #"^[0-9A-Za-z]{12,}$"#, options: .regularExpression) != nil { return false }
         return true
+    }
+
+    private static func isValidPurpose(_ str: String) -> Bool {
+        guard str.count >= 2 && str.count <= 60 else { return false }
+        let lower = str.lowercased()
+        if lower.contains("successful") || lower.contains("transaction no") || lower.contains("wallet ref") || lower.contains("reference id") { return false }
+        if lower == "payment" || lower == "transfer" || lower == "payment details" || lower == "ewallet balance" { return false }
+        if str.range(of: #"^[0-9A-Za-z]{12,}$"#, options: .regularExpression) != nil { return false }
+        return true
+    }
+
+    private static func detectCategory(focused: String, fullText: String) -> (String, String?, String) {
+        let trimmedFocused = focused.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedFocused.isEmpty && trimmedFocused != "转账付款" {
+            let focusedResult = detectCategory(from: trimmedFocused)
+            if focusedResult.0 != "exp_other" {
+                return focusedResult
+            }
+        }
+        return detectCategory(from: fullText)
     }
 
     /// Flexible timestamp parser for Malaysian bank and eWallet receipts.

@@ -742,6 +742,23 @@ public final class MimiStore: ObservableObject {
         auditLogs.insert(log, at: 0)
     }
 
+    /// Reloads persisted state from disk. Used when the Shortcuts intent (running in a
+    /// background process) has written new bills before the app UI is brought to front.
+    public func reloadFromDisk() {
+        guard !inMemory,
+              let data = try? Data(contentsOf: storageURL),
+              let decoded = try? JSONDecoder().decode(PersistedAppState.self, from: data) else { return }
+        ledgers = decoded.ledgers
+        currentLedgerId = decoded.currentLedgerId
+        accounts = decoded.accounts
+        transactions = decoded.transactions
+        auditLogs = decoded.auditLogs
+        expenseCategories = decoded.expenseCategories
+        incomeCategories = decoded.incomeCategories
+        tags = decoded.tags
+        recalculateAllAccountBalances()
+    }
+
     public func saveState() {
         guard !inMemory else { return }
         let state = PersistedAppState(

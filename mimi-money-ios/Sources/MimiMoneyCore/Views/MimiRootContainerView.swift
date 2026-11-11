@@ -4,8 +4,9 @@ public struct MimiRootContainerView: View {
     @ObservedObject public var store: MimiStore
     @StateObject private var aiEngine = MimiAIEngine()
 
-    @State private var currentMainPage: String = "记录" // "记录" or "Mimi"
+    @State private var currentMainPage: String = "记录"
     @State private var isDrawerOpen: Bool = false
+    @State private var showStatsView: Bool = false
     @State private var showAllRecordsCalendar: Bool = false
     @State private var showRecordSheet: Bool = false
     @State private var openRecordSheetInAIMode: Bool = false
@@ -22,67 +23,90 @@ public struct MimiRootContainerView: View {
 
     public var body: some View {
         ZStack(alignment: .top) {
-            if currentMainPage == "Mimi" {
-                MimiStatsView(
-                    store: store,
-                    onOpenDrawer: {
-                        withAnimation(.easeOut(duration: 0.22)) {
-                            isDrawerOpen = true
-                        }
-                    },
-                    onSwitchToHome: {
-                        currentMainPage = "记录"
-                    },
-                    onOpenAssets: {
-                        showAssetsManager = true
+            HomeRecordView(
+                store: store,
+                onOpenDrawer: {
+                    withAnimation(.easeOut(duration: 0.22)) {
+                        isDrawerOpen = true
                     }
-                )
-            } else {
-                HomeRecordView(
-                    store: store,
-                    onOpenDrawer: {
-                        withAnimation(.easeOut(duration: 0.22)) {
-                            isDrawerOpen = true
-                        }
-                    },
-                    onSwitchToStats: {
-                        currentMainPage = "Mimi"
-                    },
-                    onOpenSearchOrCalendar: {
-                        showAllRecordsCalendar = true
-                    },
-                    onOpenRecordSheet: { aiMode in
-                        openRecordSheetInAIMode = aiMode
-                        showRecordSheet = true
-                    },
-                    onSelectTransaction: { tx in
-                        activeBillForEdit = tx
-                    },
-                    onOpenBudgetManager: {
-                        showBudgetManager = true
-                    },
-                    onOpenAssetsManager: {
-                        showAssetsManager = true
-                    }
-                )
-            }
+                },
+                onSwitchToStats: {
+                    showStatsView = true
+                },
+                onOpenSearchOrCalendar: {
+                    showAllRecordsCalendar = true
+                },
+                onOpenRecordSheet: { aiMode in
+                    openRecordSheetInAIMode = aiMode
+                    showRecordSheet = true
+                },
+                onSelectTransaction: { tx in
+                    activeBillForEdit = tx
+                },
+                onOpenBudgetManager: {
+                    showBudgetManager = true
+                },
+                onOpenAssetsManager: {
+                    showAssetsManager = true
+                }
+            )
 
             // Top floating Shortcut Snippet Overlay when triggered via URL / Quick-Scan
             if let snippetBill = store.pendingShortcutSnippetBill {
-                ScreenshotResultSnippetView(
-                    transaction: snippetBill,
-                    onModifyTapped: {
-                        store.pendingShortcutSnippetBill = nil
-                        activeBillForEdit = snippetBill
-                    },
-                    onConfirmTapped: {
-                        store.pendingShortcutSnippetBill = nil
-                    }
-                )
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-                .transition(.move(edge: .top).combined(with: .opacity))
+                ZStack(alignment: .top) {
+                    // Tap anywhere outside to dismiss
+                    Color.black.opacity(0.18)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                store.pendingShortcutSnippetBill = nil
+                            }
+                        }
+
+                    ScreenshotResultSnippetView(
+                        transaction: snippetBill,
+                        onModifyTapped: {
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                store.pendingShortcutSnippetBill = nil
+                            }
+                            activeBillForEdit = snippetBill
+                        },
+                        onConfirmTapped: {
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                store.pendingShortcutSnippetBill = nil
+                            }
+                        },
+                        onCloseTapped: {
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                store.pendingShortcutSnippetBill = nil
+                            }
+                        }
+                    )
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .gesture(
+                        DragGesture(minimumDistance: 20)
+                            .onEnded { value in
+                                if value.translation.height < -15 {
+                                    withAnimation(.easeOut(duration: 0.2)) {
+                                        store.pendingShortcutSnippetBill = nil
+                                    }
+                                }
+                            }
+                    )
+                }
+                .transition(.opacity)
                 .zIndex(20)
+                .onAppear {
+                    // Auto-dismiss after 5 seconds so it never blocks the user screen indefinitely
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                        if store.pendingShortcutSnippetBill?.id == snippetBill.id {
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                store.pendingShortcutSnippetBill = nil
+                            }
+                        }
+                    }
+                }
             }
 
             if isDrawerOpen {
@@ -129,6 +153,26 @@ public struct MimiRootContainerView: View {
                 onDismiss: {
                     activeBillForEdit = nil
                     store.pendingEditTransactionId = nil
+                }
+            )
+        }
+        .sheet(isPresented: $showStatsView) {
+            MimiStatsView(
+                store: store,
+                onOpenDrawer: {
+                    showStatsView = false
+                    withAnimation(.easeOut(duration: 0.22)) {
+                        isDrawerOpen = true
+                    }
+                },
+                onSwitchToHome: {
+                    showStatsView = false
+                },
+                onOpenAssets: {
+                    showStatsView = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        showAssetsManager = true
+                    }
                 }
             )
         }
@@ -205,8 +249,10 @@ public struct MimiRootContainerView: View {
 
     private func handleDrawerSelection(_ destination: DrawerDestination) {
         switch destination {
+        case .calendar:
+            showAllRecordsCalendar = true
         case .stats:
-            currentMainPage = "Mimi"
+            showStatsView = true
         case .assets:
             showAssetsManager = true
         case .budgets:

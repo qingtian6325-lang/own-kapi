@@ -5,11 +5,25 @@ public struct BudgetManagementView: View {
     public var onDismiss: () -> Void
 
     @State private var showDynamicDailySheet: Bool = false
-    @State private var showEditTotalBudgetSheet: Bool = false
+    private enum ActiveBudgetSheetType: Identifiable {
+        case editTotal
+        case editCategory(CategoryBudgetItem)
+        case addCategory(CategoryGroup)
+        case selectNewCategory
+
+        var id: String {
+            switch self {
+            case .editTotal: return "total"
+            case .editCategory(let c): return "edit_\(c.categoryName)"
+            case .addCategory(let g): return "add_\(g.name)"
+            case .selectNewCategory: return "select_new"
+            }
+        }
+    }
+
+    @State private var activeSheetType: ActiveBudgetSheetType? = nil
     @State private var totalBudgetInput: String = ""
-    @State private var editingCategoryBudget: CategoryBudgetItem? = nil
     @State private var categoryBudgetInput: String = ""
-    @State private var addingCategoryForBudget: CategoryGroup? = nil
     @State private var newCategoryBudgetInput: String = ""
     @State private var selectedDayKeyForCustomBudget: String?
     @State private var customDayBudgetInput: String = ""
@@ -99,51 +113,210 @@ public struct BudgetManagementView: View {
             .sheet(isPresented: $showDynamicDailySheet) {
                 dynamicDailyBudgetCalendarSheet
             }
-            .alert("修改月度总预算", isPresented: $showEditTotalBudgetSheet) {
-                TextField("输入总预算金额", text: $totalBudgetInput)
-                Button("取消", role: .cancel) {}
-                Button("保存") {
-                    if let val = Double(totalBudgetInput), val >= 0 {
-                        store.updateMonthlyBudget(val)
-                    }
-                }
-            } message: {
-                Text("当前月度总预算为 \(MimiTheme.formatRM(store.monthlyBudgetTotal))。设置后将实时影响当月结余与日预算。")
-            }
-            .alert("修改分类预算", isPresented: Binding(
-                get: { editingCategoryBudget != nil },
-                set: { if !$0 { editingCategoryBudget = nil } }
-            )) {
-                TextField("输入月度分类预算限额", text: $categoryBudgetInput)
-                Button("取消", role: .cancel) {}
-                Button("删除此分类预算", role: .destructive) {
-                    if let item = editingCategoryBudget {
-                        store.removeCategoryBudget(categoryName: item.categoryName)
-                    }
-                }
-                Button("保存") {
-                    if let item = editingCategoryBudget, let val = Double(categoryBudgetInput), val >= 0 {
-                        store.setCategoryBudget(categoryName: item.categoryName, monthlyLimit: val, iconName: item.iconName)
-                    }
-                }
-            } message: {
-                Text("设置「\(editingCategoryBudget?.categoryName ?? "")」的月度支出限额。")
-            }
-            .alert("添加分类预算", isPresented: Binding(
-                get: { addingCategoryForBudget != nil },
-                set: { if !$0 { addingCategoryForBudget = nil } }
-            )) {
-                TextField("输入该分类月度预算", text: $newCategoryBudgetInput)
-                Button("取消", role: .cancel) {}
-                Button("确定添加") {
-                    if let grp = addingCategoryForBudget, let val = Double(newCategoryBudgetInput), val > 0 {
-                        store.setCategoryBudget(categoryName: grp.name, monthlyLimit: val, iconName: grp.displayBadgeToken)
-                    }
-                }
-            } message: {
-                Text("为「\(addingCategoryForBudget?.name ?? "")」设定月度预算。")
+            .sheet(item: $activeSheetType) { sheetType in
+                budgetModalSheet(for: sheetType)
             }
         }
+    }
+
+    @ViewBuilder
+    private func budgetModalSheet(for sheetType: ActiveBudgetSheetType) -> some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 18) {
+                switch sheetType {
+                case .editTotal:
+                    Text("设置月度总预算")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(MimiTheme.textPrimary)
+
+                    Text("当前总预算为 \(MimiTheme.formatRM(store.monthlyBudgetTotal))。设置后将实时影响当月结余与日预算。")
+                        .font(.system(size: 13))
+                        .foregroundColor(MimiTheme.textSecondary)
+
+                    HStack(spacing: 6) {
+                        Text("RM")
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .foregroundColor(MimiTheme.textPrimary)
+                        TextField("0.00", text: $totalBudgetInput)
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            #if os(iOS)
+                            .keyboardType(.decimalPad)
+                            #endif
+                    }
+                    .padding(12)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF5F6FA)))
+
+                    Button {
+                        if let val = Double(totalBudgetInput), val >= 0 {
+                            store.updateMonthlyBudget(val)
+                        }
+                        activeSheetType = nil
+                    } label: {
+                        Text("保存总预算")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.expenseBlue))
+                    }
+                    .buttonStyle(.plain)
+
+                case .editCategory(let item):
+                    HStack(spacing: 10) {
+                        MimiStickerIconView(
+                            iconName: item.iconName,
+                            categoryName: item.categoryName,
+                            transactionType: .expense,
+                            useFirstCharIcon: item.useFirstCharIcon,
+                            size: 34
+                        )
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(item.categoryName)
+                                .font(.system(size: 17, weight: .bold))
+                                .foregroundColor(MimiTheme.textPrimary)
+                            Text("修改此分类月度支出上限")
+                                .font(.system(size: 12))
+                                .foregroundColor(MimiTheme.textSecondary)
+                        }
+                    }
+
+                    HStack(spacing: 6) {
+                        Text("RM")
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .foregroundColor(MimiTheme.textPrimary)
+                        TextField("0.00", text: $categoryBudgetInput)
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            #if os(iOS)
+                            .keyboardType(.decimalPad)
+                            #endif
+                    }
+                    .padding(12)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF5F6FA)))
+
+                    HStack(spacing: 10) {
+                        Button {
+                            store.removeCategoryBudget(categoryName: item.categoryName)
+                            activeSheetType = nil
+                        } label: {
+                            Text("删除分类预算")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(MimiTheme.dangerRed)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xFEECEC)))
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            if let val = Double(categoryBudgetInput), val >= 0 {
+                                store.setCategoryBudget(categoryName: item.categoryName, monthlyLimit: val, iconName: item.iconName)
+                            }
+                            activeSheetType = nil
+                        } label: {
+                            Text("保存修改")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.expenseBlue))
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                case .addCategory(let grp):
+                    HStack(spacing: 10) {
+                        MimiStickerIconView(
+                            iconName: grp.displayBadgeToken,
+                            categoryName: grp.name,
+                            transactionType: .expense,
+                            useFirstCharIcon: grp.useFirstCharIcon,
+                            size: 34
+                        )
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("为「\(grp.name)」添加预算")
+                                .font(.system(size: 17, weight: .bold))
+                                .foregroundColor(MimiTheme.textPrimary)
+                            Text("设定该分类每月支出上限")
+                                .font(.system(size: 12))
+                                .foregroundColor(MimiTheme.textSecondary)
+                        }
+                    }
+
+                    HStack(spacing: 6) {
+                        Text("RM")
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .foregroundColor(MimiTheme.textPrimary)
+                        TextField("0.00", text: $newCategoryBudgetInput)
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            #if os(iOS)
+                            .keyboardType(.decimalPad)
+                            #endif
+                    }
+                    .padding(12)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF5F6FA)))
+
+                    Button {
+                        if let val = Double(newCategoryBudgetInput), val > 0 {
+                            store.setCategoryBudget(categoryName: grp.name, monthlyLimit: val, iconName: grp.displayBadgeToken)
+                        }
+                        activeSheetType = nil
+                    } label: {
+                        Text("确定添加分类预算")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.expenseBlue))
+                    }
+                    .buttonStyle(.plain)
+
+                case .selectNewCategory:
+                    Text("选择要增加预算的分类")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(MimiTheme.textPrimary)
+
+                    ScrollView {
+                        LazyVStack(spacing: 8) {
+                            ForEach(unbudgetedCategories) { grp in
+                                Button {
+                                    newCategoryBudgetInput = "200.00"
+                                    activeSheetType = .addCategory(grp)
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        MimiStickerIconView(
+                                            iconName: grp.displayBadgeToken,
+                                            categoryName: grp.name,
+                                            transactionType: .expense,
+                                            useFirstCharIcon: grp.useFirstCharIcon,
+                                            size: 32
+                                        )
+                                        Text(grp.name)
+                                            .font(.system(size: 15, weight: .medium))
+                                            .foregroundColor(MimiTheme.textPrimary)
+                                        Spacer()
+                                        Image(systemName: "plus.circle.fill")
+                                            .font(.system(size: 16))
+                                            .foregroundColor(MimiTheme.expenseBlue)
+                                    }
+                                    .padding(12)
+                                    .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF5F6FA)))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
+
+                Spacer()
+            }
+            .padding(20)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { activeSheetType = nil }
+                }
+            }
+        }
+        .presentationDetents([.height(340)])
     }
 
     // MARK: - Top Monthly Overview +Ring Chart (IMG_2263)
@@ -166,7 +339,7 @@ public struct BudgetManagementView: View {
 
                     Button {
                         totalBudgetInput = String(format: "%.2f", store.monthlyBudgetTotal)
-                        showEditTotalBudgetSheet = true
+                        activeSheetType = .editTotal
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "slider.horizontal.3")
@@ -238,9 +411,20 @@ public struct BudgetManagementView: View {
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
-                Text("共 \(MimiTheme.formatRM(store.categoryBudgets.reduce(0) { $0 + $1.monthlyLimit }))")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundColor(MimiTheme.textSecondary)
+                Button {
+                    activeSheetType = .selectNewCategory
+                } label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: "plus.circle.fill")
+                        Text("增加分类预算")
+                    }
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(MimiTheme.expenseBlue)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                }
+                .buttonStyle(.plain)
             }
 
             ForEach(store.categoryBudgets) { item in
@@ -249,8 +433,8 @@ public struct BudgetManagementView: View {
                 let ratio = item.monthlyLimit > 0 ? min(1.0, spent / item.monthlyLimit) : 0
 
                 Button {
-                    editingCategoryBudget = item
                     categoryBudgetInput = String(format: "%.2f", item.monthlyLimit)
+                    activeSheetType = .editCategory(item)
                 } label: {
                     VStack(spacing: 8) {
                         HStack(spacing: 10) {
@@ -331,8 +515,8 @@ public struct BudgetManagementView: View {
                         .foregroundColor(MimiTheme.textSecondary)
 
                     Button {
-                        addingCategoryForBudget = group
                         newCategoryBudgetInput = "200.00"
+                        activeSheetType = .addCategory(group)
                     } label: {
                         HStack(spacing: 2) {
                             Image(systemName: "plus.circle.fill")
