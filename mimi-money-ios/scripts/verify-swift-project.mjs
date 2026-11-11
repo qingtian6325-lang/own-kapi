@@ -141,18 +141,37 @@ function verifyTask2() {
 }
 
 function verifyTask3() {
-  const ocr = assertFileExists('Sources/MimiMoneyCore/Services/ReceiptOCRService.swift');
-  checkBalancedBraces(ocr, 'ReceiptOCRService.swift');
+  // v1.2.1：识别改纯 AI，ReceiptOCRService 已删除。改为校验独立出来的
+  // ParsedDraftBill 与纯 AI 门面，并断言 Sources 里再无 OCR 残留引用。
+  const draftBill = assertFileExists('Sources/MimiMoneyCore/Services/ParsedDraftBill.swift');
+  checkBalancedBraces(draftBill, 'ParsedDraftBill.swift');
+  assertContains(draftBill, 'public struct ParsedDraftBill', 'ParsedDraftBill.swift');
+
+  const recognizer = assertFileExists('Sources/MimiMoneyCore/Services/SmartReceiptRecognizer.swift');
+  checkBalancedBraces(recognizer, 'SmartReceiptRecognizer.swift');
   for (const sym of [
-    'public struct ParsedDraftBill',
-    'public final class ReceiptOCRService',
-    'public static func parseReceiptText(',
-    'public static func recognizeAndParseImageData(',
-    '餐饮-零食甜品',
-    'TNGewallet',
-    'PBBank'
+    'public enum ReceiptRecognitionFailure',
+    'public static func recognize(imageData:',
+    'GeminiClient.recognizeBill'
   ]) {
-    assertContains(ocr, sym, 'ReceiptOCRService.swift');
+    assertContains(recognizer, sym, 'SmartReceiptRecognizer.swift');
+  }
+
+  const sourcesDir = path.join(rootDir, 'Sources');
+  const stack = [sourcesDir];
+  while (stack.length > 0) {
+    const dir = stack.pop();
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(full);
+      } else if (entry.name.endsWith('.swift')) {
+        const text = fs.readFileSync(full, 'utf8');
+        if (text.includes('ReceiptOCRService') || text.includes('import Vision')) {
+          throw new Error(`OCR remnant found in ${full} (v1.2.1 removed OCR entirely)`);
+        }
+      }
+    }
   }
 
   const ai = assertFileExists('Sources/MimiMoneyCore/Services/MimiAIEngine.swift');
@@ -169,7 +188,7 @@ function verifyTask3() {
     assertContains(ai, sym, 'MimiAIEngine.swift');
   }
 
-  console.log('Task 3 verified: ReceiptOCRService and MimiAIEngine tests valid');
+  console.log('Task 3 verified: ParsedDraftBill, SmartReceiptRecognizer (pure AI, no OCR) and MimiAIEngine tests valid');
 }
 
 function verifyTask4() {
