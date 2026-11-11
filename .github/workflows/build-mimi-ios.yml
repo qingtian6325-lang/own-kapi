@@ -56,6 +56,9 @@ jobs:
           while IFS= read -r src; do
             [ -z "${src}" ] && continue
             base="$(basename "${src}" .swift)"
+            # -primary-file already counts the primary file as an input;
+            # the remaining list must exclude it (else "filename used twice").
+            OTHERS="$(printf '%s\n' "${ALL_SRCS}" | grep -v -F -x "${src}")"
             xcrun --sdk iphoneos swiftc \
               -target arm64-apple-ios17.0 \
               -sdk "${IOS_SDK_PATH}" \
@@ -63,7 +66,7 @@ jobs:
               -emit-module-path "objs/${base}.swiftmodule" \
               -emit-const-values-path "constvals/${base}.swiftconstvalues" \
               -parse-as-library \
-              -c -primary-file "${src}" ${ALL_SRCS} -o "objs/${base}.o"
+              -c -primary-file "${src}" ${OTHERS} -o "objs/${base}.o"
           done <<EOF_SRCS
           ${ALL_SRCS}
           EOF_SRCS
