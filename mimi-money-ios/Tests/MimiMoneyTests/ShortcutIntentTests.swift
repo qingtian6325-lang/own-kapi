@@ -126,6 +126,24 @@ final class ShortcutIntentTests: XCTestCase {
         XCTAssertEqual(ScanConfirmationFollowUp.followUp(for: NSError(domain: "test", code: 42)), .discard)
     }
 
+    // MARK: - v1.1.4 iOS 26 选项卡（requestChoice）：文案与后续决策（纯逻辑）
+
+    func testScanChoicePlanCopyMatchesKapiCard() {
+        XCTAssertEqual(ScanChoicePlan.viewOptionTitle, "View")
+        XCTAssertEqual(ScanChoicePlan.gotItOptionTitle, "Got it")
+        XCTAssertEqual(ScanChoicePlan.promptText, "已识别记录以上信息，打开「咪咪记账」查看更多")
+    }
+
+    func testScanChoicePlanViewOpensEditorAndDoesNotFinalizeInPerform() {
+        XCTAssertTrue(ScanChoicePlan.opensEditor(for: .view))
+        XCTAssertFalse(ScanChoicePlan.finalizesInPerform(for: .view))
+    }
+
+    func testScanChoicePlanGotItFinalizesInPerformAndDoesNotOpenEditor() {
+        XCTAssertFalse(ScanChoicePlan.opensEditor(for: .gotIt))
+        XCTAssertTrue(ScanChoicePlan.finalizesInPerform(for: .gotIt))
+    }
+
     func testQuickScanURLSchemeWithOCRText() {
         let store = MimiStore(inMemory: true)
         let raw = "-RM38.78\nPayment - PBB\nPetronas Gas\n08/11/2026".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!

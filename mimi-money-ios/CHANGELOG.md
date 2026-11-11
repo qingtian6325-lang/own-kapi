@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.1.4] - 2026-11-11
+
+### 🧪 Highlights
+- **呈现探针版：iOS 26+ 识别卡改走 requestChoice 选项卡**：前几版已证实——结果型卡底部必有系统 Done（HIG 解剖图写死）、确认型卡必带 Cancel＋主钮一对且 Cancel 删不掉（ConfirmationActionName 官方 API 只有带 denyLabel 的构造）。iOS 26 的 `requestChoice` 是唯一未被官方文档排除的呈现：perform 中途弹出「纯账单卡（view）＋提示文案（dialog）」与两个完全自定的选项 **View / Got it**，选中后回到 perform 继续。本版就是验证它能否复刻 Kapi 那张卡的探针版；选项按钮的实际排版（并排胶囊还是列表）、系统会不会另加取消，只能以真机截图定案。
+- **选 Got it**：先在 perform 内把暂存正式落盘，再以 opensIntent 收尾——指向一个无操作、不打开 App 的后续 Intent，捷徑流程静默结束回原 App。
+- **选 View**：不在 perform 内消费暂存，opensIntent 交给同一后续 Intent：它消费暂存→转未确认记录→定位编辑页，并以 `continueInForeground(alwaysConfirm: false)` 把 App 带到前台（刚点过 View、交互新鲜，预期免确认直达）。
+- **取消/下滑**：requestChoice 抛错，作废暂存、不落盘，安静结束（catch 仅为作废暂存，随后返回的仍是无呈现的结果）。
+- **实现说明**：perform 的全部出口统一为同一 opensIntent 目标（ScanChoiceFollowUpIntent，用参数区分动作）——v1.1.3 已用 CI 实证：同一 perform 混用普通结果、或指向不同 Intent 的 opensIntent，都会触发 #OpaqueTypeInference 编译失败。选项的 Style 只有 .default / .destructive / .cancel，没有主次样式之分，View 与 Got it 均为默认样式，颜色与排版由系统决定。另注意：因返回值带 openIntent，捷徑编辑器里「识别账单」动作会多出一个 **Open When Run** 开关（默认开），请保持开启，否则后续 Intent 不会被执行。
+- **分层不变**：iOS 18–25 与 iOS 17 仍走 v1.1.3 的确认型流程，行为不变；App 内扫描后的浮层卡片行为不变。
+
 ## [v1.1.3] - 2026-11-11
 
 ### 🎨 Highlights

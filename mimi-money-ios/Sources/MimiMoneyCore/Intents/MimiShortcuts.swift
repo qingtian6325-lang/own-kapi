@@ -47,6 +47,37 @@ public enum ScanConfirmationFollowUp: Equatable, Sendable {
     }
 }
 
+// MARK: - Scan Choice Plan (v1.1.4, iOS 26 requestChoice 探针)
+
+/// iOS 26 选项卡的两个选项。文案与 Kapi 完全一致（英文 View / Got it）。
+/// 选项的 Style 只有 .default / .destructive / .cancel 三种，没有主次样式，
+/// 故两个选项都用 .default，颜色与排版由系统决定（探针要验的正是这一点）。
+public enum ScanChoicePick: Equatable, Sendable {
+    case view
+    case gotIt
+}
+
+/// 选项卡的文案常量与「选择 → 后续动作」映射（纯逻辑，可单测）。
+/// perform 里的选项构造用与这里相同的字面量，两处必须保持一致。
+public enum ScanChoicePlan {
+    public static let viewOptionTitle = "View"
+    public static let gotItOptionTitle = "Got it"
+    /// requestChoice 的 dialog 提示文案：与之前卡内 ✓ 行同一句。
+    /// 选项卡的 view 只放纯账单卡（不含这一行），保证这句话只出现一次。
+    public static let promptText = "已识别记录以上信息，打开「咪咪记账」查看更多"
+
+    /// 选 View：不在 perform 里消费暂存，由 opensIntent 的后续 Intent
+    /// 消费暂存并打开 App 到编辑页。选 Got it：不开 App。
+    public static func opensEditor(for pick: ScanChoicePick) -> Bool {
+        pick == .view
+    }
+
+    /// 选 Got it：先在 perform 里把暂存正式落盘。选 View：不在 perform 落盘。
+    public static func finalizesInPerform(for pick: ScanChoicePick) -> Bool {
+        pick == .gotIt
+    }
+}
+
 @MainActor
 public enum ShortcutActionCoordinator {
     /// 「添加专属指令」一键导入链接（iCloud 快捷指令分享链接，形如 https://www.icloud.com/shortcuts/xxxx）。
@@ -479,6 +510,96 @@ public struct ScanConfirmationCardView: View {
     }
 }
 
+// MARK: - Scan Choice Card View (iOS 26 requestChoice 专用，v1.1.4)
+
+/// 选项卡的纯账单卡：与 ScanConfirmationCardView 的账单部分一致，但不含
+/// ✓ 提示行（那句话改由 requestChoice 的 dialog 呈现，只出现一次）、
+/// 不含任何按钮（选项由系统在卡外渲染）。外层渐变与圆角沿用前几版卡面，
+/// 让探针的观感变量只剩「系统如何排选项」这一项。
+public struct ScanChoiceCardView: View {
+    public let transaction: TransactionItem
+
+    public init(transaction: TransactionItem) {
+        self.transaction = transaction
+    }
+
+    private var formattedTimestamp: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm"
+        return formatter.string(from: transaction.date)
+    }
+
+    private var signedAmountText: String {
+        let prefix = transaction.type == .expense ? "-RM" : "+RM"
+        return String(format: "%@%.2f", prefix, transaction.amount)
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                MimiStickerIconView(iconName: transaction.iconName, size: 28)
+
+                Text(transaction.categoryPath)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(MimiTheme.textPrimary)
+
+                Spacer()
+
+                Text(signedAmountText)
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundColor(
+                        transaction.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange
+                    )
+            }
+
+            HStack(spacing: 6) {
+                Text(transaction.accountName)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(MimiTheme.textSecondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(
+                        Capsule().fill(Color(hex: 0xF2F4F8))
+                    )
+
+                if !transaction.note.isEmpty {
+                    Text(transaction.note)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(MimiTheme.textSecondary)
+                        .lineLimit(1)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule().fill(Color(hex: 0xF2F4F8))
+                        )
+                }
+
+                Spacer()
+
+                Text(formattedTimestamp)
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundColor(MimiTheme.textMuted)
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.white)
+                .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
+        )
+        .padding(16)
+        .background(
+            LinearGradient(
+                colors: [Color(hex: 0xDEF0FE), Color(hex: 0xF6F9FE)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .shadow(color: Color.black.opacity(0.12), radius: 18, x: 0, y: 6)
+    }
+}
+
 // MARK: - iOS AppIntents Integration (Shortcuts Screenshot Bookkeeping)
 
 #if canImport(AppIntents)
@@ -567,6 +688,62 @@ public struct OpenPendingScanForEditIntent: AppIntent {
     }
 }
 
+/// 「识别账单」的统一后续 Intent（v1.1.4）：ScanScreenshotIntent 的全部出口都以
+/// opensIntent 指向本 Intent——单一目标类型是硬约束：同一 perform 里混用普通
+/// .result() 或不同目标的 opensIntent 都会触发 #OpaqueTypeInference
+/// （v1.1.3 两次 CI 实证，run 42970310739 的报错即此），故两种后续收敛到
+/// 本 Intent、用 opensEditor 参数区分：
+/// - opensEditor=false：无操作占位。Got it 已在 perform 内落盘、旧系统路径的
+///   收尾也已在 perform 内完成，本 Intent 执行后不打开 App、无任何副作用，
+///   捷徑流程静默结束回原 App。
+/// - opensEditor=true（iOS 26 选项卡选了 View）：消费暂存→转未确认记录→
+///   定位编辑页，再靠 .foreground(.dynamic) 的 continueInForeground
+///   (alwaysConfirm: false) 把 App 带到前台——用户刚点过 View、交互新鲜，
+///   预期免确认直达（WWDC25-275 的 recency 规则）；前台失败也不丢账，
+///   记录已安全转未确认并定位，手动打开 App 同样直达编辑页。
+@available(iOS 16.0, macOS 13.0, *)
+public struct ScanChoiceFollowUpIntent: AppIntent {
+    public static var title: LocalizedStringResource = "识别账单后续"
+    public static var description = IntentDescription("完成截图记账的收尾：无操作结束，或按需打开咪咪记账到待确认账单的编辑页")
+    public static var openAppWhenRun: Bool = false
+    public static var isDiscoverable: Bool = false
+
+    @Parameter(title: "打开编辑页")
+    public var opensEditor: Bool
+
+    @Parameter(title: "账单ID")
+    public var transactionIdString: String
+
+    public init() {
+        self.opensEditor = false
+        self.transactionIdString = ""
+    }
+
+    public init(opensEditor: Bool, transactionId: UUID) {
+        self.opensEditor = opensEditor
+        self.transactionIdString = transactionId.uuidString
+    }
+
+    @available(iOS 26.0, macOS 26.0, *)
+    public static var supportedModes: IntentModes {
+        [.background, .foreground(.dynamic)]
+    }
+
+    @MainActor
+    public func perform() async throws -> some IntentResult {
+        guard opensEditor, let uuid = UUID(uuidString: transactionIdString) else {
+            return .result()
+        }
+        _ = ShortcutActionCoordinator.consumePendingScanForEdit(id: uuid, in: MimiStore.shared)
+        if #available(iOS 26.0, macOS 26.0, *) {
+            // 打开被拒/失败就安静结束：记录已转为未确认并标记定位，
+            // 用户手动打开 App 也会直达这笔的编辑页。
+            try? await continueInForeground(alwaysConfirm: false)
+        }
+        return .result()
+    }
+}
+
 /// iOS 26 确认型呈现的卡片驱动 Intent：按账单 id 从暂存区（或已落盘记录）取账单，
 /// 渲染 ScanConfirmationCardView。系统在交互后可能重跑本 Intent 刷新卡面，
 /// 所以取不到暂存时回退到正式记录，保证卡面不空白。
@@ -617,13 +794,13 @@ public struct ScanScreenshotIntent: AppIntent {
     @Parameter(title: "类型", default: 2)
     public var type: Int?
 
-    @Parameter(title: "版本", default: "1.1.3")
+    @Parameter(title: "版本", default: "1.1.4")
     public var version: String?
 
     public init() {}
 
     @MainActor
-    public func perform() async throws -> some IntentResult {
+    public func perform() async throws -> some IntentResult & OpensIntent {
         let store = MimiStore.shared
         let draft: ParsedDraftBill
         if let file = content {
@@ -645,29 +822,27 @@ public struct ScanScreenshotIntent: AppIntent {
             )
             #endif
         }
-        // 确认型呈现（v1.1.2）：识别结果先暂存（不落盘）→ requestConfirmation 弹确认卡
-        // → 用户点确认后才正式落盘 → 返回无可呈现内容的结果。
-        // 没有可呈现内容意味着捷徑流程直接结束回原 App，不再出现结果型
-        // snippet 底部那个系统 Done 按钮（WWDC25-281：结果型 snippet 底部
-        // 唯一按钮就是 Done，确认型没有这个问题）。
+        // 呈现分层（v1.1.4）：
+        // - iOS 26+：requestChoice 选项卡探针（见 performScanChoice）。前几版已
+        //   证实：结果型 snippet 底部必带系统 Done、确认型必带 Cancel＋主钮一对
+        //   且 Cancel 删不掉（HIG 解剖图＋ConfirmationActionName 官方 API），
+        //   requestChoice 是唯一未被官方排除的呈现——卡面＋两个完全自定的选项，
+        //   选中后回到 perform 继续。它的实际长相只能真机定案。
+        // - iOS 18–25 / 17：保持 v1.1.2/1.1.3 的确认型流程，行为一行不改：
+        //   识别结果先暂存（不落盘）→ requestConfirmation 弹确认卡（按钮对
+        //   改名为 View / Got it）→ 点 Got it 才正式落盘；点 View/下滑走
+        //   catch 分支转未确认记录并前台打开 App；其他错误作废暂存。
         //
-        // v1.1.3：卡上只剩系统渲染的一对按钮 View / Got it（actionName 改名）。
-        // - 点「Got it」(accept)：requestConfirmation 正常返回 → 正式落盘 →
-        //   返回空 .result()，无任何呈现，直接结束回原 App。
-        // - 点「View」(deny) 或下滑关卡：系统以取消类错误抛回 perform，两者
-        //   无法区分，统一按「去修改」处理——不落正式账，先把暂存消费为
-        //   未确认记录并定位编辑页（与 OpenPendingScanForEditIntent 同一逻辑），
-        //   再经 ForegroundContinuableIntent 请求系统把 App 带到前台打开。
-        //   这推翻了 v1.1.2「取消不 catch」的官方默认指引，是为实现 View
-        //   语义刻意为之（用户已知情：下滑也会打开 App）。
-        //   实现说明：原本想用 .result(opensIntent:) 打开编辑 Intent，但
-        //   IntentResult 的结果类型按目标 Intent 分型——同一 perform 里
-        //   .result() 与 opensIntent 结果、以及不同目标的 opensIntent 结果
-        //   都无法混用（CI 两次实证编译错误 #OpaqueTypeInference），
-        //   故改走前台继续这条路；OpenPendingScanForEditIntent 本身保留，
-        //   仍是 App 内/其他入口可复用的「转未确认＋定位编辑页」Intent。
-        // - 其他错误：作废暂存，安静收尾，不落盘、不打开 App、不向上抛。
+        // 全部出口统一返回 IntentResult & OpensIntent，且 opensIntent 只指向
+        // 单一目标 ScanChoiceFollowUpIntent（用 opensEditor 参数区分动作）：
+        // 同一 perform 里混用普通 .result()、或指向不同 Intent 的 opensIntent，
+        // 都会让不透明返回类型对不上而编译失败（#OpaqueTypeInference，
+        // v1.1.3 两次 CI 实证）。旧系统路径的收尾动作仍在 perform 内完成，
+        // 返回的 opensIntent 只是无操作占位，行为与 v1.1.3 的空 .result() 等价。
         let staged = ShortcutActionCoordinator.stageRecognizedDraft(draft, in: store)
+        if #available(iOS 26.0, macOS 26.0, *) {
+            return try await performScanChoice(staged: staged, store: store)
+        }
         do {
             try await requestScanConfirmation(for: staged)
         } catch {
@@ -681,14 +856,55 @@ public struct ScanScreenshotIntent: AppIntent {
                         IntentDialog("打开「咪咪记账」修改这笔账单")
                     ) { }
                 }
-                return .result()
+                return .result(opensIntent: ScanChoiceFollowUpIntent(opensEditor: false, transactionId: staged.id))
             case .discard:
                 store.discardPendingScan(id: staged.id)
-                return .result()
+                return .result(opensIntent: ScanChoiceFollowUpIntent(opensEditor: false, transactionId: staged.id))
             }
         }
         _ = ShortcutActionCoordinator.finalizePendingScan(id: staged.id, in: store)
-        return .result()
+        return .result(opensIntent: ScanChoiceFollowUpIntent(opensEditor: false, transactionId: staged.id))
+    }
+
+    /// iOS 26 选项卡呈现（v1.1.4 探针）：requestChoice 弹「纯账单卡（view)＋
+    /// 提示文案（dialog)」与两个系统渲染的自定选项 View / Got it，选中后
+    /// 回到这里继续。选项不加 .cancel：取消/下滑时 requestChoice 抛错，
+    /// catch 里先作废暂存、再以同一返回形状安静收尾——官方指引是不要
+    /// catch 取消错误，这里 catch 的唯一目的是在终止前作废暂存，随后
+    /// 返回的仍是无呈现、无落盘、不开 App 的结果，与直接终止等价。
+    /// - 选 View：不在 perform 里消费暂存，opensIntent 交给
+    ///   ScanChoiceFollowUpIntent 消费暂存并打开 App 到编辑页。
+    /// - 选 Got it：先在 perform 里正式落盘，再 opensIntent 一个无操作
+    ///   后续，静默结束回原 App。
+    /// requestChoice 返回的必是给出的两个选项之一（Equatable 比对），
+    /// 非 View 即 Got it。
+    @available(iOS 26.0, macOS 26.0, *)
+    @MainActor
+    private func performScanChoice(staged: TransactionItem, store: MimiStore) async throws -> some IntentResult & OpensIntent {
+        // 选项文案与 ScanChoicePlan 的常量是同一组字面量，两处保持一致。
+        // Style 只有 .default / .destructive / .cancel，没有主样式，
+        // 故两个选项都不带 style（默认 .default），排版与颜色由系统决定。
+        let viewOption = IntentChoiceOption(title: "View")
+        let gotItOption = IntentChoiceOption(title: "Got it")
+        let choice: IntentChoiceOption
+        do {
+            choice = try await requestChoice(
+                between: [viewOption, gotItOption],
+                dialog: "\(ScanChoicePlan.promptText)",
+                view: ScanChoiceCardView(transaction: staged)
+            )
+        } catch {
+            store.discardPendingScan(id: staged.id)
+            return .result(opensIntent: ScanChoiceFollowUpIntent(opensEditor: false, transactionId: staged.id))
+        }
+        let pick: ScanChoicePick = (choice == viewOption) ? .view : .gotIt
+        if ScanChoicePlan.finalizesInPerform(for: pick) {
+            _ = ShortcutActionCoordinator.finalizePendingScan(id: staged.id, in: store)
+        }
+        return .result(opensIntent: ScanChoiceFollowUpIntent(
+            opensEditor: ScanChoicePlan.opensEditor(for: pick),
+            transactionId: staged.id
+        ))
     }
 
     /// 按系统版本分层弹确认卡，按钮文案统一改名为 View / Got it（与 Kapi 一致）：
@@ -696,6 +912,9 @@ public struct ScanScreenshotIntent: AppIntent {
     /// iOS 18–25 用带 content 视图的确认（同一套 ConfirmationActionName.custom）；
     /// iOS 17 的旧确认 API 只接受预置文案（.log，对应 Log / Cancel），无法改名，
     /// 功能不变——这是该层的既有限制。
+    /// 注（v1.1.4）：perform 在 iOS 26+ 已改走 requestChoice 选项卡、不再调用
+    /// 本方法，故 iOS 26 分层在现行调用链上不会触发，保留仅为分层完整与回退便利；
+    /// iOS 18–25 / 17 两层的行为与 v1.1.3 完全一致。
     @MainActor
     private func requestScanConfirmation(for transaction: TransactionItem) async throws {
         if #available(iOS 26.0, macOS 26.0, *) {
@@ -761,6 +980,15 @@ public struct OpenPendingScanForEditIntent: Sendable {
     public static let openAppWhenRun: Bool = true
     public let transactionIdString: String
     public init(transactionId: UUID) { self.transactionIdString = transactionId.uuidString }
+}
+public struct ScanChoiceFollowUpIntent: Sendable {
+    public static let openAppWhenRun: Bool = false
+    public let opensEditor: Bool
+    public let transactionIdString: String
+    public init(opensEditor: Bool, transactionId: UUID) {
+        self.opensEditor = opensEditor
+        self.transactionIdString = transactionId.uuidString
+    }
 }
 public struct ScanScreenshotIntent: Sendable {
     public init() {}
