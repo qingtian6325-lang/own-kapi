@@ -21,6 +21,11 @@ public struct ShortcutExecutionOutcome: Equatable, Sendable {
 
 @MainActor
 public enum ShortcutActionCoordinator {
+    /// 「添加专属指令」一键导入链接（iCloud 快捷指令分享链接，形如 https://www.icloud.com/shortcuts/xxxx）。
+    /// 该链接只能由登录 iCloud 的设备在「快捷指令」App 内通过「共享 → 拷贝 iCloud 链接」生成，
+    /// 服务器端无法伪造；在用户提供链接之前保持 nil，指南页的「添加专属指令」按钮将展开手动搭建教程。
+    public static let shortcutInstallURL: String? = nil
+
     public static func recordRecognizedDraft(_ draft: ParsedDraftBill, in store: MimiStore) -> TransactionItem {
         var attachments: [String] = []
         if let raw = draft.rawImageData {
@@ -104,20 +109,6 @@ public enum ShortcutActionCoordinator {
         return false
     }
 
-    public static let bundledShortcutBase64 = "YnBsaXN0MDDYAQIDBAUGBwgJKSorMDEzNF8QEVdGV29ya2Zsb3dBY3Rpb25zXxAXV0ZXb3JrZmxvd0NsaWVudFJlbGVhc2VfEBdXRldvcmtmbG93Q2xpZW50VmVyc2lvbl5XRldvcmtmbG93SWNvbl8QGVdGV29ya2Zsb3dJbXBvcnRRdWVzdGlvbnNfECFXRldvcmtmbG93SW5wdXRDb250ZW50SXRlbUNsYXNzZXNfEB5XRldvcmtmbG93TWluaW11bUNsaWVudFZlcnNpb25fEA9XRldvcmtmbG93VHlwZXOjChEg0gsMDQ5fEBpXRldvcmtmbG93QWN0aW9uSWRlbnRpZmllcl8QGldGV29ya2Zsb3dBY3Rpb25QYXJhbWV0ZXJzXxAiaXMud29ya2Zsb3cuYWN0aW9ucy50YWtlc2NyZWVuc2hvdNEPEFRVVUlEXxAkODRCOUFBMjgtOEY2QS00MTA0LUEyQTQtQzkwMzQ0OERDQ0Mw0gsMEhNfECBpcy53b3JrZmxvdy5hY3Rpb25zLnNldGNsaXBib2FyZNIPFBUWV1dGSW5wdXRfECRDQUFDRjlBRS0xNjM0LTQ3ODQtODA5Qi00RjA5QjQ4MUFDN0XSFxgZH1VWYWx1ZV8QE1dGU2VyaWFsaXphdGlvblR5cGXTGhscHRAeWk91dHB1dE5hbWVaT3V0cHV0VVVJRFRUeXBlYmIqXE9cQWN0aW9uT3V0cHV0XxAVV0ZUZXh0VG9rZW5BdHRhY2htZW500gsMISJfEBtpcy53b3JrZmxvdy5hY3Rpb25zLm9wZW51cmzSDxQjJF8QJEVCM0U3QUM3LUIwMDItNDUzQy1CRTU1LTQzRDIxNDY2RUI1QtIXGCUo0SYnVnN0cmluZ18QFm1pbWltb25leTovL3F1aWNrLXNjYW5fEBFXRlRleHRUb2tlblN0cmluZ1MyLjBYMjYwMC4wLjDSLC0uL18QGVdGV29ya2Zsb3dJY29uR2x5cGhOdW1iZXJfEBhXRldvcmtmbG93SWNvblN0YXJ0Q29sb3IR6HcS/0NR/6ChMl8QEldGSW1hZ2VDb250ZW50SXRlbREDhKM1NjdYTkNXaWRnZXRVV2F0Y2hfEA9BY3Rpb25FeHRlbnNpb24ACAAZAC0ARwBhAHAAjACwANEA4wDnAOwBCQEmAUsBTgFTAXoBfwGiAacBrwHWAdsB4QH3Af4CCQIUAhkCHgIrAkMCSAJmAmsCkgKXApoCoQK6As4C0gLbAuAC/AMXAxoDHwMgAyIDNwM6Az4DRwNNAAAAAAAAAgEAAAAAAAAAOAAAAAAAAAAAAAAAAAAAA18="
-
-    public static func getLocalShortcutFileURL() -> URL? {
-        guard let data = Data(base64Encoded: bundledShortcutBase64) else { return nil }
-        let tempDir = FileManager.default.temporaryDirectory
-        let fileUrl = tempDir.appendingPathComponent("咪咪截屏自动记账.shortcut")
-        do {
-            try data.write(to: fileUrl)
-            return fileUrl
-        } catch {
-            return nil
-        }
-    }
-
     public static func openShortcutsApp() {
         #if canImport(UIKit)
         if let url = URL(string: "shortcuts://") {
@@ -126,17 +117,6 @@ public enum ShortcutActionCoordinator {
         #endif
     }
 
-    public static func openOnlineShortcutInstallURL() {
-        #if canImport(UIKit)
-        if let url = URL(string: "https://github.com/qingtian6325-lang/own-mimi/releases/download/v1.0.3/MimiScreenshotBookkeeping.shortcut") {
-            UIApplication.shared.open(url, options: [:]) { success in
-                if !success {
-                    openShortcutsApp()
-                }
-            }
-        }
-        #endif
-    }
 }
 
 // MARK: - Screenshot Result Snippet View (1:1 Match with IMG_2294.PNG)
@@ -333,6 +313,7 @@ public struct OpenBillForEditIntent: AppIntent {
     public static var title: LocalizedStringResource = "修改账单 (View)"
     public static var description = IntentDescription("打开咪咪记账并跳转到该笔账单详情编辑页")
     public static var openAppWhenRun: Bool = true
+    public static var isDiscoverable: Bool = false
 
     @Parameter(title: "账单ID")
     public var transactionIdString: String
@@ -362,6 +343,7 @@ public struct ConfirmBillIntent: AppIntent {
     public static var title: LocalizedStringResource = "确认记账 (Got it)"
     public static var description = IntentDescription("确认截图识别的账单并直接完成记账，无需进入App")
     public static var openAppWhenRun: Bool = false
+    public static var isDiscoverable: Bool = false
 
     @Parameter(title: "账单ID")
     public var transactionIdString: String
@@ -390,17 +372,11 @@ public struct ScanScreenshotIntent: AppIntent {
     @Parameter(title: "内容")
     public var content: IntentFile?
 
-    @Parameter(title: "截图文件")
-    public var screenshotFile: IntentFile?
-
     @Parameter(title: "类型", default: 2)
     public var type: Int?
 
-    @Parameter(title: "版本", default: "0.8.62")
+    @Parameter(title: "版本", default: "1.1.0")
     public var version: String?
-
-    @Parameter(title: "识别后跳转修改")
-    public var openForModifyAfterScan: Bool?
 
     public init() {}
 
@@ -408,7 +384,7 @@ public struct ScanScreenshotIntent: AppIntent {
     public func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
         let store = MimiStore.shared
         let draft: ParsedDraftBill
-        if let file = content ?? screenshotFile {
+        if let file = content {
             draft = await ReceiptOCRService.recognizeAndParseImageData(file.data)
         } else {
             #if canImport(UIKit)
@@ -428,9 +404,6 @@ public struct ScanScreenshotIntent: AppIntent {
             #endif
         }
         let saved = ShortcutActionCoordinator.recordRecognizedDraft(draft, in: store)
-        if openForModifyAfterScan == true {
-            _ = ShortcutActionCoordinator.markForInAppModification(transactionId: saved.id, in: store)
-        }
         return .result(
             dialog: "已识别记录以上信息，打开「咪咪记账」查看更多"
         ) {

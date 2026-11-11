@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.1.0] - 2026-11-11
+
+### 🚀 Highlights
+- **捷徑「识别账单」真正可用（修复根因）**：v1.0.9 及更早的 IPA 是 `swift build` 手工拼包，从不生成 `Metadata.appintents`，iOS 根本发现不了 `ScanScreenshotIntent`。v1.1.0 起 CI 显式运行 `appintentsmetadataprocessor` 提取元数据并塞入 .app，并新增硬验证：`extract.actionsdata` 缺失或不含 `ScanScreenshotIntent` 直接构建失败。
+- **「识别账单」Intent 参数收干净**：只保留「内容 / 类型（默认 2）/ 版本（默认 1.1.0）」，与 Kapi 捷徑编排一致；「修改账单 / 确认记账」两个辅助 Intent 设为不在动作库中单独展示。
+- **删除错误捷徑流程**：移除自带的截屏→剪贴板→openURL `.shortcut` 文件（未签名本就无法导入），不再打进 .app 与 Release。
+- **自动记账指南页改版（Kapi 式）**：四种触发方式分区（①辅助触控 ②轻敲手机背面 ③操作按钮 ④控制中心），附「教程」6 步手动搭建与醒目蓝色「添加专属指令」按钮（iCloud 一键导入链接待用户在设备上生成后填入开通）。
+- **分类图标贴纸风升级**：白底圆、浅灰细描边、轻微阴影、emoji 放大；图标库扩充至 14 个分组、520+ 个不重复 emoji。
+- **全新 App 图标**：原创贴纸风——蓝白渐变底＋橘猫「咪咪」抱金币、脚边账本。
+
 ## [v1.0.10] - 2026-11-11
 
 ### 🚀 核心缺陷修复与体验增强

@@ -510,112 +510,197 @@ public struct SettingsAndShortcutsGuideView: View {
         }
     }
 
-    // MARK: - Shortcuts Popup Card
+    // MARK: - 自动记账指南状态
+
+    @State private var expandedTriggerSection: Int? = 4
+    @State private var showShortcutTutorial: Bool = false
+    @Environment(\.openURL) private var openURL
+
+    // MARK: - 自动记账指南 (Kapi 式四种触发方式 + 添加专属指令)
+
+    private func guideStepRow(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 12))
+            .foregroundColor(MimiTheme.textSecondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func triggerSection(index: Int, title: String, symbol: String, steps: [String]) -> some View {
+        let expanded = expandedTriggerSection == index
+        return VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    expandedTriggerSection = expanded ? nil : index
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: symbol)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(MimiTheme.expenseBlue)
+                        .frame(width: 30, height: 30)
+                        .background(Circle().fill(Color(hex: 0xE8F0FE)))
+                    Text(title)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(MimiTheme.textPrimary)
+                    Spacer()
+                    Image(systemName: expanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(MimiTheme.textMuted)
+                }
+                .padding(12)
+            }
+            .buttonStyle(.plain)
+
+            if expanded {
+                VStack(alignment: .leading, spacing: 5) {
+                    ForEach(Array(steps.enumerated()), id: \.offset) { _, step in
+                        guideStepRow(step)
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.bottom, 12)
+            }
+        }
+        .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xF7F8FA)))
+    }
 
     private var shortcutsCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("⚡ 自动记账 · 快捷指令截图弹窗 (IMG_2294)")
+                Text("⚡ 自动记账 · 截屏识别记账")
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
             }
 
-            Text("在 iPhone「快捷指令」中绑定『截屏 ➔ 咪咪记账 · 识别账单』，付款后在控制中心点击或敲两下手机背面即可弹出以下卡片：点击「修改 (View)」直达 App 账单详情页，点击「确认 (Got it)」原地直接入账。")
+            Text("付款完成后触发一次「咪咪记账 · 识别账单」快捷指令：系统自动截屏 → OCR 识别金额、商户与扣款账户 → 在当前付款 App 上方弹出卡片。点「修改 (View)」跳进 App 编辑该笔；点「确认 (Got it)」原地入账，不离开当前 App。下方四种触发方式任选一种绑定即可。")
                 .font(.system(size: 12))
                 .foregroundColor(MimiTheme.textSecondary)
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text("📌 控制中心 / 轻点背面无感记账配置（推荐）：")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(MimiTheme.textPrimary)
-                Text("1. 打开自带「快捷指令」App ➔ 点右上角「+」新建")
-                    .font(.system(size: 12))
-                Text("2. 依次添加以下动作：\n   ① 隐藏控制中心 (Hide Control Centre)\n   ② 等待 1 秒 (Wait 1 second)\n   ③ 截屏 (Take screenshot)\n   ④ 从截屏获取图像 (Get images from Screenshot)\n   ⑤ 识别账单 (咪咪记账)")
-                    .font(.system(size: 12))
-                    .foregroundColor(MimiTheme.textSecondary)
-                Text("3. ⚠️ 最关键一步：点击【识别账单】展开箭头，务必将【运行时打开】(Open When Run) 切换为【关闭】！")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(MimiTheme.dangerRed)
-                Text("👉 关闭「运行时打开」后，快捷指令就会停留在当前画面（不会跳进App），在屏幕顶部浮出包含【修改 (View)】与【确认 (Got it)】两个按钮的 Dialog 卡片：按确认原地直接记账；按修改才会打开 App！")
-                    .font(.system(size: 11))
-                    .foregroundColor(MimiTheme.textSecondary)
-            }
-            .padding(12)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF5F6FA)))
+            triggerSection(
+                index: 1,
+                title: "① 通过辅助触控触发",
+                symbol: "circle.circle.fill",
+                steps: [
+                    "1. 先按下方「教程」把「识别账单」捷徑建好（只需一次）",
+                    "2. 打开 iPhone「设置 → 辅助功能 → 触控 → 辅助触控」，开启辅助触控",
+                    "3. 为「单点」「轻点两下」或「长按」选择刚建好的捷徑",
+                    "4. 付款完成后，使用该手势触发记账"
+                ]
+            )
 
-            // iOS 15+ Unsigned Shortcut Notice & Dual Non-Jumping Dialog Guide
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 6) {
-                    Image(systemName: "bubble.left.and.exclamationmark.bubble.right.fill")
-                        .foregroundColor(MimiTheme.expenseBlue)
-                    Text("💡 为什么提示「不支持导入未签名的快捷指令」？")
+            triggerSection(
+                index: 2,
+                title: "② 通过「轻敲手机背面」触发",
+                symbol: "iphone.radiowaves.left.and.right",
+                steps: [
+                    "1. 先按下方「教程」把「识别账单」捷徑建好（只需一次）",
+                    "2. 打开 iPhone「设置 → 辅助功能 → 触控」，拉到最底部点「轻点背面」",
+                    "3. 选择「轻点两下」或「轻点三下」，勾选刚建好的捷徑",
+                    "4. 付款完成后，敲两下手机背面即可触发记账"
+                ]
+            )
+
+            triggerSection(
+                index: 3,
+                title: "③ 通过「操作按钮」触发",
+                symbol: "button.programmable",
+                steps: [
+                    "1. 先按下方「教程」把「识别账单」捷徑建好（只需一次）",
+                    "2. 打开 iPhone「设置 → 操作按钮」，选择「快捷指令」（需 iPhone 15 Pro 或更新机型）",
+                    "3. 点「选取」，选择刚建好的捷徑",
+                    "4. 付款完成后，按一下侧边操作按钮即可触发记账"
+                ]
+            )
+
+            triggerSection(
+                index: 4,
+                title: "④ 通过「控制中心」触发（添加专属指令）",
+                symbol: "switch.2",
+                steps: [
+                    "仅部分 iOS 版本支持（建议 iOS 18.1 及以上），若无法使用，建议升级系统版本",
+                    "1. 点击下方「添加专属指令」，记住系统添加页显示的名称",
+                    "2. 打开控制中心，长按进入编辑，点击「添加控制」",
+                    "3. 添加「快捷指令」，点击「选取」，选择刚添加的咪咪记账控制中心快捷指令",
+                    "4. 付款完成后，点击该控制触发记账"
+                ]
+            )
+
+            // 「教程」与「添加专属指令」双按钮
+            HStack(spacing: 12) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        expandedTriggerSection = 4
+                        showShortcutTutorial = true
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 15))
+                        Text("教程")
+                            .font(.system(size: 14, weight: .bold))
+                    }
+                    .foregroundColor(MimiTheme.expenseBlue)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    if let link = ShortcutActionCoordinator.shortcutInstallURL, let url = URL(string: link) {
+                        openURL(url)
+                    } else {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            expandedTriggerSection = 4
+                            showShortcutTutorial = true
+                        }
+                    }
+                } label: {
+                    Text("添加专属指令")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Capsule().fill(MimiTheme.expenseBlue))
+                }
+                .buttonStyle(.plain)
+            }
+
+            if ShortcutActionCoordinator.shortcutInstallURL == nil {
+                Text("首次需按教程手动建一次；建好后在「快捷指令」App 中对该捷徑点「共享 → 拷贝 iCloud 链接」，把链接发给开发者即可开通一键导入。")
+                    .font(.system(size: 11))
+                    .foregroundColor(MimiTheme.textMuted)
+            }
+
+            if showShortcutTutorial {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("📖 手动搭建教程（只需一次，约 1 分钟）：")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(MimiTheme.textPrimary)
-                }
-
-                Text("因为 iOS 限制从网页直接下载 .shortcut 文件。你完全不需要下载任何外部文件！本 App 安装后，系统已内置原生动作【识别账单】。请直接在自带「快捷指令」App 中搜索并添加【识别账单】即可（100% 官方支持，永不失效）！")
-                    .font(.system(size: 11))
-                    .foregroundColor(MimiTheme.textSecondary)
-
-                Divider()
-
-                // Mode 2: Shortcuts "Choose from Menu" Dialog
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 4) {
-                        Text("🛠️ 备用方式：快捷指令原生「从菜单中选取」对话框")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(MimiTheme.incomeOrange)
-                    }
-                    Text("1. 在快捷指令中依次添加：【截屏】➔【拷贝至剪贴板】")
-                        .font(.system(size: 11))
-                    Text("2. 添加【从菜单中选取】(Choose from Menu)，提示写「是否记入咪咪记账？」")
-                        .font(.system(size: 11, weight: .semibold))
-                    Text("   • 选项 ①「Got it」：内部留空 ➔ 100% 停留在当前App，不跳转！\n   • 选项 ②「Edit」：内部添加【打开 URL】mimimoney://quick-scan ➔ 只有按此才跳转！")
-                        .font(.system(size: 11))
-                        .foregroundColor(MimiTheme.textSecondary)
-                }
-                .padding(8)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color.white))
-
-                HStack {
-                    Text("URL: mimimoney://quick-scan")
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    guideStepRow("1. 打开自带「快捷指令」App → 点右上角「+」新建，命名为「咪咪记账-识别账单」")
+                    guideStepRow("2. 添加动作「隐藏控制中心 (Hide Control Centre)」")
+                    guideStepRow("3. 添加动作「等待 (Wait)」，时长设为 1 秒")
+                    guideStepRow("4. 添加动作「截屏 (Take Screenshot)」")
+                    guideStepRow("5. 添加动作「从截屏获取图像 (Get Images from Screenshot)」")
+                    guideStepRow("6. 添加动作「识别账单 (咪咪记账)」，将「内容 (Content)」设为上一步的「图像 (Images)」，「类型 (Type)」保持 2")
+                    Text("⚠️ 点开「识别账单」的展开箭头，确认「运行时显示 (Show When Run)」与「运行时打开 (Open When Run)」两个开关都打开，识别卡片才会直接浮在当前付款 App 上方。")
+                        .font(.system(size: 12, weight: .bold))
                         .foregroundColor(MimiTheme.expenseBlue)
-                    Spacer()
-                    Button {
-                        #if canImport(UIKit)
-                        UIPasteboard.general.string = "mimimoney://quick-scan"
-                        statusBannerMessage = "已复制 URL: mimimoney://quick-scan"
-                        #endif
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "doc.on.doc")
-                            Text("复制链接")
-                        }
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(Capsule().fill(MimiTheme.expenseBlue))
-                    }
-                    .buttonStyle(.plain)
+                    guideStepRow("完成后回到上方四种触发方式，任选一种把这个捷徑绑定上去即可使用。无需下载任何 .shortcut 文件：本 App 安装后系统已内置原生动作「识别账单」。")
                 }
-                .padding(8)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color(hex: 0xF5F6FA)))
+                .padding(12)
+                .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF5F6FA)))
             }
-            .padding(12)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xFFF9E6)))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.orange.opacity(0.35), lineWidth: 1))
 
-            // 1. One-click open apple shortcuts app
+            // 快捷入口：直接打开快捷指令 App
             Button {
                 ShortcutActionCoordinator.openShortcutsApp()
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "arrow.up.forward.app.fill")
                         .font(.system(size: 16))
-                    Text("⚡ 打开「快捷指令」App 配置「识别账单」")
+                    Text("打开「快捷指令」App 开始搭建")
                         .font(.system(size: 14, weight: .bold))
                 }
                 .foregroundColor(.white)
@@ -625,23 +710,7 @@ public struct SettingsAndShortcutsGuideView: View {
             }
             .buttonStyle(.plain)
 
-            // 2. Unsigned shortcut warning note
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 4) {
-                    Image(systemName: "info.circle.fill")
-                        .foregroundColor(Color.orange)
-                    Text("为什么提示「不支持导入未签名的快捷指令」？")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(MimiTheme.textPrimary)
-                }
-                Text("因为 iOS 限制从网页直接下载 .shortcut 文件。你完全不需要下载任何外部文件！本 App 安装后，系统已内置原生动作【识别账单】。请直接在自带「快捷指令」App 中搜索并添加【识别账单】即可（100% 官方支持，永不失效）！")
-                    .font(.system(size: 11))
-                    .foregroundColor(MimiTheme.textSecondary)
-            }
-            .padding(10)
-            .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xFFF9E6)))
-
-            // 3. Direct In-App Instant Recognition (No shortcut needed at all!)
+            // 无需快捷指令：读取剪贴板截图直接记账
             Button {
                 #if canImport(UIKit)
                 if let image = UIPasteboard.general.image, let pngData = image.pngData() {
@@ -676,6 +745,11 @@ public struct SettingsAndShortcutsGuideView: View {
                 .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xFFF3E0)))
             }
             .buttonStyle(.plain)
+
+            // 识别卡片效果预览
+            Text("效果预览（付款 App 上方弹出的卡片长这样）：")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(MimiTheme.textPrimary)
 
             let previewTx = simulatedSnippetTx ?? TransactionItem(
                 type: .expense,

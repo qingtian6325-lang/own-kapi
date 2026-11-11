@@ -32,25 +32,81 @@ jobs:
       - name: Run MimiMoneyTests (macOS host unit tests)
         run: swift test
 
-      - name: Build Standard iOS App Bundle & IPA via iOS SDK
+      - name: Build iOS executable (SwiftPM, same as before)
+        run: |
+          IOS_SDK_PATH="$(xcrun --sdk iphoneos --show-sdk-path)"
+          echo "IOS_SDK_PATH=${IOS_SDK_PATH}" >> "$GITHUB_ENV"
+          swift build -c release --product MimiMoneyApp \
+            --triple arm64-apple-ios17.0 \
+            -Xswiftc -sdk -Xswiftc "${IOS_SDK_PATH}" \
+            -Xcc -isysroot -Xcc "${IOS_SDK_PATH}"
+          BIN_PATH="$(find .build -path "*/release/MimiMoneyApp" -type f | head -n 1)"
+          echo "BIN_PATH=${BIN_PATH}" >> "$GITHUB_ENV"
+          echo "Built executable: ${BIN_PATH}"
+
+      - name: Extract AppIntents metadata (appintentsmetadataprocessor)
+        run: |
+          # ------------------------------------------------------------------
+          # Why this step exists:
+          # `swift build` + manual .app assembly NEVER runs Xcode's AppIntents
+          # metadata extraction, so previous IPAs shipped without
+          # Metadata.appintents and iOS could not discover the
+          # 「识别账单」 (ScanScreenshotIntent) action in Shortcuts at all.
+          # We run the same processor Xcode would run, against the built
+          # executable (the AppIntents definitions live in MimiMoneyCore,
+          # statically linked into the app executable).
+          # ------------------------------------------------------------------
+          set -euo pipefail
+          APP_VERSION="$(cat VERSION 2>/dev/null || echo "1.0.1")"
+          rm -rf appintents-md
+          mkdir -p appintents-md
+
+          XCODE_CONTENTS="$(xcode-select -p | sed 's|/Developer$||')"
+          PROCESSOR="$(find "${XCODE_CONTENTS}" -name appintentsmetadataprocessor -type f 2>/dev/null | head -n 1)"
+          if [ -z "${PROCESSOR}" ]; then
+            PROCESSOR="$(xcrun --find appintentsmetadataprocessor 2>/dev/null || true)"
+          fi
+          if [ -z "${PROCESSOR}" ] || [ ! -x "${PROCESSOR}" ]; then
+            echo "::error::appintentsmetadataprocessor not found in the selected Xcode toolchain"
+            exit 1
+          fi
+          echo "Using metadata processor: ${PROCESSOR}"
+
+          SOURCE_FILES="$(find Sources -name '*.swift' | sort | tr '\n' ' ')"
+
+          "${PROCESSOR}" \
+            --module-name MimiMoneyCore \
+            --sdk-root "${IOS_SDK_PATH}" \
+            --xcode-version "$(xcodebuild -version | head -n 1 | awk '{print $2}')" \
+            --platform-family iOS \
+            --deployment-target 17.0 \
+            --target-triple arm64-apple-ios17.0 \
+            --binary-file "${BIN_PATH}" \
+            --output "${PWD}/appintents-md" \
+            --source-files ${SOURCE_FILES} \
+            --compile-time-extraction \
+            --deployment-aware-processing FALSE \
+            --validate-assistant-intents FALSE \
+            --shortcuts-metadata-extraction FALSE
+
+          echo "--- generated files ---"
+          find appintents-md -type f | sort
+
+      - name: Assemble .app bundle (with Metadata.appintents, WITHOUT legacy .shortcut)
         run: |
           rm -rf build
           mkdir -p build/Payload/MimiMoneyApp.app
-          IOS_SDK_PATH="$(xcrun --sdk iphoneos --show-sdk-path)"
           SDK_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
           SDK_BUILD="$(xcrun --sdk iphoneos --show-sdk-build-version)"
           XCODE_BUILD="$(xcodebuild -version | awk 'NR==2 {print $3}')"
           APP_VERSION="$(cat VERSION 2>/dev/null || echo "1.0.1")"
 
-          swift build -c release --product MimiMoneyApp \
-            --triple arm64-apple-ios17.0 \
-            -Xswiftc -sdk -Xswiftc "${IOS_SDK_PATH}" \
-            -Xcc -isysroot -Xcc "${IOS_SDK_PATH}"
-
-          BIN_PATH="$(find .build -path "*/release/MimiMoneyApp" -type f | head -n 1)"
           cp "${BIN_PATH}" build/Payload/MimiMoneyApp.app/MimiMoneyApp
           chmod 755 build/Payload/MimiMoneyApp.app/MimiMoneyApp
-          cp shortcuts/MimiScreenshotBookkeeping.shortcut build/Payload/MimiMoneyApp.app/MimiScreenshotBookkeeping.shortcut
+
+          # Ship the extracted AppIntents metadata inside the .app so that
+          # iOS registers 识别账单 / 修改账单 / 确认记账 for Shortcuts & Siri.
+          cp -R appintents-md build/Payload/MimiMoneyApp.app/Metadata.appintents
 
           # Write standard 8-byte PkgInfo
           printf "APPL????" > build/Payload/MimiMoneyApp.app/PkgInfo
@@ -164,10 +220,37 @@ jobs:
           </plist>
           EOF
 
-          # Convert Info.plist to standard Apple binary plist and generate _CodeSignature/CodeResources
+          # Convert Info.plist to standard Apple binary plist and ad-hoc sign
           plutil -convert binary1 build/Payload/MimiMoneyApp.app/Info.plist
           codesign --force --deep --sign - build/Payload/MimiMoneyApp.app
 
+      - name: Verify AppIntents metadata inside .app (HARD GATE)
+        run: |
+          # Fail the whole build if the metadata iOS needs is missing or does
+          # not register the 识别账单 intent. This is the regression guard for
+          # the v1.0.9 bug (IPA shipped with no Metadata.appintents at all).
+          set -euo pipefail
+          ACTIONS_DATA="build/Payload/MimiMoneyApp.app/Metadata.appintents/extract.actionsdata"
+          if [ ! -f "${ACTIONS_DATA}" ]; then
+            echo "::error::Metadata.appintents/extract.actionsdata is MISSING from the .app — iOS would not discover the 识别账单 action"
+            find build/Payload/MimiMoneyApp.app -maxdepth 2 | sort || true
+            exit 1
+          fi
+          if ! grep -a -q "ScanScreenshotIntent" "${ACTIONS_DATA}"; then
+            echo "::error::extract.actionsdata does not contain ScanScreenshotIntent"
+            exit 1
+          fi
+          # The legacy clipboard/openURL .shortcut flow must never come back into the bundle.
+          if [ -e "build/Payload/MimiMoneyApp.app/MimiScreenshotBookkeeping.shortcut" ]; then
+            echo "::error::Legacy .shortcut file must not be bundled into the .app"
+            exit 1
+          fi
+          echo "✅ AppIntents verification passed:"
+          ls -la build/Payload/MimiMoneyApp.app/Metadata.appintents/
+          grep -a -o "ScanScreenshotIntent" "${ACTIONS_DATA}" | head -n 1
+
+      - name: Package IPA
+        run: |
           cd build && zip -qry MimiMoney-iOS.ipa Payload
 
       - name: Upload MimiMoney-iOS.ipa Artifact
@@ -177,6 +260,7 @@ jobs:
           path: mimi-money-ios/build/MimiMoney-iOS.ipa
 
       - name: Publish MimiMoney-iOS.ipa to GitHub Releases
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -205,19 +289,19 @@ jobs:
             if (!content) {
               content = '## [' + tag + ']\n\n- 咪咪记账 iOS ' + tag + ' 自动化发布版本';
             }
-            content += '\n\n### 📦 资产下载\n- **MimiMoney-iOS.ipa**：App 安装包（建议使用 Sideloadly / AltStore 签名安装）\n- **MimiScreenshotBookkeeping.shortcut**：iOS 快捷指令一键导入文件';
+            content += '\n\n### 📦 资产下载\n- **MimiMoney-iOS.ipa**：App 安装包（建议使用 Sideloadly / AltStore 签名安装）\n- 快捷指令无需下载任何文件：安装 App 后在系统「快捷指令」中添加内置动作「识别账单」即可（App 内「自动记账」页有四种触发方式的图文教程）';
             fs.writeFileSync('RELEASE_NOTES.md', content);
           "
 
           if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
-            gh release upload "${RELEASE_TAG}" build/MimiMoney-iOS.ipa shortcuts/MimiScreenshotBookkeeping.shortcut --clobber
+            gh release upload "${RELEASE_TAG}" build/MimiMoney-iOS.ipa --clobber
             gh release edit "${RELEASE_TAG}" --title "咪咪记账 iOS ${RELEASE_TAG} (MimiMoney-iOS.ipa)" --notes-file RELEASE_NOTES.md
           else
-            gh release create "${RELEASE_TAG}" build/MimiMoney-iOS.ipa shortcuts/MimiScreenshotBookkeeping.shortcut \
+            gh release create "${RELEASE_TAG}" build/MimiMoney-iOS.ipa \
               --title "咪咪记账 iOS ${RELEASE_TAG} (MimiMoney-iOS.ipa)" \
               --notes-file RELEASE_NOTES.md
           fi
 
           if gh release view v1.0.0 >/dev/null 2>&1; then
-            gh release upload v1.0.0 build/MimiMoney-iOS.ipa shortcuts/MimiScreenshotBookkeeping.shortcut --clobber
+            gh release upload v1.0.0 build/MimiMoney-iOS.ipa --clobber
           fi
