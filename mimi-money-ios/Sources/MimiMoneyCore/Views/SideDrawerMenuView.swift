@@ -32,6 +32,10 @@ public struct SideDrawerMenuView: View {
         self.onSelectDestination = onSelectDestination
     }
 
+    private var monthDayCells: [CalendarDaySummary] {
+        DynamicBudgetEngine.buildMonthDayCells(year: 2026, month: 11, transactions: store.transactions)
+    }
+
     public var body: some View {
         ZStack(alignment: .leading) {
             Color.black.opacity(0.32)
@@ -108,14 +112,13 @@ public struct SideDrawerMenuView: View {
                                     }
                                 }
 
-                                let cells = DynamicBudgetEngine.buildMonthDayCells(year: 2026, month: 11, transactions: store.transactions)
                                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 3), count: 7), spacing: 3) {
                                     // 2026年11月1日是周日，周一开始排前面空6格
                                     ForEach(0..<6, id: \.self) { _ in
                                         Color.clear
                                             .frame(height: 18)
                                     }
-                                    ForEach(cells) { cell in
+                                    ForEach(monthDayCells, id: \.id) { cell in
                                         ZStack {
                                             RoundedRectangle(cornerRadius: 3, style: .continuous)
                                                 .fill(heatmapMiniColor(for: cell))
@@ -123,7 +126,7 @@ public struct SideDrawerMenuView: View {
 
                                             Text("\(cell.day)")
                                                 .font(.system(size: 9, weight: cell.isToday ? .bold : .regular, design: .rounded))
-                                                .foregroundColor(cell.isToday ? MimiTheme.expenseBlue : (cell.expenseAmount > 0 || cell.incomeAmount > 0 ? MimiTheme.textPrimary : MimiTheme.textMuted))
+                                                .foregroundColor(cell.isToday ? MimiTheme.expenseBlue : (cell.expense > 0 || cell.income > 0 ? MimiTheme.textPrimary : MimiTheme.textMuted))
                                         }
                                     }
                                 }
@@ -242,13 +245,13 @@ public struct SideDrawerMenuView: View {
     }
 
     private func heatmapMiniColor(for cell: CalendarDaySummary) -> Color {
-        if cell.incomeAmount > 0 && cell.expenseAmount == 0 {
-            if cell.incomeAmount > 500 { return Color(hex: 0xFFD8B5) }
+        if cell.income > 0 && cell.expense == 0 {
+            if cell.income > 500 { return Color(hex: 0xFFD8B5) }
             return Color(hex: 0xFFEBD9)
         }
-        if cell.expenseAmount > 0 {
-            if cell.expenseAmount > 200 { return Color(hex: 0x90B8F8) }
-            if cell.expenseAmount > 30 { return Color(hex: 0xC3D7FD) }
+        if cell.expense > 0 {
+            if cell.expense > 200 { return Color(hex: 0x90B8F8) }
+            if cell.expense > 30 { return Color(hex: 0xC3D7FD) }
             return Color(hex: 0xDDE9FD)
         }
         return Color(hex: 0xF5F7FA)

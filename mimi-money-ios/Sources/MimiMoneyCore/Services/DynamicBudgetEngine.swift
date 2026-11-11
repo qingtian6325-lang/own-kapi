@@ -16,6 +16,8 @@ public struct DailyBudgetCellModel: Identifiable, Equatable, Sendable {
     public var isHighestExpenseDay: Bool { isHighestSpendDayInMonth }
     public var expense: Double { actualSpent }
     public var income: Double { actualIncome }
+    public var expenseAmount: Double { actualSpent }
+    public var incomeAmount: Double { actualIncome }
 
     public init(
         id: String,
