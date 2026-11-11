@@ -52,7 +52,9 @@ jobs:
           # invocation emits nothing — the const-extraction job is only
           # scheduled when object code is emitted.)
           mkdir -p constvals objs
+          ALL_SRCS="$(find Sources/MimiMoneyCore -name '*.swift' | sort)"
           while IFS= read -r src; do
+            [ -z "${src}" ] && continue
             base="$(basename "${src}" .swift)"
             xcrun --sdk iphoneos swiftc \
               -target arm64-apple-ios17.0 \
@@ -61,9 +63,9 @@ jobs:
               -emit-module-path "objs/${base}.swiftmodule" \
               -emit-const-values-path "constvals/${base}.swiftconstvalues" \
               -parse-as-library \
-              -c "${src}" -o "objs/${base}.o"
+              -c -primary-file "${src}" ${ALL_SRCS} -o "objs/${base}.o"
           done <<EOF_SRCS
-          $(find Sources/MimiMoneyCore -name '*.swift' | sort)
+          ${ALL_SRCS}
           EOF_SRCS
           echo "--- constvals emission diagnostics ---"
           ls constvals | head -30
