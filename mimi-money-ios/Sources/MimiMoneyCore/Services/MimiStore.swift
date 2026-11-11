@@ -253,7 +253,7 @@ public final class MimiStore: ObservableObject {
 
     // MARK: - Pending Shortcut Scan Staging （确认型识别流程的待确认暂存区）
     //
-    // v1.1.2 起「识别账单」改为确认型呈现：OCR 识别结果先暂存到这里
+    // v1.1.2 起「识别账单」改为确认型呈现：识别结果先暂存到这里
     // （isConfirmed=false），不进 transactions，因此不影响余额、列表与统计；
     // 用户在系统确认卡上点「确认」后才由 finalize 路径正式落盘，点「修改」
     // 则由 edit 路径以未确认状态转入正式记录并进 App 编辑，取消/下滑则永不落盘。

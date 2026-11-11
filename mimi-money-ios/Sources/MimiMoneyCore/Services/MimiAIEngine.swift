@@ -265,6 +265,16 @@ public final class MimiAIEngine: ObservableObject {
         saveHistory()
     }
 
+    /// 相册/拍照识别失败时如实告知：不生成草稿、不落账，并给出可行的下一步。
+    public func appendRecognitionFailure(_ dialogText: String, sourceLabel: String) {
+        messages.append(
+            AIChatMessageItem(isUser: false, userText: "", blocks: [
+                .text("小金主，\(sourceLabel)这张图没识别成。\(dialogText) 你可以换一张更清楚的截图再发，或直接用一句话把这笔账告诉我（例如：午餐 38）。")
+            ])
+        )
+        saveHistory()
+    }
+
     private func replaceMessageBlocks(id: UUID, blocks: [AIChatResponseBlock]) {
         guard let idx = messages.firstIndex(where: { $0.id == id }) else { return }
         messages[idx].blocks = blocks

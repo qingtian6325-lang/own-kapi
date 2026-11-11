@@ -484,6 +484,22 @@ public struct SettingsAndShortcutsGuideView: View {
         }
     }
 
+    /// 指南页效果预览用的示例账单（与预览卡上写死的示例为同一笔）：
+    /// 直接按结构构造，不再经任何文字解析。
+    fileprivate static func demoSampleDraft() -> ParsedDraftBill {
+        GeminiBillDTO(
+            type: "expense",
+            amount: 5.90,
+            counterparty: "Near Me Voucher Eggette Lab",
+            counterpartyKind: "merchant",
+            account: "TNGewallet",
+            primaryCategory: "餐饮",
+            subCategory: "零食甜品",
+            occurredAt: "2026-11-08 16:56",
+            note: ""
+        ).toDraftBill(now: Date())
+    }
+
     private func filteredTransactionsForExport() -> [TransactionItem] {
         let range = exportDateRange
         if let s = range.start, let e = range.end {
@@ -579,7 +595,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 Spacer()
             }
 
-            Text("付款完成后触发一次「咪咪记账 · 识别账单」快捷指令：系统自动截屏 → OCR 识别金额、商户与扣款账户 → 在当前付款 App 上方弹出卡片。点「修改 (View)」跳进 App 编辑该笔；点「确认 (Got it)」原地入账，不离开当前 App。下方四种触发方式任选一种绑定即可。")
+            Text("付款完成后触发一次「咪咪记账 · 识别账单」快捷指令：系统自动截屏 → AI 识别金额、商户与扣款账户 → 在当前付款 App 上方弹出卡片。点「修改 (View)」跳进 App 编辑该笔；点「确认 (Got it)」原地入账，不离开当前 App。下方四种触发方式任选一种绑定即可。")
                 .font(.system(size: 12))
                 .foregroundColor(MimiTheme.textSecondary)
 
@@ -720,22 +736,23 @@ public struct SettingsAndShortcutsGuideView: View {
             Button {
                 #if canImport(UIKit)
                 if let image = UIPasteboard.general.image, let pngData = image.pngData() {
-                    let draft = ReceiptOCRService.recognizeAndParseImageSync(pngData)
-                    let saved = ShortcutActionCoordinator.recordRecognizedDraft(draft, in: store)
-                    simulatedSnippetTx = saved
-                    statusBannerMessage = "已通过 Apple Vision 成功识别剪贴板账单截图并记账！"
-                } else if let clipStr = UIPasteboard.general.string, !clipStr.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    let draft = ReceiptOCRService.parseReceiptText(clipStr)
-                    let saved = ShortcutActionCoordinator.recordRecognizedDraft(draft, in: store)
-                    simulatedSnippetTx = saved
-                    statusBannerMessage = "已识别剪贴板账单文字并记账！"
+                    Task {
+                        do {
+                            let result = try await SmartReceiptRecognizer.recognize(imageData: pngData)
+                            await MainActor.run {
+                                let saved = ShortcutActionCoordinator.recordRecognizedDraft(result.draft, in: store)
+                                simulatedSnippetTx = saved
+                                statusBannerMessage = "已通过 AI 成功识别剪贴板账单截图并记账！"
+                            }
+                        } catch {
+                            await MainActor.run {
+                                statusBannerMessage = (error as? ReceiptRecognitionFailure)?.dialogText
+                                    ?? ReceiptRecognitionFailure.failed(reason: error.localizedDescription).dialogText
+                            }
+                        }
+                    }
                 } else {
-                    let demoDraft = ReceiptOCRService.parseReceiptText(
-                        "-RM5.90\nPayment - TNGD\nNear Me Voucher Eggette Lab\n08/11/2026 16:56:34"
-                    )
-                    let saved = ShortcutActionCoordinator.recordRecognizedDraft(demoDraft, in: store)
-                    simulatedSnippetTx = saved
-                    statusBannerMessage = "剪贴板无截图，已演示默认截图识别"
+                    statusBannerMessage = "剪贴板里没有截图：请先截屏付款页面，再点这个按钮。识别只走 AI，不会拿示例账单凑数。"
                 }
                 #endif
             } label: {
@@ -770,18 +787,12 @@ public struct SettingsAndShortcutsGuideView: View {
             ScreenshotResultSnippetView(
                 transaction: previewTx,
                 onModifyTapped: {
-                    let draft = ReceiptOCRService.parseReceiptText(
-                        "-RM5.90\nPayment - TNGD\nNear Me Voucher Eggette Lab\n08/11/2026 16:56:34"
-                    )
-                    let saved = ShortcutActionCoordinator.recordRecognizedDraft(draft, in: store)
+                    let saved = ShortcutActionCoordinator.recordRecognizedDraft(Self.demoSampleDraft(), in: store)
                     _ = ShortcutActionCoordinator.markForInAppModification(transactionId: saved.id, in: store)
                     onModifyTransactionFromPopup(saved)
                 },
                 onConfirmTapped: {
-                    let draft = ReceiptOCRService.parseReceiptText(
-                        "-RM5.90\nPayment - TNGD\nNear Me Voucher Eggette Lab\n08/11/2026 16:56:34"
-                    )
-                    let saved = ShortcutActionCoordinator.recordRecognizedDraft(draft, in: store)
+                    let saved = ShortcutActionCoordinator.recordRecognizedDraft(Self.demoSampleDraft(), in: store)
                     simulatedSnippetTx = saved
                     statusBannerMessage = "已确认记账：\(saved.categoryPath) -RM5.90 (TNGewallet)"
                 }
@@ -799,7 +810,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 .font(.system(size: 15, weight: .bold))
                 .foregroundColor(MimiTheme.textPrimary)
 
-            Text("填入 Google AI Studio 的免费 Gemini API Key 后，截图识别与 AI 问账优先走 Gemini（分类与备注更准）；未填、没网或额度用完时，会静默回退到本机 Vision OCR，不会丢账。Key 只保存在 iOS 钥匙串里，不会上传到任何其他地方。请注意：Google 免费层条款说明，提交的内容可能被用于改进其产品。")
+            Text("填入 Google AI Studio 的免费 Gemini API Key 后，截图识别与 AI 问账全部走 Gemini（纯 AI 识别，不再使用本机 OCR）；未填 Key、没网或额度用完时，识别会明确提示失败原因，不会用其他方式凑数，也不会记错账。Key 只保存在 iOS 钥匙串里，不会上传到任何其他地方。请注意：Google 免费层条款说明，提交的内容可能被用于改进其产品。")
                 .font(.system(size: 12))
                 .foregroundColor(MimiTheme.textSecondary)
 

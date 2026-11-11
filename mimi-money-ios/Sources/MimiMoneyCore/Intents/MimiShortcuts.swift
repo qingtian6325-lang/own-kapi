@@ -163,7 +163,6 @@ public enum ShortcutActionCoordinator {
         }
         if url.host == "quick-scan" {
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            let textParam = components?.queryItems?.first(where: { $0.name == "text" })?.value
             let amountParam = components?.queryItems?.first(where: { $0.name == "amount" })?.value
             let noteParam = components?.queryItems?.first(where: { $0.name == "note" || $0.name == "merchant" })?.value
             let accountParam = components?.queryItems?.first(where: { $0.name == "account" })?.value
@@ -185,17 +184,9 @@ public enum ShortcutActionCoordinator {
                     merchantOrNote: note,
                     occurredAt: Date()
                 )
-            } else if let txt = textParam, !txt.isEmpty {
-                draft = ReceiptOCRService.parseReceiptText(txt)
-            } else {
-                #if canImport(UIKit)
-                if let image = UIPasteboard.general.image, let pngData = image.pngData() {
-                    draft = ReceiptOCRService.recognizeAndParseImageSync(pngData)
-                } else if let clipText = UIPasteboard.general.string, !clipText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    draft = ReceiptOCRService.parseReceiptText(clipText)
-                }
-                #endif
             }
+            // v1.2.1：识别已改纯 AI（Gemini），URL 入口不再做文字/剪贴板解析；
+            // 只有带 amount 参数的快速记账会生成记录，其余情况走下方打开手动记账页。
 
             if let recognized = draft {
                 let saved = recordRecognizedDraft(recognized, in: store)
@@ -794,7 +785,7 @@ public struct ScanScreenshotIntent: AppIntent {
     @Parameter(title: "类型", default: 2)
     public var type: Int?
 
-    @Parameter(title: "版本", default: "1.2.0")
+    @Parameter(title: "版本", default: "1.2.1")
     public var version: String?
 
     public init() {}
@@ -802,32 +793,30 @@ public struct ScanScreenshotIntent: AppIntent {
     @MainActor
     public func perform() async throws -> some IntentResult & OpensIntent {
         let store = MimiStore.shared
-        let draft: ParsedDraftBill
-        var amountIsSuspicious = false
+        // v1.2.1：识别改纯 AI（Gemini），彻底移除 OCR，不再有任何兜底凑数。
+        // 识别失败直接抛 ReceiptRecognitionFailure（LocalizedError），捷徑会
+        // 把失败原因弹给用户看；失败时不暂存、不落账、不弹识别卡。
+        let screenshotData: Data?
         if let file = content {
-            // v1.2.0：截图识别走智能门面 — Gemini 单引擎优先，失败静默回退本地 OCR
-            let result = await SmartReceiptRecognizer.recognize(imageData: file.data)
-            draft = result.draft
-            amountIsSuspicious = result.isSuspiciousAmount
+            screenshotData = file.data
         } else {
             #if canImport(UIKit)
             if let image = UIPasteboard.general.image, let pngData = image.pngData() {
-                let result = await SmartReceiptRecognizer.recognize(imageData: pngData)
-                draft = result.draft
-                amountIsSuspicious = result.isSuspiciousAmount
-            } else if let clip = UIPasteboard.general.string, !clip.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                draft = ReceiptOCRService.parseReceiptText(clip)
+                screenshotData = pngData
             } else {
-                draft = ReceiptOCRService.parseReceiptText(
-                    "-RM5.90\nPayment - TNGD\nNear Me Voucher Eggette Lab\n08/11/2026 16:56:34"
-                )
+                screenshotData = nil
             }
             #else
-            draft = ReceiptOCRService.parseReceiptText(
-                "-RM5.90\nPayment - TNGD\nNear Me Voucher Eggette Lab\n08/11/2026 16:56:34"
-            )
+            screenshotData = nil
             #endif
         }
+        guard let imageData = screenshotData else {
+            GeminiSettings.recordCallStatus(success: false, message: ReceiptRecognitionFailure.noImage.statusText)
+            throw ReceiptRecognitionFailure.noImage
+        }
+        let recognition = try await SmartReceiptRecognizer.recognize(imageData: imageData)
+        let draft = recognition.draft
+        let amountIsSuspicious = recognition.isSuspiciousAmount
         // 呈现分层（v1.1.4）：
         // - iOS 26+：requestChoice 选项卡探针（见 performScanChoice）。前几版已
         //   证实：结果型 snippet 底部必带系统 Done、确认型必带 Cancel＋主钮一对

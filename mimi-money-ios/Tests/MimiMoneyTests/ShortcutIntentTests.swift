@@ -3,10 +3,26 @@ import XCTest
 
 @MainActor
 final class ShortcutIntentTests: XCTestCase {
+    /// 与旧示例截图等价的账单草稿（餐饮-零食甜品 RM5.90、TNGewallet），
+    /// 走 Gemini 结构化结果的同一条换算路径构造，不经任何文字解析。
+    private func sampleDraft() -> ParsedDraftBill {
+        GeminiBillDTO(
+            type: "expense",
+            amount: 5.90,
+            counterparty: "Near Me Voucher Eggette Lab",
+            counterpartyKind: "merchant",
+            account: "TNGewallet",
+            primaryCategory: "餐饮",
+            subCategory: "零食甜品",
+            occurredAt: "2026-11-08 16:56",
+            note: ""
+        ).toDraftBill(now: Date())
+    }
+
     func testShortcutRecognizeAndConfirmSavesDirectly() {
         let store = MimiStore(inMemory: true)
         let initialCount = store.transactions.count
-        let draft = ReceiptOCRService.parseReceiptText("-RM5.90\nPayment - TNGD\nNear Me Voucher Eggette Lab\n08/11/2026 16:56:34")
+        let draft = sampleDraft()
         let saved = ShortcutActionCoordinator.recordRecognizedDraft(draft, in: store)
         XCTAssertEqual(store.transactions.count, initialCount + 1)
         XCTAssertEqual(saved.amount, 5.90, accuracy: 0.001)
@@ -15,7 +31,7 @@ final class ShortcutIntentTests: XCTestCase {
 
     func testShortcutModifyButtonDeepLinksIntoAppBillEditor() {
         let store = MimiStore(inMemory: true)
-        let draft = ReceiptOCRService.parseReceiptText("-RM5.90\nPayment - TNGD\nNear Me Voucher Eggette Lab")
+        let draft = sampleDraft()
         let saved = ShortcutActionCoordinator.recordRecognizedDraft(draft, in: store)
         let url = ShortcutActionCoordinator.markForInAppModification(transactionId: saved.id, in: store)
         XCTAssertEqual(url.absoluteString, "mimimoney://edit-bill?id=\(saved.id.uuidString)")
@@ -43,7 +59,7 @@ final class ShortcutIntentTests: XCTestCase {
         let store = MimiStore(inMemory: true)
         let initialCount = store.transactions.count
         let tngBefore = store.accounts.first(where: { $0.id == "acc_tng" })?.balance ?? 0
-        let draft = ReceiptOCRService.parseReceiptText("-RM5.90\nPayment - TNGD\nNear Me Voucher Eggette Lab\n08/11/2026 16:56:34")
+        let draft = sampleDraft()
 
         let staged = ShortcutActionCoordinator.stageRecognizedDraft(draft, in: store)
         XCTAssertFalse(staged.isConfirmed)
@@ -64,7 +80,7 @@ final class ShortcutIntentTests: XCTestCase {
     func testFinalizePendingScanIsIdempotent() {
         let store = MimiStore(inMemory: true)
         let initialCount = store.transactions.count
-        let draft = ReceiptOCRService.parseReceiptText("-RM5.90\nPayment - TNGD\nNear Me Voucher Eggette Lab\n08/11/2026 16:56:34")
+        let draft = sampleDraft()
         let staged = ShortcutActionCoordinator.stageRecognizedDraft(draft, in: store)
 
         XCTAssertNotNil(ShortcutActionCoordinator.finalizePendingScan(id: staged.id, in: store))
@@ -75,7 +91,7 @@ final class ShortcutIntentTests: XCTestCase {
     func testConsumePendingScanForEditRecordsUnconfirmedAndDeepLinks() {
         let store = MimiStore(inMemory: true)
         let initialCount = store.transactions.count
-        let draft = ReceiptOCRService.parseReceiptText("-RM5.90\nPayment - TNGD\nNear Me Voucher Eggette Lab\n08/11/2026 16:56:34")
+        let draft = sampleDraft()
         let staged = ShortcutActionCoordinator.stageRecognizedDraft(draft, in: store)
 
         let editing = ShortcutActionCoordinator.consumePendingScanForEdit(id: staged.id, in: store)
@@ -97,7 +113,7 @@ final class ShortcutIntentTests: XCTestCase {
     func testDiscardPendingScanNeverRecords() {
         let store = MimiStore(inMemory: true)
         let initialCount = store.transactions.count
-        let draft = ReceiptOCRService.parseReceiptText("-RM5.90\nPayment - TNGD\nNear Me Voucher Eggette Lab\n08/11/2026 16:56:34")
+        let draft = sampleDraft()
         let staged = ShortcutActionCoordinator.stageRecognizedDraft(draft, in: store)
         store.discardPendingScan(id: staged.id)
         XCTAssertEqual(store.pendingScanTransactions.count, 0)
@@ -144,13 +160,17 @@ final class ShortcutIntentTests: XCTestCase {
         XCTAssertTrue(ScanChoicePlan.finalizesInPerform(for: .gotIt))
     }
 
-    func testQuickScanURLSchemeWithOCRText() {
+    // v1.2.1：识别改纯 AI 后，quick-scan 只认带 amount 参数的快速记账；
+    // 只带 text 的链接不再解析文字、不记账，只打开手动记账页。
+    func testQuickScanURLSchemeWithTextOnlyDoesNotRecord() {
         let store = MimiStore(inMemory: true)
+        let initialCount = store.transactions.count
         let raw = "-RM38.78\nPayment - PBB\nPetronas Gas\n08/11/2026".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
         let url = URL(string: "mimimoney://quick-scan?text=\(raw)")!
         let handled = ShortcutActionCoordinator.handleIncomingURL(url, in: store)
         XCTAssertTrue(handled)
-        XCTAssertEqual(store.pendingShortcutSnippetBill?.amount ?? 0.0, 38.78, accuracy: 0.001)
-        XCTAssertEqual(store.pendingShortcutSnippetBill?.accountName, "PBBank")
+        XCTAssertEqual(store.transactions.count, initialCount)
+        XCTAssertNil(store.pendingShortcutSnippetBill)
+        XCTAssertTrue(store.isRecordSheetPresented)
     }
 }

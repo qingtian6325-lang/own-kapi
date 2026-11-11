@@ -18,6 +18,7 @@ public struct MimiRootContainerView: View {
     @State private var showHomeAlbumPicker: Bool = false
     @State private var showHomeCameraPicker: Bool = false
     @State private var homeRecognizedDraft: ParsedDraftBill?
+    @State private var homeRecognitionFailureText: String?
 
     @MainActor
     public init(store: MimiStore = .shared) {
@@ -316,14 +317,31 @@ public struct MimiRootContainerView: View {
                 activeBillForEdit = match
             }
         }
+        .alert("AI 识别失败", isPresented: Binding(
+            get: { homeRecognitionFailureText != nil },
+            set: { if !$0 { homeRecognitionFailureText = nil } }
+        )) {
+            Button("好") { homeRecognitionFailureText = nil }
+        } message: {
+            Text(homeRecognitionFailureText ?? "")
+        }
     }
 
-    /// 首页问账条面板选图/拍照后的识别：Gemini 优先、静默回退本地 OCR，结果以草稿卡等待确认。
+    /// 首页问账条面板选图/拍照后的识别：纯 AI（Gemini），成功才出草稿卡等待确认；
+    /// 失败弹窗如实说明原因，不生成草稿、不落账。
     private func recognizeHomeImage(_ imageData: Data) {
         Task {
-            let result = await SmartReceiptRecognizer.recognize(imageData: imageData)
-            await MainActor.run {
-                homeRecognizedDraft = result.draft
+            do {
+                let result = try await SmartReceiptRecognizer.recognize(imageData: imageData)
+                await MainActor.run {
+                    homeRecognizedDraft = result.draft
+                }
+            } catch {
+                let text = (error as? ReceiptRecognitionFailure)?.dialogText
+                    ?? ReceiptRecognitionFailure.failed(reason: error.localizedDescription).dialogText
+                await MainActor.run {
+                    homeRecognitionFailureText = text
+                }
             }
         }
     }

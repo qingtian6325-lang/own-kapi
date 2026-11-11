@@ -35,6 +35,7 @@ public struct RecordAndAISheetView: View {
     @State private var showChatAttachmentPanel: Bool = false
     @State private var showChatAlbumPicker: Bool = false
     @State private var showChatCameraPicker: Bool = false
+    @State private var recognitionFailureText: String?
     #if canImport(Speech) && canImport(AVFoundation)
     @StateObject private var speechTranscriber = SpeechTranscriber()
     #endif
@@ -135,11 +136,19 @@ public struct RecordAndAISheetView: View {
                 pickerSourceType = .photoLibrary
                 showImagePickerSheet = true
             }
-            Button("📋 识别剪贴板文本或图片") {
+            Button("📋 识别剪贴板图片") {
                 readFromClipboard()
             }
             #endif
             Button("取消", role: .cancel) {}
+        }
+        .alert("AI 识别失败", isPresented: Binding(
+            get: { recognitionFailureText != nil },
+            set: { if !$0 { recognitionFailureText = nil } }
+        )) {
+            Button("好") { recognitionFailureText = nil }
+        } message: {
+            Text(recognitionFailureText ?? "")
         }
         #if canImport(UIKit)
         .sheet(isPresented: $showImagePickerSheet) {
@@ -148,9 +157,15 @@ public struct RecordAndAISheetView: View {
                     let filename = store.saveReceiptImage(data: data)
                     attachedReceiptFilenames.append(filename)
                     Task {
-                        let result = await SmartReceiptRecognizer.recognize(imageData: data)
-                        await MainActor.run {
-                            applyDraft(result.draft)
+                        do {
+                            let result = try await SmartReceiptRecognizer.recognize(imageData: data)
+                            await MainActor.run {
+                                applyDraft(result.draft)
+                            }
+                        } catch {
+                            await MainActor.run {
+                                recognitionFailureText = recognitionDialogText(for: error)
+                            }
                         }
                     }
                 }
@@ -241,15 +256,28 @@ public struct RecordAndAISheetView: View {
         }
     }
 
-    /// 聊天层相册/拍照选图后：Gemini 优先识别，草稿进聊天等确认。
+    /// 聊天层相册/拍照选图后：纯 AI（Gemini）识别，草稿进聊天等确认；
+    /// 失败时在聊天里如实说明原因，不生成草稿、不落账，可重试。
     private func recognizeChatImage(_ imageData: Data, sourceLabel: String) {
         showChatAttachmentPanel = false
         Task {
-            let result = await SmartReceiptRecognizer.recognize(imageData: imageData)
-            await MainActor.run {
-                aiEngine.appendRecognizedDraft(result.draft, sourceLabel: sourceLabel)
+            do {
+                let result = try await SmartReceiptRecognizer.recognize(imageData: imageData)
+                await MainActor.run {
+                    aiEngine.appendRecognizedDraft(result.draft, sourceLabel: sourceLabel)
+                }
+            } catch {
+                await MainActor.run {
+                    aiEngine.appendRecognitionFailure(recognitionDialogText(for: error), sourceLabel: sourceLabel)
+                }
             }
         }
+    }
+
+    /// 把识别失败统一换成给用户看的中文说明。
+    private func recognitionDialogText(for error: Error) -> String {
+        (error as? ReceiptRecognitionFailure)?.dialogText
+            ?? ReceiptRecognitionFailure.failed(reason: error.localizedDescription).dialogText
     }
 
     private var sheetTopHeader: some View {
@@ -693,11 +721,20 @@ public struct RecordAndAISheetView: View {
         if let image = UIPasteboard.general.image, let pngData = image.pngData() {
             let filename = store.saveReceiptImage(data: pngData)
             attachedReceiptFilenames.append(filename)
-            let draft = ReceiptOCRService.recognizeAndParseImageSync(pngData)
-            applyDraft(draft)
-        } else if let clip = UIPasteboard.general.string, !clip.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            let draft = ReceiptOCRService.parseReceiptText(clip)
-            applyDraft(draft)
+            Task {
+                do {
+                    let result = try await SmartReceiptRecognizer.recognize(imageData: pngData)
+                    await MainActor.run {
+                        applyDraft(result.draft)
+                    }
+                } catch {
+                    await MainActor.run {
+                        recognitionFailureText = recognitionDialogText(for: error)
+                    }
+                }
+            }
+        } else {
+            recognitionFailureText = "剪贴板里没有图片。AI 识别需要付款截图或收据照片，请先截屏、或把图片复制到剪贴板后再试。"
         }
         #endif
     }

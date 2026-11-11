@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.2.1] - 2026-11-11
+
+### 🎯 Highlights
+- **识别改纯 AI，彻底移除 OCR**：v1.2.0 的「Gemini 优先、失败静默回退本地 Vision OCR」被取消——`ReceiptOCRService` 已从工程中删除，运行时再无任何路径调用它做识别。所有识别入口（「识别账单」Intent、首页问账条相册/拍照、聊天层相册/拍照、记账页加小票与剪贴板图片、指南页剪贴板一键记账）只走 Gemini。
+- **失败明说、绝不凑数**：没填 key、无网络、超时（8 秒）、HTTP/额度错误、返回无法解析时，一律不暂存、不落账、不生成草稿：Intent 路径直接把失败原因弹给用户（简洁中文，含检查 Key/网络的指引）；App 内路径弹窗或在聊天里如实说明并可重试；设置页「最近一次调用状态」继续如实记录失败原因。Intent 在没有收到截图时同样明确提示，不再拿示例账单顶替。URL 快速记账入口不再解析文字，只保留带 amount 参数的快速记账，其余打开手动记账页；设置页与指南页中描述 OCR 兜底的文案已同步更正。
+- **prompt 强化「认真读细节」**：新增硬指令——先读完整个交易详情页再填写；商家全名以页面上的商家/收款方字段为准（如 Paid to / Merchant / 收款方 / 店名抬头）；状态栏的时间、电量、信号绝不进入任何字段；参考号/交易号/Wallet Ref 等长编号不是金额也不是备注；备注仍按既有三规则生成，商家名必须是真读到的名字，读不到留空、不许用数字碎片凑。
+- **其余不动**：Gemini 客户端、Key 的 Keychain 存储、设置页、金额合理性拦截、呈现层结构（iOS 26 requestChoice / 18–25 确认型 / 17 降级）、AI 助手其他功能与数据模型均未改变；「识别账单」Version 参数默认更新为 1.2.1。测试按新契约调整：新增纯 AI 失败/成功路径用例（失败不暂存不落账、超时文案、额度文案），旧 OCR 解析用例改用 Gemini 结构化结果表达同一批真实场景。
+
 ## [v1.2.0] - 2026-11-11
 
 ### 🤖 A 部分：识别改 Gemini 单引擎
