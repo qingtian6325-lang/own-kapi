@@ -468,7 +468,7 @@ public struct RecordAndAISheetView: View {
                                     }
                                     .contentShape(Rectangle())
                                     .onTapGesture {
-                                        if let d = data ?? store.loadReceiptImageData(filename: filename) {
+                                        if let d = data ?? store.loadReceiptImageData(filename: path) {
                                             activeViewerItem = ReceiptViewerItem(imageData: d)
                                         }
                                     }
