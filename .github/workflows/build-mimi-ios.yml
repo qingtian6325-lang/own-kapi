@@ -44,38 +44,30 @@ jobs:
           BIN_PATH="$(find .build -path "*/release/MimiMoneyApp" -type f | head -n 1)"
           echo "BIN_PATH=${BIN_PATH}" >> "$GITHUB_ENV"
           echo "Built executable: ${BIN_PATH}"
-          # Step 2: a dedicated whole-module pass over MimiMoneyCore sources
-          # that ONLY emits the .swiftconstvalues sidecars which
-          # appintentsmetadataprocessor consumes. (The swiftc -c build does
-          # not emit them per-file; this manual pass is the equivalent of
-          # Xcode's SWIFT_ENABLE_EMIT_CONST_VALUES build setting.)
-          mkdir -p constvals module
-          xcrun --sdk iphoneos swiftc \
-            -target arm64-apple-ios17.0 \
-            -sdk "${IOS_SDK_PATH}" \
-            -module-name MimiMoneyCore \
-            -emit-module -emit-module-path module/MimiMoneyCore.swiftmodule \
-            -emit-const-values-path constvals/MimiMoneyCore.swiftconstvalues \
-            -parse-as-library \
-            -O \
-            $(find Sources/MimiMoneyCore -name '*.swift' | sort)
-          # Variant B: whole-module-optimization merges everything into a
-          # single frontend job — the mode in which -emit-const-values-path
-          # reliably produces one module-wide .swiftconstvalues file.
-          mkdir -p constvals-wmo module-wmo
-          xcrun --sdk iphoneos swiftc \
-            -target arm64-apple-ios17.0 \
-            -sdk "${IOS_SDK_PATH}" \
-            -module-name MimiMoneyCore \
-            -emit-module -emit-module-path module-wmo/MimiMoneyCore.swiftmodule \
-            -emit-const-values-path constvals-wmo/MimiMoneyCore.swiftconstvalues \
-            -whole-module-optimization \
-            -parse-as-library \
-            -O \
-            $(find Sources/MimiMoneyCore -name '*.swift' | sort)
+          # Step 2: compile MimiMoneyCore to OBJECTS with the driver flag
+          # -emit-const-values-path set per file. This replicates exactly how
+          # Xcode (SWIFT_ENABLE_EMIT_CONST_VALUES=YES) produces the
+          # .swiftconstvalues sidecars that appintentsmetadataprocessor eats.
+          # (Merely passing -emit-const-values-path on a -emit-module-only
+          # invocation emits nothing — the const-extraction job is only
+          # scheduled when object code is emitted.)
+          mkdir -p constvals objs
+          while IFS= read -r src; do
+            base="$(basename "${src}" .swift)"
+            xcrun --sdk iphoneos swiftc \
+              -target arm64-apple-ios17.0 \
+              -sdk "${IOS_SDK_PATH}" \
+              -module-name MimiMoneyCore \
+              -emit-module-path "objs/${base}.swiftmodule" \
+              -emit-const-values-path "constvals/${base}.swiftconstvalues" \
+              -parse-as-library \
+              -c "${src}" -o "objs/${base}.o"
+          done <<EOF_SRCS
+          $(find Sources/MimiMoneyCore -name '*.swift' | sort)
+          EOF_SRCS
           echo "--- constvals emission diagnostics ---"
-          ls -la constvals constvals-wmo || true
-          find . -name '*.swiftconstvalues' | head -20 || true
+          ls constvals | head -30
+          echo "constvals count: $(ls constvals | wc -l)"
 
       - name: Extract AppIntents metadata (appintentsmetadataprocessor)
         run: |
@@ -113,11 +105,7 @@ jobs:
           echo "Xcode version: ${XCODE_VERSION}"
 
           find "${PWD}/Sources/MimiMoneyCore" -name '*.swift' | sort > source-file-list.txt
-          if find "${PWD}/constvals-wmo" -name '*.swiftconstvalues' 2>/dev/null | grep -q .; then
-            find "${PWD}/constvals-wmo" -name '*.swiftconstvalues' | sort > swift-const-vals-list.txt
-          else
-            find "${PWD}/constvals" .build -name '*.swiftconstvalues' 2>/dev/null | sort > swift-const-vals-list.txt
-          fi
+          find "${PWD}/constvals" .build -name '*.swiftconstvalues' 2>/dev/null | sort > swift-const-vals-list.txt
           echo "--- source-file-list ($(wc -l < source-file-list.txt) files) ---"
           cat source-file-list.txt
           echo "--- swift-const-vals-list ($(wc -l < swift-const-vals-list.txt) files) ---"
