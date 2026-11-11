@@ -21,6 +21,32 @@ final class AIEngineAndOCRTests: XCTestCase {
         XCTAssertTrue(draft.merchantOrNote.contains("Near Me Voucher"))
     }
 
+    func testYingLaiRestaurantScreenshot() {
+        let rawOCR = """
+        Payment Details    Payment - YING LAI RESTAURANT
+        Payment Method     eWallet Balance
+        Date/Time          10/11/2026 12:13:53
+        Wallet Ref         202611010110000010000TNGOW3MY171298463730209
+        Status             Successful
+        Transaction No.    20261110TNGDMYNB030OQR0lhbeyts
+        -RM10.30
+        """
+        let draft = ReceiptOCRService.parseReceiptText(rawOCR)
+        XCTAssertEqual(draft.amount, 10.30, accuracy: 0.001)
+        XCTAssertEqual(draft.type, .expense)
+        XCTAssertEqual(draft.merchantOrNote, "YING LAI RESTAURANT")
+        XCTAssertEqual(draft.categoryDisplayName, "餐饮-餐厅")
+        XCTAssertEqual(draft.accountDisplayName, "TNGewallet")
+
+        let cal = Calendar(identifier: .gregorian)
+        let comps = cal.dateComponents([.year, .month, .day, .hour, .minute], from: draft.occurredAt)
+        XCTAssertEqual(comps.year, 2026)
+        XCTAssertEqual(comps.month, 11)
+        XCTAssertEqual(comps.day, 10)
+        XCTAssertEqual(comps.hour, 12)
+        XCTAssertEqual(comps.minute, 13)
+    }
+
     func testTransferReceiptRecipientAndDateExtraction() {
         let transferOCR = """
         DuitNow Transfer
