@@ -151,8 +151,9 @@ public final class MimiStore: ObservableObject {
             }
         }
 
-        // 6. Last resort: if the string itself is bare base64 (>= 100 chars)
-        if clean.count >= 100, let bareDecoded = Data(base64Encoded: clean, options: .ignoreUnknownCharacters) {
+        // 6. Last resort: if the string itself is bare base64 (not a standard filename or path)
+        if !clean.contains(".") && !clean.contains("/") && !clean.contains("\\"),
+           let bareDecoded = Data(base64Encoded: clean, options: .ignoreUnknownCharacters), !bareDecoded.isEmpty {
             Self.receiptMemoryCache[clean] = bareDecoded
             return bareDecoded
         }
