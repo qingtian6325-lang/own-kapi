@@ -19,6 +19,34 @@ public struct ShortcutExecutionOutcome: Equatable, Sendable {
     }
 }
 
+// MARK: - Scan Confirmation Follow-Up Decision (v1.1.3)
+
+/// 确认卡交互结束后的动作决策（纯逻辑，可单测）。
+///
+/// v1.1.3 起确认卡的系统按钮对改名为 View / Got it（与 Kapi 一致）：
+/// 点「Got it」（accept）时 requestConfirmation 正常返回，随后落盘结束；
+/// 点「View」（deny）或下滑关卡时，系统以同一种「取消」信号抛错回来，
+/// 两者无法区分——按产品决策统一当作「去修改」：不落正式账，
+/// 改为打开 App 到这笔的编辑页。其他错误则作废这笔，安静结束。
+public enum ScanConfirmationFollowUp: Equatable, Sendable {
+    /// 点了「View」或下滑关卡：打开 App 改这笔（暂存转未确认记录）。
+    case openEditor
+    /// 其他错误：作废暂存，不落盘、不打开 App。
+    case discard
+
+    public static func followUp(for error: Error) -> ScanConfirmationFollowUp {
+        isCancellation(error) ? .openEditor : .discard
+    }
+
+    /// 取消类错误的判定：requestConfirmation 被拒绝/取消时按官方约定抛
+    /// CancellationError；个别系统路径可能换一种错误类型回传，故再按
+    /// 错误类型名含 "cancel" 兜底（只认类型名，避免把无关 NSError 误判）。
+    public static func isCancellation(_ error: Error) -> Bool {
+        if error is CancellationError { return true }
+        return String(describing: type(of: error)).localizedCaseInsensitiveContains("cancel")
+    }
+}
+
 @MainActor
 public enum ShortcutActionCoordinator {
     /// 「添加专属指令」一键导入链接（iCloud 快捷指令分享链接，形如 https://www.icloud.com/shortcuts/xxxx）。
@@ -349,20 +377,15 @@ public struct ScreenshotResultSnippetView: View {
 // MARK: - Scan Confirmation Card View (确认型呈现专用，v1.1.2)
 
 /// 确认卡卡面：与 ScreenshotResultSnippetView 上半部长相一致（分类图标+分类-二级、
-/// 金额、账户 chip、备注 chip、时间、✓ 识别提示一行），但不带自制「确认 (Got it)」
-/// 按钮——确认动作由系统在卡片下方渲染（requestConfirmation 的 actionName），
-/// 卡内只保留一个「修改 (View)」按钮：点它走 OpenPendingScanForEditIntent，
-/// 把暂存转为未确认正式记录并打开 App 编辑页。
+/// 金额、账户 chip、备注 chip、时间、✓ 识别提示一行）。v1.1.3 起卡内不放任何
+/// 自制按钮——卡面下方只有系统渲染的一对按钮 View / Got it（requestConfirmation
+/// 的 actionName 改名而来，与 Kapi 一致）：Got it = 确认入账，View = 打开 App
+/// 改这笔（经 perform 的 catch 分支接成 opensIntent，见 ScanScreenshotIntent）。
 public struct ScanConfirmationCardView: View {
     public let transaction: TransactionItem
-    public var onModifyTapped: (() -> Void)?
 
-    public init(
-        transaction: TransactionItem,
-        onModifyTapped: (() -> Void)? = nil
-    ) {
+    public init(transaction: TransactionItem) {
         self.transaction = transaction
-        self.onModifyTapped = onModifyTapped
     }
 
     private var formattedTimestamp: String {
@@ -440,26 +463,8 @@ public struct ScanConfirmationCardView: View {
                     .foregroundColor(MimiTheme.textSecondary)
             }
 
-            // 只有一个「修改 (View)」按钮：确认由系统按钮承担，这里不再放自制确认按钮。
-            #if canImport(AppIntents)
-            if #available(iOS 16.0, *) {
-                Button(intent: OpenPendingScanForEditIntent(transactionId: transaction.id)) {
-                    Text("修改 (View)")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(MimiTheme.textPrimary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .background(
-                            Capsule().fill(Color(hex: 0xEDEFF5))
-                        )
-                }
-                .buttonStyle(.plain)
-            } else {
-                fallbackModifyButton
-            }
-            #else
-            fallbackModifyButton
-            #endif
+            // v1.1.3：卡内不再有任何自制按钮。View / Got it 由系统在卡面
+            // 下方成对渲染（见 requestScanConfirmation 的 actionName 改名）。
         }
         .padding(16)
         .background(
@@ -471,22 +476,6 @@ public struct ScanConfirmationCardView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .shadow(color: Color.black.opacity(0.12), radius: 18, x: 0, y: 6)
-    }
-
-    private var fallbackModifyButton: some View {
-        Button {
-            onModifyTapped?()
-        } label: {
-            Text("修改 (View)")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(MimiTheme.textPrimary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 11)
-                .background(
-                    Capsule().fill(Color(hex: 0xEDEFF5))
-                )
-        }
-        .buttonStyle(.plain)
     }
 }
 
@@ -579,7 +568,7 @@ public struct OpenPendingScanForEditIntent: AppIntent {
 }
 
 /// iOS 26 确认型呈现的卡片驱动 Intent：按账单 id 从暂存区（或已落盘记录）取账单，
-/// 渲染 ScanConfirmationCardView。系统在点卡内按钮后会重跑本 Intent 刷新卡面，
+/// 渲染 ScanConfirmationCardView。系统在交互后可能重跑本 Intent 刷新卡面，
 /// 所以取不到暂存时回退到正式记录，保证卡面不空白。
 @available(iOS 26.0, macOS 26.0, *)
 public struct ScanConfirmationSnippetIntent: SnippetIntent {
@@ -628,13 +617,13 @@ public struct ScanScreenshotIntent: AppIntent {
     @Parameter(title: "类型", default: 2)
     public var type: Int?
 
-    @Parameter(title: "版本", default: "1.1.2")
+    @Parameter(title: "版本", default: "1.1.3")
     public var version: String?
 
     public init() {}
 
     @MainActor
-    public func perform() async throws -> some IntentResult {
+    public func perform() async throws -> some IntentResult & OpensIntent {
         let store = MimiStore.shared
         let draft: ParsedDraftBill
         if let file = content {
@@ -657,30 +646,54 @@ public struct ScanScreenshotIntent: AppIntent {
             #endif
         }
         // 确认型呈现（v1.1.2）：识别结果先暂存（不落盘）→ requestConfirmation 弹确认卡
-        // → 用户点系统「确认」后才正式落盘 → 返回空 .result()。
-        // 返回空结果意味着没有任何可呈现内容，捷徑流程直接结束回原 App，
-        // 不再出现结果型 snippet 底部那个系统 Done 按钮（WWDC25-281：
-        // 结果型 snippet 底部唯一按钮就是 Done，确认型没有这个问题）。
-        // 取消/下滑时 requestConfirmation 抛错：按官方指引（WWDC25-275）
-        // 不 catch、让它终止 perform，暂存永不落盘，等于丢弃这笔。
+        // → 用户点确认后才正式落盘 → 返回无可呈现内容的结果。
+        // 没有可呈现内容意味着捷徑流程直接结束回原 App，不再出现结果型
+        // snippet 底部那个系统 Done 按钮（WWDC25-281：结果型 snippet 底部
+        // 唯一按钮就是 Done，确认型没有这个问题）。
+        //
+        // v1.1.3：卡上只剩系统渲染的一对按钮 View / Got it（actionName 改名）。
+        // - 点「Got it」(accept)：requestConfirmation 正常返回 → 正式落盘 →
+        //   以 opensIntent 收尾（ConfirmBillIntent 是 openAppWhenRun=false 的
+        //   静默收尾 Intent，不打开 App、无任何呈现）。
+        // - 点「View」(deny) 或下滑关卡：系统以取消类错误抛回 perform，两者
+        //   无法区分，统一按「去修改」处理——不落正式账，返回 opensIntent
+        //   打开 OpenPendingScanForEditIntent（消费暂存→未确认记录→开 App
+        //   定位编辑页）。这推翻了 v1.1.2「取消不 catch」的官方默认指引，
+        //   是为实现 View 语义刻意为之（用户已知情：下滑也会打开 App）。
+        // - 其他错误：作废暂存，安静收尾，不落盘、不打开 App、不向上抛。
         let staged = ShortcutActionCoordinator.stageRecognizedDraft(draft, in: store)
-        try await requestScanConfirmation(for: staged)
+        do {
+            try await requestScanConfirmation(for: staged)
+        } catch {
+            switch ScanConfirmationFollowUp.followUp(for: error) {
+            case .openEditor:
+                return .result(opensIntent: OpenPendingScanForEditIntent(transactionId: staged.id))
+            case .discard:
+                store.discardPendingScan(id: staged.id)
+                return .result(opensIntent: ConfirmBillIntent(transactionId: staged.id))
+            }
+        }
         _ = ShortcutActionCoordinator.finalizePendingScan(id: staged.id, in: store)
-        return .result()
+        return .result(opensIntent: ConfirmBillIntent(transactionId: staged.id))
     }
 
-    /// 按系统版本分层弹确认卡：
-    /// iOS 26+ 用 SnippetIntent 驱动的互动确认卡（确认按钮文案「确认」）；
-    /// iOS 18–25 用带 content 视图的确认；更低版本降级为纯 dialog 文字确认。
+    /// 按系统版本分层弹确认卡，按钮文案统一改名为 View / Got it（与 Kapi 一致）：
+    /// iOS 26+ 用 SnippetIntent 驱动的互动确认卡；
+    /// iOS 18–25 用带 content 视图的确认（同一套 ConfirmationActionName.custom）；
+    /// iOS 17 的旧确认 API 只接受预置文案（.log，对应 Log / Cancel），无法改名，
+    /// 功能不变——这是该层的既有限制。
     @MainActor
     private func requestScanConfirmation(for transaction: TransactionItem) async throws {
         if #available(iOS 26.0, macOS 26.0, *) {
             try await requestConfirmation(
-                actionName: .custom(acceptLabel: "确认", acceptAlternatives: [], denyLabel: "取消", denyAlternatives: []),
+                actionName: .custom(acceptLabel: "Got it", acceptAlternatives: [], denyLabel: "View", denyAlternatives: []),
                 snippetIntent: ScanConfirmationSnippetIntent(transactionId: transaction.id)
             )
         } else if #available(iOS 18.0, macOS 15.0, *) {
-            try await requestConfirmation(actionName: .log, dialog: nil, showDialogAsPrompt: false) {
+            try await requestConfirmation(
+                actionName: .custom(acceptLabel: "Got it", acceptAlternatives: [], denyLabel: "View", denyAlternatives: []),
+                dialog: nil, showDialogAsPrompt: false
+            ) {
                 ScanConfirmationCardView(transaction: transaction)
             }
         } else {

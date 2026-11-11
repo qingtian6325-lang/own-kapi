@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.1.3] - 2026-11-11
+
+### 🎨 Highlights
+- **卡上只剩 View / Got it 两个按钮，与 Kapi 一模一样**：v1.1.2 的确认卡是系统按钮对「取消／确认」、卡内另有一颗自制「修改 (View)」按钮。v1.1.3 把系统确认按钮对的文案直接改名为 **View（左、灰）/ Got it（右、蓝）**——位置与配色本就是同一套系统排版——并撤掉卡内自制按钮。卡上只剩账单信息、✓ 提示行和这一对按钮，没有多余的选择。
+- **点 View 打开 App 改这笔**：系统层面「点 deny 按钮」与「下滑关卡」是同一种取消信号、无法区分，本版统一接成「修改」语义：不落正式账，暂存转未确认记录并打开 App 定位到这笔的编辑页（下滑关卡同样会打开 App，这是该机制的已知行为）。其他异常则作废这笔、安静结束。
+- **点 Got it 才入账**：与 v1.1.2 相同，点 Got it（原「确认」）后才正式记账，随后直接结束回原 App，全程没有 Done。
+- **分层差异**：iOS 26+ 与 iOS 18–25 均使用 View / Got it 自定义文案；iOS 17 的旧确认 API 只接受系统预置文案（Log / Cancel），无法改名，功能不变。App 内扫描后的浮层卡片行为不变。
+
 ## [v1.1.2] - 2026-11-11
 
 ### 🚀 Highlights

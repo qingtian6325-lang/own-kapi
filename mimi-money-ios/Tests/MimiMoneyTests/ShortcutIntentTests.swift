@@ -105,6 +105,27 @@ final class ShortcutIntentTests: XCTestCase {
         XCTAssertEqual(store.transactions.count, initialCount)
     }
 
+    // MARK: - v1.1.3 确认卡按钮决策：取消类错误 → 打开编辑；其他错误 → 作废
+
+    func testScanConfirmationFollowUpCancellationOpensEditor() {
+        // 点「View」(deny) / 下滑关卡 → CancellationError → 打开 App 改这笔
+        XCTAssertTrue(ScanConfirmationFollowUp.isCancellation(CancellationError()))
+        XCTAssertEqual(ScanConfirmationFollowUp.followUp(for: CancellationError()), .openEditor)
+    }
+
+    func testScanConfirmationFollowUpCancelNamedErrorOpensEditor() {
+        // 个别系统路径可能换一种错误类型回传取消：类型名含 cancel 同样算取消
+        struct FakeUserCancelledError: Error {}
+        XCTAssertEqual(ScanConfirmationFollowUp.followUp(for: FakeUserCancelledError()), .openEditor)
+    }
+
+    func testScanConfirmationFollowUpOtherErrorsDiscard() {
+        struct StubError: Error {}
+        XCTAssertFalse(ScanConfirmationFollowUp.isCancellation(StubError()))
+        XCTAssertEqual(ScanConfirmationFollowUp.followUp(for: StubError()), .discard)
+        XCTAssertEqual(ScanConfirmationFollowUp.followUp(for: NSError(domain: "test", code: 42)), .discard)
+    }
+
     func testQuickScanURLSchemeWithOCRText() {
         let store = MimiStore(inMemory: true)
         let raw = "-RM38.78\nPayment - PBB\nPetronas Gas\n08/11/2026".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
