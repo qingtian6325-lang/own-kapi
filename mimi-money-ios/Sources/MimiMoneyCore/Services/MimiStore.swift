@@ -29,6 +29,7 @@ public final class MimiStore: ObservableObject {
     @Published public var tags: [String]
     @Published public var pendingEditTransactionId: UUID?
     @Published public var pendingShortcutSnippetBill: TransactionItem?
+    @Published public var pendingScanTransactions: [TransactionItem] = []
     @Published public var isRecordSheetPresented: Bool = false
     @Published public var hideAmounts: Bool = false
     @Published public var reimbursableAmount: Double = 0.00
@@ -38,6 +39,7 @@ public final class MimiStore: ObservableObject {
 
     private let inMemory: Bool
     private let storageURL: URL
+    private let pendingScansURL: URL
     private static var receiptMemoryCache: [String: Data] = [:]
 
     // MARK: - Receipt Image Persistence
@@ -182,6 +184,7 @@ public final class MimiStore: ObservableObject {
         let docDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSTemporaryDirectory())
         self.storageURL = docDir.appendingPathComponent("mimi_money_state_v2.json")
+        self.pendingScansURL = docDir.appendingPathComponent("mimi_pending_scans_v1.json")
 
         if !inMemory,
            let data = try? Data(contentsOf: storageURL),
@@ -219,6 +222,11 @@ public final class MimiStore: ObservableObject {
             self.tags = empty.tags
             self.reimbursableAmount = 0.00
         }
+        if !inMemory,
+           let data = try? Data(contentsOf: pendingScansURL),
+           let decoded = try? JSONDecoder().decode([TransactionItem].self, from: data) {
+            self.pendingScanTransactions = decoded
+        }
         recalculateAllAccountBalances()
     }
 
@@ -241,6 +249,55 @@ public final class MimiStore: ObservableObject {
         recalculateAllAccountBalances()
         appendAuditLog(for: item, action: .created, loggedAt: loggedAt)
         saveState()
+    }
+
+    // MARK: - Pending Shortcut Scan Staging （确认型识别流程的待确认暂存区）
+    //
+    // v1.1.2 起「识别账单」改为确认型呈现：OCR 识别结果先暂存到这里
+    // （isConfirmed=false），不进 transactions，因此不影响余额、列表与统计；
+    // 用户在系统确认卡上点「确认」后才由 finalize 路径正式落盘，点「修改」
+    // 则由 edit 路径以未确认状态转入正式记录并进 App 编辑，取消/下滑则永不落盘。
+    // 每个暂存项只能被消费一次（consume 后即删除），保证绝不重复记账。
+    // 暂存单独落盘到 mimi_pending_scans_v1.json（不并入 PersistedAppState，
+    // 避免旧存档 Codable 解码兼容风险），因为捷徑 Intent 与 App 可能运行在
+    // 不同进程，暂存必须持久化才能跨进程接力。
+
+    public func stagePendingScan(_ item: TransactionItem) {
+        if let idx = pendingScanTransactions.firstIndex(where: { $0.id == item.id }) {
+            pendingScanTransactions[idx] = item
+        } else {
+            pendingScanTransactions.append(item)
+        }
+        // 只保留最近 20 条，防取消确认后残留的孤儿暂存无限累积
+        if pendingScanTransactions.count > 20 {
+            pendingScanTransactions.removeFirst(pendingScanTransactions.count - 20)
+        }
+        savePendingScans()
+    }
+
+    public func pendingScan(id: UUID) -> TransactionItem? {
+        pendingScanTransactions.first(where: { $0.id == id })
+    }
+
+    /// 原子消费一个暂存项：取出并删除。同一 id 第二次调用必然返回 nil（单次消费/幂等）。
+    @discardableResult
+    public func consumePendingScan(id: UUID) -> TransactionItem? {
+        guard let idx = pendingScanTransactions.firstIndex(where: { $0.id == id }) else { return nil }
+        let item = pendingScanTransactions.remove(at: idx)
+        savePendingScans()
+        return item
+    }
+
+    public func discardPendingScan(id: UUID) {
+        pendingScanTransactions.removeAll(where: { $0.id == id })
+        savePendingScans()
+    }
+
+    private func savePendingScans() {
+        guard !inMemory else { return }
+        if let data = try? JSONEncoder().encode(pendingScanTransactions) {
+            try? data.write(to: pendingScansURL, options: .atomic)
+        }
     }
 
     public func updateTransaction(_ updated: TransactionItem, at loggedAt: Date = Date()) {
@@ -862,6 +919,10 @@ public final class MimiStore: ObservableObject {
         expenseCategories = decoded.expenseCategories
         incomeCategories = decoded.incomeCategories
         tags = decoded.tags
+        if let pendingData = try? Data(contentsOf: pendingScansURL),
+           let pendingDecoded = try? JSONDecoder().decode([TransactionItem].self, from: pendingData) {
+            pendingScanTransactions = pendingDecoded
+        }
         recalculateAllAccountBalances()
     }
 

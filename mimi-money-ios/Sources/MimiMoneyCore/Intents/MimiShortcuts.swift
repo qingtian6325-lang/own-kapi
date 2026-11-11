@@ -26,13 +26,14 @@ public enum ShortcutActionCoordinator {
     /// 服务器端无法伪造；在用户提供链接之前保持 nil，指南页的「添加专属指令」按钮将展开手动搭建教程。
     public static let shortcutInstallURL: String? = nil
 
-    public static func recordRecognizedDraft(_ draft: ParsedDraftBill, in store: MimiStore) -> TransactionItem {
+    /// 把识别草稿构建为 TransactionItem（含收据图保存），但不落盘。
+    public static func makeTransaction(from draft: ParsedDraftBill, in store: MimiStore, isConfirmed: Bool) -> TransactionItem {
         var attachments: [String] = []
         if let raw = draft.rawImageData {
             let filename = store.saveReceiptImage(data: raw)
             attachments.append(filename)
         }
-        let tx = TransactionItem(
+        return TransactionItem(
             type: draft.type,
             categoryPath: draft.categoryPath,
             iconName: draft.iconName,
@@ -41,10 +42,50 @@ public enum ShortcutActionCoordinator {
             note: draft.note,
             receiptImageLabels: attachments,
             date: draft.date,
-            isConfirmed: true
+            isConfirmed: isConfirmed
         )
+    }
+
+    public static func recordRecognizedDraft(_ draft: ParsedDraftBill, in store: MimiStore) -> TransactionItem {
+        let tx = makeTransaction(from: draft, in: store, isConfirmed: true)
         store.addTransaction(tx)
         return tx
+    }
+
+    /// 确认型流程第一步（v1.1.2）：识别结果先暂存（isConfirmed=false），
+    /// 不落盘、不计入余额/列表，等用户在系统确认卡上做决定。
+    public static func stageRecognizedDraft(_ draft: ParsedDraftBill, in store: MimiStore) -> TransactionItem {
+        let tx = makeTransaction(from: draft, in: store, isConfirmed: false)
+        store.stagePendingScan(tx)
+        return tx
+    }
+
+    /// 确认型流程第二步（用户点系统「确认」后）：消费暂存并以正式账单落盘。
+    /// 暂存已被「修改」路径消费时返回 nil，绝不重复记账。
+    @discardableResult
+    public static func finalizePendingScan(id: UUID, in store: MimiStore) -> TransactionItem? {
+        guard let staged = store.consumePendingScan(id: id) else { return nil }
+        var confirmed = staged
+        confirmed.isConfirmed = true
+        store.addTransaction(confirmed)
+        return confirmed
+    }
+
+    /// 「修改 (View)」路径：消费暂存，以未确认状态转入正式记录并定位到 App 内编辑页，
+    /// 用户在 App 里改完保存即完成这笔。暂存已被消费但正式记录已存在时（例如重复点击、
+    /// 或确认路径已落盘），只重新定位到编辑页，不重复记账。
+    @discardableResult
+    public static func consumePendingScanForEdit(id: UUID, in store: MimiStore) -> TransactionItem? {
+        if let staged = store.consumePendingScan(id: id) {
+            store.addTransaction(staged)
+            _ = markForInAppModification(transactionId: staged.id, in: store)
+            return staged
+        }
+        if let existing = store.transactions.first(where: { $0.id == id }) {
+            _ = markForInAppModification(transactionId: existing.id, in: store)
+            return existing
+        }
+        return nil
     }
 
     public static func markForInAppModification(transactionId: UUID, in store: MimiStore) -> URL {
@@ -305,6 +346,150 @@ public struct ScreenshotResultSnippetView: View {
     }
 }
 
+// MARK: - Scan Confirmation Card View (确认型呈现专用，v1.1.2)
+
+/// 确认卡卡面：与 ScreenshotResultSnippetView 上半部长相一致（分类图标+分类-二级、
+/// 金额、账户 chip、备注 chip、时间、✓ 识别提示一行），但不带自制「确认 (Got it)」
+/// 按钮——确认动作由系统在卡片下方渲染（requestConfirmation 的 actionName），
+/// 卡内只保留一个「修改 (View)」按钮：点它走 OpenPendingScanForEditIntent，
+/// 把暂存转为未确认正式记录并打开 App 编辑页。
+public struct ScanConfirmationCardView: View {
+    public let transaction: TransactionItem
+    public var onModifyTapped: (() -> Void)?
+
+    public init(
+        transaction: TransactionItem,
+        onModifyTapped: (() -> Void)? = nil
+    ) {
+        self.transaction = transaction
+        self.onModifyTapped = onModifyTapped
+    }
+
+    private var formattedTimestamp: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm"
+        return formatter.string(from: transaction.date)
+    }
+
+    private var signedAmountText: String {
+        let prefix = transaction.type == .expense ? "-RM" : "+RM"
+        return String(format: "%@%.2f", prefix, transaction.amount)
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 10) {
+                    MimiStickerIconView(iconName: transaction.iconName, size: 28)
+
+                    Text(transaction.categoryPath)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(MimiTheme.textPrimary)
+
+                    Spacer()
+
+                    Text(signedAmountText)
+                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .foregroundColor(
+                            transaction.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange
+                        )
+                }
+
+                HStack(spacing: 6) {
+                    Text(transaction.accountName)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(MimiTheme.textSecondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule().fill(Color(hex: 0xF2F4F8))
+                        )
+
+                    if !transaction.note.isEmpty {
+                        Text(transaction.note)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(MimiTheme.textSecondary)
+                            .lineLimit(1)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(
+                                Capsule().fill(Color(hex: 0xF2F4F8))
+                            )
+                    }
+
+                    Spacer()
+
+                    Text(formattedTimestamp)
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundColor(MimiTheme.textMuted)
+                }
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.white)
+                    .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
+            )
+
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 13))
+                    .foregroundColor(MimiTheme.expenseBlue)
+                Text("已识别记录以上信息，打开「咪咪记账」查看更多")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(MimiTheme.textSecondary)
+            }
+
+            // 只有一个「修改 (View)」按钮：确认由系统按钮承担，这里不再放自制确认按钮。
+            #if canImport(AppIntents)
+            if #available(iOS 16.0, *) {
+                Button(intent: OpenPendingScanForEditIntent(transactionId: transaction.id)) {
+                    Text("修改 (View)")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(MimiTheme.textPrimary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background(
+                            Capsule().fill(Color(hex: 0xEDEFF5))
+                        )
+                }
+                .buttonStyle(.plain)
+            } else {
+                fallbackModifyButton
+            }
+            #else
+            fallbackModifyButton
+            #endif
+        }
+        .padding(16)
+        .background(
+            LinearGradient(
+                colors: [Color(hex: 0xDEF0FE), Color(hex: 0xF6F9FE)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .shadow(color: Color.black.opacity(0.12), radius: 18, x: 0, y: 6)
+    }
+
+    private var fallbackModifyButton: some View {
+        Button {
+            onModifyTapped?()
+        } label: {
+            Text("修改 (View)")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(MimiTheme.textPrimary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 11)
+                .background(
+                    Capsule().fill(Color(hex: 0xEDEFF5))
+                )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 // MARK: - iOS AppIntents Integration (Shortcuts Screenshot Bookkeeping)
 
 #if canImport(AppIntents)
@@ -364,6 +549,74 @@ public struct ConfirmBillIntent: AppIntent {
 }
 
 @available(iOS 16.0, macOS 13.0, *)
+public struct OpenPendingScanForEditIntent: AppIntent {
+    public static var title: LocalizedStringResource = "修改待确认账单 (View)"
+    public static var description = IntentDescription("把确认卡上的待确认识别账单转入咪咪记账并打开编辑页")
+    public static var openAppWhenRun: Bool = true
+    public static var isDiscoverable: Bool = false
+
+    @Parameter(title: "账单ID")
+    public var transactionIdString: String
+
+    public init() {
+        self.transactionIdString = ""
+    }
+
+    public init(transactionId: UUID) {
+        self.transactionIdString = transactionId.uuidString
+    }
+
+    @MainActor
+    public func perform() async throws -> some IntentResult {
+        if let uuid = UUID(uuidString: transactionIdString) {
+            _ = ShortcutActionCoordinator.consumePendingScanForEdit(
+                id: uuid,
+                in: MimiStore.shared
+            )
+        }
+        return .result()
+    }
+}
+
+/// iOS 26 确认型呈现的卡片驱动 Intent：按账单 id 从暂存区（或已落盘记录）取账单，
+/// 渲染 ScanConfirmationCardView。系统在点卡内按钮后会重跑本 Intent 刷新卡面，
+/// 所以取不到暂存时回退到正式记录，保证卡面不空白。
+@available(iOS 26.0, macOS 26.0, *)
+public struct ScanConfirmationSnippetIntent: SnippetIntent {
+    public static var title: LocalizedStringResource = "确认识别账单"
+    public static var description = IntentDescription("展示待确认的识别账单卡片")
+    public static var isDiscoverable: Bool = false
+
+    @Parameter(title: "账单ID")
+    public var transactionIdString: String
+
+    public init() {
+        self.transactionIdString = ""
+    }
+
+    public init(transactionId: UUID) {
+        self.transactionIdString = transactionId.uuidString
+    }
+
+    @MainActor
+    public func perform() async throws -> some IntentResult & ShowsSnippetView {
+        let store = MimiStore.shared
+        let transaction = UUID(uuidString: transactionIdString).flatMap { id in
+            store.pendingScan(id: id) ?? store.transactions.first(where: { $0.id == id })
+        }
+        if let transaction {
+            return .result(view: AnyView(ScanConfirmationCardView(transaction: transaction)))
+        }
+        return .result(view: AnyView(
+            Text("这笔识别结果已处理")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(MimiTheme.textSecondary)
+                .padding(16)
+        ))
+    }
+}
+
+@available(iOS 16.0, macOS 13.0, *)
 public struct ScanScreenshotIntent: AppIntent {
     public static var title: LocalizedStringResource = "识别账单"
     public static var description = IntentDescription("识别账单截图并录入金额、商户或转账收款人与扣款账户，弹出确认与修改卡片")
@@ -375,13 +628,13 @@ public struct ScanScreenshotIntent: AppIntent {
     @Parameter(title: "类型", default: 2)
     public var type: Int?
 
-    @Parameter(title: "版本", default: "1.1.1")
+    @Parameter(title: "版本", default: "1.1.2")
     public var version: String?
 
     public init() {}
 
     @MainActor
-    public func perform() async throws -> some IntentResult & ShowsSnippetView {
+    public func perform() async throws -> some IntentResult {
         let store = MimiStore.shared
         let draft: ParsedDraftBill
         if let file = content {
@@ -403,9 +656,43 @@ public struct ScanScreenshotIntent: AppIntent {
             )
             #endif
         }
-        let saved = ShortcutActionCoordinator.recordRecognizedDraft(draft, in: store)
-        return .result {
-            ScreenshotResultSnippetView(transaction: saved)
+        // 确认型呈现（v1.1.2）：识别结果先暂存（不落盘）→ requestConfirmation 弹确认卡
+        // → 用户点系统「确认」后才正式落盘 → 返回空 .result()。
+        // 返回空结果意味着没有任何可呈现内容，捷徑流程直接结束回原 App，
+        // 不再出现结果型 snippet 底部那个系统 Done 按钮（WWDC25-281：
+        // 结果型 snippet 底部唯一按钮就是 Done，确认型没有这个问题）。
+        // 取消/下滑时 requestConfirmation 抛错：按官方指引（WWDC25-275）
+        // 不 catch、让它终止 perform，暂存永不落盘，等于丢弃这笔。
+        let staged = ShortcutActionCoordinator.stageRecognizedDraft(draft, in: store)
+        try await requestScanConfirmation(for: staged)
+        _ = ShortcutActionCoordinator.finalizePendingScan(id: staged.id, in: store)
+        return .result()
+    }
+
+    /// 按系统版本分层弹确认卡：
+    /// iOS 26+ 用 SnippetIntent 驱动的互动确认卡（确认按钮文案「确认」）；
+    /// iOS 18–25 用带 content 视图的确认；更低版本降级为纯 dialog 文字确认。
+    @MainActor
+    private func requestScanConfirmation(for transaction: TransactionItem) async throws {
+        if #available(iOS 26.0, macOS 26.0, *) {
+            try await requestConfirmation(
+                actionName: .custom(acceptLabel: "确认", acceptAlternatives: [], denyLabel: "取消", denyAlternatives: []),
+                snippetIntent: ScanConfirmationSnippetIntent(transactionId: transaction.id)
+            )
+        } else if #available(iOS 18.0, macOS 15.0, *) {
+            try await requestConfirmation(actionName: .log, dialog: nil, showDialogAsPrompt: false) {
+                ScanConfirmationCardView(transaction: transaction)
+            }
+        } else {
+            let amountText = String(
+                format: "%@RM%.2f",
+                transaction.type == .expense ? "-" : "+",
+                transaction.amount
+            )
+            try await requestConfirmation(
+                result: .result(dialog: "确认记账：\(transaction.categoryPath) \(amountText)（\(transaction.accountName)）？"),
+                confirmationActionName: .log
+            )
         }
     }
 }
@@ -433,6 +720,11 @@ public struct OpenBillForEditIntent: Sendable {
 }
 public struct ConfirmBillIntent: Sendable {
     public static let openAppWhenRun: Bool = false
+    public let transactionIdString: String
+    public init(transactionId: UUID) { self.transactionIdString = transactionId.uuidString }
+}
+public struct OpenPendingScanForEditIntent: Sendable {
+    public static let openAppWhenRun: Bool = true
     public let transactionIdString: String
     public init(transactionId: UUID) { self.transactionIdString = transactionId.uuidString }
 }

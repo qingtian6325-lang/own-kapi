@@ -10,3 +10,6 @@ AppIntents const-gather 协议清单，供 CI 在 stage 1 收割 `.swiftconstval
 
 出处：借自 https://github.com/cyberneel/xtool-on-linux 仓库的
 `appintents/appintents-protocols.json`（命令用法见其 docs/SIRI.md）。
+
+v1.1.2 追加：`SnippetIntent`（iOS 26 确认卡的驱动协议，不在上游清单里，
+为让 appintentsmetadataprocessor 能提取 ScanConfirmationSnippetIntent 而补入）。

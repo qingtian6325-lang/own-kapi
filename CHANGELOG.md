@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.1.2] - 2026-11-11
+
+### 🚀 Highlights
+- **识别卡改确认型，告别 Done**：此前「识别账单」是结果型 snippet——识别完先落盘再弹卡，按苹果设计（WWDC25-281）这类卡片底部必有系统 Done 按钮，无法隐藏（v1.1.1 去掉 dialog 后真机实测 Done 仍在）。v1.1.2 改走确认型呈现：识别结果先暂存（不落盘、不计入余额与列表），系统弹出确认卡；点「确认」才真正记账，随后 Intent 返回空结果——没有任何可呈现内容，捷徑流程直接结束回原 App，全程没有 Done。
+- **点确认才入账，取消不记账**：在确认卡上取消或下滑 = 这笔不记（暂存永不落盘，自动丢弃），与「先记账再说」彻底分开。
+- **「修改 (View)」保留在确认卡内**：点它会把这笔以未确认状态转入正式记录并打开 App 定位到编辑页，改完保存即可；暂存单次消费、双路径互斥，绝不重复记账。
+- **按系统版本分层呈现**：iOS 26+ 用 SnippetIntent 驱动的互动确认卡（系统确认按钮文案「确认」，卡面与原结果卡一致）；iOS 18–25 用带卡面视图的确认；iOS 17 降级为纯文字确认。App 内扫描后的浮层卡片行为不变。
+
 ## [v1.1.1] - 2026-11-11
 
 ### 🔧 Fixes
