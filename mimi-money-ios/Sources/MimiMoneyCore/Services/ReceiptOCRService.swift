@@ -448,15 +448,6 @@ public final class ReceiptOCRService: Sendable {
         return nil
     }
 
-    private static func isValidPurpose(_ str: String) -> Bool {
-        guard str.count >= 2 && str.count <= 40 else { return false }
-        let lower = str.lowercased()
-        if lower.contains("successful") || lower.contains("transaction") || lower.contains("reference id") { return false }
-        if lower.hasPrefix("payment -") || lower == "payment" || lower == "transfer" { return false }
-        if str.range(of: #"^[0-9A-Za-z]{12,}$"#, options: .regularExpression) != nil { return false }
-        return true
-    }
-
     /// Extract transfer counterparty (转账给谁) or merchant name, combining purpose if found.
     private static func detectRecipientOrMerchant(from lines: [String], rawText: String) -> String {
         let purpose = detectPaymentPurpose(from: lines, rawText: rawText)
