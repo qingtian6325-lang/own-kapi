@@ -64,11 +64,11 @@ public static var modelName: String {
 get {
 let saved = UserDefaults.standard.string(forKey: modelUserDefaultsKey)?
 .trimmingCharacters(in:.whitespacesAndNewlines)
-return (saved?.isEmpty == false)? saved!: defaultModelName
+return (saved?.isEmpty == false) ? saved! : defaultModelName
 }
 set {
 let trimmed = newValue.trimmingCharacters(in:.whitespacesAndNewlines)
-UserDefaults.standard.set(trimmed.isEmpty? defaultModelName: trimmed, forKey: modelUserDefaultsKey)
+UserDefaults.standard.set(trimmed.isEmpty ? defaultModelName : trimmed, forKey: modelUserDefaultsKey)
 }
 }
 
@@ -77,7 +77,7 @@ KeychainHelper.readGeminiAPIKey()
 }
 
 public static var hasAPIKey: Bool {
-apiKey!= nil
+apiKey != nil
 }
 
 public static func saveAPIKey(_ key: String?) {
@@ -86,7 +86,7 @@ KeychainHelper.saveGeminiAPIKey(key)
 
 /// 最近一次 Gemini 调用状态（只记成功/失败与原因简述，绝不记录 key）。
 public static func recordCallStatus(success: Bool, message: String) {
-let prefix = success? "成功": "失败"
+let prefix = success ? "成功" : "失败"
 UserDefaults.standard.set("\(prefix)：\(message)", forKey: statusUserDefaultsKey)
 UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: statusDateUserDefaultsKey)
 }
@@ -176,16 +176,16 @@ self.note = note
 public func toDraftBill(now: Date = Date()) -> ParsedDraftBill {
 let txType: TransactionType
 switch type.lowercased() {
-case "income": txType =.income
-case "transfer": txType =.transfer
-default: txType =.expense
+case "income": txType = .income
+case "transfer": txType = .transfer
+default: txType = .expense
 }
 
 let categoryPath: String
 let primaryId: String
 let subId: String?
 let categoryDisplay: String
-if txType ==.transfer {
+if txType == .transfer {
 categoryPath = "转账"
 primaryId = "transfer"
 subId = nil
@@ -220,7 +220,7 @@ subCategoryId: subId,
 categoryDisplayName: categoryDisplay,
 accountId: accountId,
 accountDisplayName: accountName,
-merchantOrNote: note.isEmpty? counterparty: note,
+merchantOrNote: note.isEmpty ? counterparty : note,
 occurredAt: GeminiBillDTO.parseOccurredAt(occurredAt)?? now
 )
 }
@@ -345,7 +345,7 @@ return (false, "网络请求失败（\(error.localizedDescription)）")
 
 public static func recognizeBill(imageData: Data, now: Date = Date()) async throws -> ParsedDraftBill {
 let model = GeminiSettings.modelName
-let mimeType = imageData.prefix(4) == Data([0x89, 0x50, 0x4E, 0x47])? "image/png": "image/jpeg"
+let mimeType = imageData.prefix(4) == Data([0x89, 0x50, 0x4E, 0x47]) ? "image/png" : "image/jpeg"
 
 let body: [String: Any] = [
 "systemInstruction": ["parts": [["text": recognitionSystemPrompt(now: now)]]],
@@ -387,11 +387,11 @@ let expenseGroups = DefaultCatalog.standardExpenseCategories()
 let incomeGroups = DefaultCatalog.standardIncomeCategories()
 let expenseLines = expenseGroups.map { group in
 let subs = group.subCategories.map(\.name).joined(separator: "、")
-return subs.isEmpty? group.name: "\(group.name)：\(subs)"
+return subs.isEmpty ? group.name : "\(group.name)：\(subs)"
 }.joined(separator: "\n")
 let incomeLines = incomeGroups.map { group in
 let subs = group.subCategories.map(\.name).joined(separator: "、")
-return subs.isEmpty? group.name: "\(group.name)：\(subs)"
+return subs.isEmpty ? group.name : "\(group.name)：\(subs)"
 }.joined(separator: "\n")
 let accountNames = DefaultCatalog.defaultAccounts().map(\.name).joined(separator: "、")
 

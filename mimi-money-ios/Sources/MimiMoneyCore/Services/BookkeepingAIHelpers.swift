@@ -21,9 +21,9 @@ guard!name.isEmpty else { return ""}
 let isPerson = counterpartyKind.lowercased() == "person"
 switch type {
 case.expense:
-return isPerson? "转账给\(name)": "\(name) 消费"
+return isPerson ? "转账给\(name)" : "\(name) 消费"
 case.income:
-return isPerson? "\(name) 转账": "\(name) 收入"
+return isPerson ? "\(name) 转账" : "\(name) 收入"
 case.transfer:
 return "账户转账"
 }
@@ -61,7 +61,7 @@ if sourceText.contains(intText + "%") {
 return true
 }
 // 状态栏被 OCR 读成 "$ 79" 这类样式、且正文没有真正的 RM 金额与之对应时，视为电量误读。
-if sourceText.contains("$ " + intText) &&!sourceText.contains("RM" + intText) {
+if sourceText.contains("$ " + intText) && !sourceText.contains("RM" + intText) {
 return true
 }
 return false
@@ -123,7 +123,7 @@ lines.append(line)
 
 // 本月分类支出汇总
 let monthExpenses = transactions.filter {
-$0.type ==.expense && $0.includeInStats
+$0.type == .expense && $0.includeInStats
 && cal.component(.year, from: $0.date) == year
 && cal.component(.month, from: $0.date) == month
 }
@@ -166,7 +166,7 @@ let itemFormatter = DateFormatter()
 itemFormatter.locale = Locale(identifier: "en_US_POSIX")
 itemFormatter.dateFormat = "yyyy-MM-dd"
 for tx in relevant {
-let sign = tx.type ==.income? "+": "-"
+let sign = tx.type == .income ? "+" : "-"
 lines.append("\(itemFormatter.string(from: tx.date)) \(tx.categoryPath) \(sign)\(formatRM(tx.amount)) 账户:\(tx.accountName) 备注:\(tx.note)")
 }
 }
@@ -190,8 +190,8 @@ let inMonth = transactions.filter {
 cal.component(.year, from: $0.date) == y && cal.component(.month, from: $0.date) == m
 }
 guard!inMonth.isEmpty else { continue}
-let expense = inMonth.filter { $0.type ==.expense && $0.includeInStats}.reduce(0) { $0 + $1.amount}
-let income = inMonth.filter { $0.type ==.income && $0.includeInStats}.reduce(0) { $0 + $1.amount}
+let expense = inMonth.filter { $0.type == .expense && $0.includeInStats}.reduce(0) { $0 + $1.amount}
+let income = inMonth.filter { $0.type == .income && $0.includeInStats}.reduce(0) { $0 + $1.amount}
 let count = inMonth.filter { $0.includeInStats}.count
 lines.append("\(y)年\(m)月：支出 \(formatRM(expense))，收入 \(formatRM(income))，共 \(count) 笔")
 }
@@ -213,7 +213,7 @@ matchedKeywords.contains(where: { tx.categoryPath.contains($0) || tx.note.contai
 }
 }
 if picked.count < maxRecentRecords {
-for tx in sorted where!picked.contains(where: { $0.id == tx.id}) {
+for tx in sorted where !picked.contains(where: { $0.id == tx.id}) {
 picked.append(tx)
 if picked.count >= maxRecentRecords { break}
 }
