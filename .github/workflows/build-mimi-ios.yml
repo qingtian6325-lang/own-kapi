@@ -72,12 +72,22 @@ jobs:
           fi
           echo "Using metadata processor: ${PROCESSOR}"
 
+          # Xcode 26's processor requires --toolchain-dir and takes boolean
+          # flags WITHOUT values (passing "FALSE" makes it an unknown argument).
+          TOOLCHAIN_DIR="$(dirname "$(dirname "${PROCESSOR}")")"
+          XCODE_VERSION="$(xcodebuild -version | awk 'NR==1 {print $2}')"
+          echo "Toolchain dir: ${TOOLCHAIN_DIR}"
+          echo "Xcode version: ${XCODE_VERSION}"
+          "${PROCESSOR}" --help > processor-help.txt 2>&1 || true
+          sed -n '1,60p' processor-help.txt || true
+
           SOURCE_FILES="$(find Sources -name '*.swift' | sort | tr '\n' ' ')"
 
           "${PROCESSOR}" \
+            --toolchain-dir "${TOOLCHAIN_DIR}" \
             --module-name MimiMoneyCore \
             --sdk-root "${IOS_SDK_PATH}" \
-            --xcode-version "$(xcodebuild -version | head -n 1 | awk '{print $2}')" \
+            --xcode-version "${XCODE_VERSION}" \
             --platform-family iOS \
             --deployment-target 17.0 \
             --target-triple arm64-apple-ios17.0 \
@@ -85,9 +95,8 @@ jobs:
             --output "${PWD}/appintents-md" \
             --source-files ${SOURCE_FILES} \
             --compile-time-extraction \
-            --deployment-aware-processing FALSE \
-            --validate-assistant-intents FALSE \
-            --shortcuts-metadata-extraction FALSE
+            --deployment-aware-processing \
+            --validate-assistant-intents
 
           echo "--- generated files ---"
           find appintents-md -type f | sort
