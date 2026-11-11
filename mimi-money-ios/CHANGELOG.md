@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.0.9] - 2026-11-11
+
+### 🚀 Highlights
+- **1. 原生支付 App 悬浮弹窗与弹窗交互彻底优化**：
+  - 彻底解决“快捷指令在 App 内部跳并一直挡着东西”的问题：App 内悬浮横幅增加右上角 `✕`、点击背景关闭、向上滑动划走，并加入 4 秒自动淡出机制，绝不再阻挡视线。
+  - 原生支持在支付 App（如 TNG）付款界面直接弹出系统级毛玻璃卡片（带有应用图标、分类、金额、标签、提示以及 View / Got it 两个按钮）。
+  - 点击 `Got it` 原地入账并关闭弹窗，停留在支付 App；点击 `View` 唤起 App 直达该笔账单详情编辑页。
+- **2. AI OCR 高精准识别与杂质长字符彻底清洗**：
+  - 彻底过滤 `Transaction No.`、`Wallet Ref`、`Status Successful`、`eWallet Balance` 等长串与状态字符。
+  - 自动剥离 `Payment - `、`Payment `、`Transfer to ` 前缀，精准提取纯净商户名（如 `YING LAI RESTAURANT`）或转账收款人姓名。
+  - 优先以商户名命中细分消费分类（如精准命中 `餐饮-餐厅`），并精准转换英联邦 `dd/MM/yyyy` 日期时间。
+- **3. 导览栏 November 2026 热力图与日历跳转**：
+  - 侧边抽屉顶部 `November 2026` 下方完整嵌入当月 1~30 日迷你日历热力图网格（蓝色深浅表示支出多，橙色深浅表示收入多）。
+  - 点击整个卡片一键直达“全部记录”日历页；任何二级页面退出一律退回“记录”主页。
+- **4. 预算管理与分类预算增加**：
+  - 解决 iOS SwiftUI 多 alert 并列冲突问题，重构为交互式表单 Sheet。
+  - 支持调整月度总预算、调整/删除已有分类预算，并新增【增加分类预算】按钮支持为任意支出分类设定限额。
+- **5. 图表统计优化**：
+  - 顶部增加显眼的 `< 记录` 返回主页按钮；
+  - 【总支出】、【总收入】、【净结余】三个卡片等宽等高、金额字号完全一致；
+  - 周期栏支持 `< 往前` 和 `往后 >`（月度可依次往前查看 10月、9月、8月...），并支持自定义开始与结束日期。
+- **6. 资产管理 TNG 余额一键校准**：
+  - 提供【校准当前实际余额】功能，支持输入钱包真实金额一键平账校准。
+- **7. 导入导出极简两按钮**：
+  - 界面清爽纯粹，只有【导入账单】和【导出账单】两个大按钮。
+
 ## [v1.0.8] - 2026-11-11
 
 ### 🚀 Highlights
