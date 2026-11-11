@@ -25,6 +25,8 @@ case .expense:
 return isPerson ? "转账给\(name)" : "\(name) 消费"
 case .income:
 return isPerson ? "\(name) 转账" : "\(name) 收入"
+case .transfer:
+return "账户转账"
 }
 }
 
