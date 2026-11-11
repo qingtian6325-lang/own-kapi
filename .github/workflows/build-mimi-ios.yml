@@ -55,7 +55,14 @@ jobs:
           # next step has nothing to extract. The list is vendored at
           # tools/appintents-protocols.json (see tools/README.md).
           set -euo pipefail
-          swift build --swift-sdk arm64-apple-ios -c debug \
+          # NOTE: the doc's `--swift-sdk arm64-apple-ios` form is for Linux
+          # Swift SDK bundles; on this macOS runner it picked the MacOSX
+          # sysroot ("unable to load standard library for target
+          # arm64-apple-ios17.0"). Use the main build's proven triple + SDK
+          # flags instead; the protocol-list flags are the actual fix.
+          swift build -c debug --triple arm64-apple-ios17.0 \
+            -Xswiftc -sdk -Xswiftc "${IOS_SDK_PATH}" \
+            -Xcc -isysroot -Xcc "${IOS_SDK_PATH}" \
             -Xswiftc -Xfrontend -Xswiftc -const-gather-protocols-file -Xswiftc -Xfrontend -Xswiftc tools/appintents-protocols.json \
             -Xswiftc -emit-const-values
           echo "--- harvested .swiftconstvalues ---"
@@ -68,6 +75,41 @@ jobs:
           echo "✅ ScanScreenshotIntent present in harvested const values:"
           echo "${HITS}"
           find .build -name '*.swiftconstvalues' | sort | sed "s|^\.build|${PWD}/.build|" > swift-const-vals-list.txt
+          find "${PWD}/Sources/MimiMoneyCore" -name '*.swift' | sort > source-file-list.txt
+          wc -l swift-const-vals-list.txt source-file-list.txt
+
+      - name: Extract AppIntents metadata (appintentsmetadataprocessor)
+        run: |
+          # ------------------------------------------------------------------
+          # Why this step exists:
+          # `swift build` + manual .app assembly NEVER runs Xcode's AppIntents
+          # metadata extraction, so previous IPAs shipped without
+          # Metadata.appintents and iOS could not discover the
+          # 「识别账单」 (ScanScreenshotIntent) action in Shortcuts at all.
+          # We feed Xcode's own appintentsmetadataprocessor with the const
+          # values harvested in Stage 1 (module MimiMoneyCore, where the
+          # AppIntents definitions live).
+          # ------------------------------------------------------------------
+          set -euo pipefail
+          XCODE_CONTENTS="$(xcode-select -p | sed 's|/Developer$||')"
+          PROCESSOR="$(find "${XCODE_CONTENTS}" -name appintentsmetadataprocessor -type f 2>/dev/null | head -n 1)"
+          if [ -z "${PROCESSOR}" ]; then
+            PROCESSOR="$(xcrun --find appintentsmetadataprocessor 2>/dev/null || true)"
+          fi
+          if [ -z "${PROCESSOR}" ] || [ ! -x "${PROCESSOR}" ]; then
+            echo "::error::appintentsmetadataprocessor not found in the selected Xcode toolchain"
+            exit 1
+          fi
+          echo "Using metadata processor: ${PROCESSOR}"
+
+          # Xcode 26 processor interface (from its own --help USAGE):
+          # it consumes a --source-file-list and a --swift-const-vals-list
+          # (both are FILES of paths); it no longer reads the binary.
+          TOOLCHAIN_DIR="$(dirname "$(dirname "$(dirname "${PROCESSOR}")")")"
+          XCODE_VERSION="$(xcodebuild -version | awk 'NR==1 {print $2}')"
+          echo "Toolchain dir: ${TOOLCHAIN_DIR}"
+          echo "Xcode version: ${XCODE_VERSION}"
+
           if [ ! -s swift-const-vals-list.txt ] || [ ! -s source-file-list.txt ]; then
             echo "::error::Stage 1 did not produce swift-const-vals-list.txt / source-file-list.txt"
             exit 1
