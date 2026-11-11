@@ -143,7 +143,7 @@ XCTAssertEqual(
 BillNoteFormatter.makeNote(type:.expense, counterparty: "SHELL", counterpartyKind: "merchant", modelNote: "earn points (lunch 79%"),
 "SHELL 消费"
 )
-XCTAssertFalse(BillNoteFormatter.isCleanNote("这一句备注实在是太长太长了远远超过三十个字的上限啊啊啊啊"))
+XCTAssertFalse(BillNoteFormatter.isCleanNote("这一句备注实在是太长太长了远远超过三十个字的上限啊啊啊啊啊啊啊啊还不够长继续凑字数"))
 XCTAssertTrue(BillNoteFormatter.isCleanNote("转账给TAN JOO NI"))
 }
 
@@ -263,9 +263,9 @@ XCTAssertEqual(matched.first?.categoryPath, "餐饮-餐厅")
 func testBuildContextStructureAndCap() {
 let store = MimiStore(inMemory: true)
 let context = LedgerContextBuilder.buildContext(store: store, question: "本月花了多少", now: Date())
-XCTAssertTrue(context.contains(""))
-XCTAssertTrue(context.contains(""))
-XCTAssertTrue(context.contains(""))
+XCTAssertTrue(context.contains("【月度收支汇总（近6个月）】"))
+XCTAssertTrue(context.contains("【账户余额】"))
+XCTAssertTrue(context.contains("【预算】"))
 XCTAssertLessThanOrEqual(context.count, LedgerContextBuilder.maxCharacters + 32)
 }
 

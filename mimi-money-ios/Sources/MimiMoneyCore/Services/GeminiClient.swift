@@ -459,7 +459,7 @@ let body: [String: Any] = [
 "systemInstruction": ["parts": [["text": system]]],
 "contents": [[
 "role": "user",
-"parts": [["text": "\n\(context)\n\n\n\(question)"]]
+"parts": [["text": "【账目数据】\n\(context)\n\n【我的问题】\n\(question)"]]
 ]],
 "generationConfig": ["temperature": 0.2]
 ]

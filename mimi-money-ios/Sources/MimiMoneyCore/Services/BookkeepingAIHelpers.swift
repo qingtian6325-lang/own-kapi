@@ -17,6 +17,7 @@ let name = counterparty.trimmingCharacters(in:.whitespacesAndNewlines)
 if let modelNote, isCleanNote(modelNote) {
 return modelNote.trimmingCharacters(in:.whitespacesAndNewlines)
 }
+if type == .transfer { return "账户转账" }
 guard !name.isEmpty else { return ""}
 let isPerson = counterpartyKind.lowercased() == "person"
 switch type {
@@ -24,8 +25,6 @@ case .expense:
 return isPerson ? "转账给\(name)" : "\(name) 消费"
 case .income:
 return isPerson ? "\(name) 转账" : "\(name) 收入"
-case .transfer:
-return "账户转账"
 }
 }
 
@@ -116,7 +115,7 @@ dateFormatter.dateFormat = "yyyy年M月d日"
 lines.append("今天是 \(dateFormatter.string(from: now))。")
 
 // 近 6 个月月度汇总
-lines.append("")
+lines.append("【月度收支汇总（近6个月）】")
 for line in monthlySummaryLines(transactions: transactions, monthsBack: 6, now: now) {
 lines.append(line)
 }
@@ -134,7 +133,7 @@ let primary = tx.categoryPath.components(separatedBy: "-").first ?? tx.categoryP
 byCategory[primary, default: 0] += tx.amount
 }
 let sorted = byCategory.sorted { $0.value > $1.value}
-lines.append("")
+lines.append("【本月分类支出】")
 for (name, total) in sorted {
 lines.append("\(name)：\(formatRM(total))")
 }
@@ -143,7 +142,7 @@ lines.append("\(name)：\(formatRM(total))")
 // 预算
 let budgetTotal = store.monthlyBudgetTotal
 let spent = store.monthlyExpenseTotal(year: year, month: month)
-lines.append("本月总预算 \(formatRM(budgetTotal))，已支出 \(formatRM(spent))，剩余 \(formatRM(max(0, budgetTotal - spent)))。")
+lines.append("【预算】本月总预算 \(formatRM(budgetTotal))，已支出 \(formatRM(spent))，剩余 \(formatRM(max(0, budgetTotal - spent)))。")
 if !store.categoryBudgets.isEmpty {
 let parts = store.categoryBudgets.map { item in
 let used = store.categorySpent(for: item.categoryName, year: year, month: month)
@@ -155,13 +154,13 @@ lines.append("分类预算剩余：" + parts.joined(separator: "；"))
 // 账户余额
 if !store.accounts.isEmpty {
 let parts = store.accounts.map { "\($0.name) \(formatRM($0.balance))"}
-lines.append("" + parts.joined(separator: "；") + "；净资产 \(formatRM(store.netWorth))。")
+lines.append("【账户余额】" + parts.joined(separator: "；") + "；净资产 \(formatRM(store.netWorth))。")
 }
 
 // 相关记录明细（带上限）
 let relevant = relevantTransactions(from: transactions, question: question, now: now)
 if !relevant.isEmpty {
-lines.append("")
+lines.append("【相关账单明细（最近\(relevant.count)笔）】")
 let itemFormatter = DateFormatter()
 itemFormatter.locale = Locale(identifier: "en_US_POSIX")
 itemFormatter.dateFormat = "yyyy-MM-dd"
