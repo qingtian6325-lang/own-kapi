@@ -19,7 +19,7 @@ final class PureAIRecognitionTests: XCTestCase {
         super.tearDown()
     }
 
-    private func fixtureDraft(amount: Double) -> ParsedDraftBill {
+    private nonisolated static func fixtureDraftForTest(amount: Double) -> ParsedDraftBill {
         GeminiBillDTO(
             type: "expense",
             amount: amount,
@@ -83,8 +83,8 @@ final class PureAIRecognitionTests: XCTestCase {
     }
 
     func testSuccessReturnsGeminiDraft() async throws {
-        SmartReceiptRecognizer.recognitionProvider = { [self] _, _ in
-            fixtureDraft(amount: 38.99)
+        SmartReceiptRecognizer.recognitionProvider = { _, _ in
+            Self.fixtureDraftForTest(amount: 38.99)
         }
         let result = try await SmartReceiptRecognizer.recognize(imageData: Data([0x89, 0x50]))
         XCTAssertEqual(result.draft.amount, 38.99, accuracy: 0.001)
@@ -93,8 +93,8 @@ final class PureAIRecognitionTests: XCTestCase {
     }
 
     func testSuccessStillFlagsSuspiciousAmount() async throws {
-        SmartReceiptRecognizer.recognitionProvider = { [self] _, _ in
-            fixtureDraft(amount: 200_000)
+        SmartReceiptRecognizer.recognitionProvider = { _, _ in
+            Self.fixtureDraftForTest(amount: 200_000)
         }
         let result = try await SmartReceiptRecognizer.recognize(imageData: Data([0x89, 0x50]))
         XCTAssertTrue(result.isSuspiciousAmount, "金额合理性拦截必须保留")
