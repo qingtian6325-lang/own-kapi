@@ -375,13 +375,13 @@ public struct ScanScreenshotIntent: AppIntent {
     @Parameter(title: "类型", default: 2)
     public var type: Int?
 
-    @Parameter(title: "版本", default: "1.1.0")
+    @Parameter(title: "版本", default: "1.1.1")
     public var version: String?
 
     public init() {}
 
     @MainActor
-    public func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
+    public func perform() async throws -> some IntentResult & ShowsSnippetView {
         let store = MimiStore.shared
         let draft: ParsedDraftBill
         if let file = content {
@@ -404,9 +404,7 @@ public struct ScanScreenshotIntent: AppIntent {
             #endif
         }
         let saved = ShortcutActionCoordinator.recordRecognizedDraft(draft, in: store)
-        return .result(
-            dialog: "已识别记录以上信息，打开「咪咪记账」查看更多"
-        ) {
+        return .result {
             ScreenshotResultSnippetView(transaction: saved)
         }
     }

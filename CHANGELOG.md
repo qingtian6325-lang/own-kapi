@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.1.1] - 2026-11-11
+
+### 🔧 Fixes
+- **识别提示不再重复显示**：「识别账单」Intent 不再返回 dialog——此前 iOS 会把 dialog「已识别记录以上信息，打开「咪咪记账」查看更多」单独显示成顶部大字，而 snippet 卡片内部又有同一句，于是出现两次。v1.1.1 起 perform() 只返回结果卡片，那句话只在卡片里出现一次（与 Kapi 一致）。
+
 ## [v1.1.0] - 2026-11-11
 
 ### 🚀 Highlights
