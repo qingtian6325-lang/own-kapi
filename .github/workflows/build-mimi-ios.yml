@@ -44,113 +44,71 @@ jobs:
           BIN_PATH="$(find .build -path "*/release/MimiMoneyApp" -type f | head -n 1)"
           echo "BIN_PATH=${BIN_PATH}" >> "$GITHUB_ENV"
           echo "Built executable: ${BIN_PATH}"
-          # Step 2: compile MimiMoneyCore to OBJECTS with the driver flag
-          # -emit-const-values-path set per file. This replicates exactly how
-          # Xcode (SWIFT_ENABLE_EMIT_CONST_VALUES=YES) produces the
-          # .swiftconstvalues sidecars that appintentsmetadataprocessor eats.
-          # (Merely passing -emit-const-values-path on a -emit-module-only
-          # invocation emits nothing — the const-extraction job is only
-          # scheduled when object code is emitted.)
-          mkdir -p constvals objs
-          export ALL_SRCS="$(find "${PWD}/Sources/MimiMoneyCore" -name '*.swift' | sort)"
-          # Xcode-style output file map: tells the driver where each file's
-          # object/module outputs go, so a -primary-file job needs no -o
-          # (a bare -o is rejected when a job generates multiple outputs).
-          python3 - <<'PYEOF'
-          import json, os
-          files = [l for l in os.environ["ALL_SRCS"].splitlines() if l.strip()]
-          cwd = os.getcwd()
-          mapping = {}
-          for f in files:
-              base = os.path.basename(f)[:-len(".swift")]
-              mapping[f] = {
-                  "object": os.path.join(cwd, "objs", base + ".o"),
-                  "swiftmodule": os.path.join(cwd, "objs", base + ".swiftmodule"),
-              }
-          with open("output-file-map.json", "w") as fh:
-              json.dump(mapping, fh)
-          print("output-file-map entries:", len(mapping))
-          PYEOF
-          # Compile ONE frontend job for the intents file only. The const
-          # values for ScanScreenshotIntent live entirely in MimiShortcuts.swift;
-          # sibling files are inputs (for symbol resolution) but not primaries,
-          # so no -o / output-file-map is needed at all.
-          INTENTS_SRC="${PWD}/Sources/MimiMoneyCore/Intents/MimiShortcuts.swift"
-          OTHERS="$(printf '%s\n' "${ALL_SRCS}" | grep -v -F -x "${INTENTS_SRC}")"
-          xcrun --sdk iphoneos swiftc -frontend \
-            -c -primary-file "${INTENTS_SRC}" ${OTHERS} \
-            -target arm64-apple-ios17.0 \
-            -sdk "${IOS_SDK_PATH}" \
-            -module-name MimiMoneyCore \
-            -parse-as-library \
-            -emit-module-path "${PWD}/objs/MimiShortcuts.swiftmodule" \
-            -emit-const-values-path "${PWD}/constvals/MimiShortcuts.swiftconstvalues" \
-            -o "${PWD}/objs/MimiShortcuts.o"
-          echo "--- constvals emission diagnostics ---"
-          ls constvals | head -30
-          echo "constvals count: $(ls constvals | wc -l)"
 
-      - name: Extract AppIntents metadata (appintentsmetadataprocessor)
+      - name: Stage 1 — harvest const values (const-gather-protocols)
         run: |
-          # ------------------------------------------------------------------
-          # Why this step exists:
-          # `swift build` + manual .app assembly NEVER runs Xcode's AppIntents
-          # metadata extraction, so previous IPAs shipped without
-          # Metadata.appintents and iOS could not discover the
-          # 「识别账单」 (ScanScreenshotIntent) action in Shortcuts at all.
-          # We run the same processor Xcode would run, against the built
-          # executable (the AppIntents definitions live in MimiMoneyCore,
-          # statically linked into the app executable).
-          # ------------------------------------------------------------------
+          # Evidence-based route (xtool-on-linux docs/SIRI.md + Swift Package
+          # Index build logs): the missing piece all along was the const-gather
+          # PROTOCOL LIST. Xcode passes it via SWIFT_EMIT_CONST_VALUE_PROTOCOLS;
+          # a bare swift build / swiftc without it emits .swiftconstvalues that
+          # contain NO AppIntent constants, so the metadata processor in the
+          # next step has nothing to extract. The list is vendored at
+          # tools/appintents-protocols.json (see tools/README.md).
           set -euo pipefail
-          rm -rf appintents-out
-          mkdir -p appintents-out
-
-          XCODE_CONTENTS="$(xcode-select -p | sed 's|/Developer$||')"
-          PROCESSOR="$(find "${XCODE_CONTENTS}" -name appintentsmetadataprocessor -type f 2>/dev/null | head -n 1)"
-          if [ -z "${PROCESSOR}" ]; then
-            PROCESSOR="$(xcrun --find appintentsmetadataprocessor 2>/dev/null || true)"
-          fi
-          if [ -z "${PROCESSOR}" ] || [ ! -x "${PROCESSOR}" ]; then
-            echo "::error::appintentsmetadataprocessor not found in the selected Xcode toolchain"
+          swift build --swift-sdk arm64-apple-ios -c debug \
+            -Xswiftc -Xfrontend -Xswiftc -const-gather-protocols-file -Xswiftc -Xfrontend -Xswiftc tools/appintents-protocols.json \
+            -Xswiftc -emit-const-values
+          echo "--- harvested .swiftconstvalues ---"
+          find .build -name '*.swiftconstvalues' | sort
+          HITS="$(find .build -name '*.swiftconstvalues' -exec grep -a -l "ScanScreenshotIntent" {} + || true)"
+          if [ -z "${HITS}" ]; then
+            echo "::error::Harvested .swiftconstvalues do not contain ScanScreenshotIntent — the protocol list did not take effect; not proceeding to stage 2"
             exit 1
           fi
-          echo "Using metadata processor: ${PROCESSOR}"
-
-          # Xcode 26 processor interface (from its own --help USAGE):
-          # it consumes a --source-file-list and a --swift-const-vals-list
-          # (both are FILES of paths); it no longer reads the binary.
-          TOOLCHAIN_DIR="$(dirname "$(dirname "$(dirname "${PROCESSOR}")")")"
-          XCODE_VERSION="$(xcodebuild -version | awk 'NR==1 {print $2}')"
-          echo "Toolchain dir: ${TOOLCHAIN_DIR}"
-          echo "Xcode version: ${XCODE_VERSION}"
-
-          find "${PWD}/Sources/MimiMoneyCore" -name '*.swift' | sort > source-file-list.txt
-          find "${PWD}/constvals" .build -name '*.swiftconstvalues' 2>/dev/null | sort > swift-const-vals-list.txt
-          echo "--- source-file-list ($(wc -l < source-file-list.txt) files) ---"
-          cat source-file-list.txt
+          echo "✅ ScanScreenshotIntent present in harvested const values:"
+          echo "${HITS}"
+          find .build -name '*.swiftconstvalues' | sort | sed "s|^\.build|${PWD}/.build|" > swift-const-vals-list.txt
+          if [ ! -s swift-const-vals-list.txt ] || [ ! -s source-file-list.txt ]; then
+            echo "::error::Stage 1 did not produce swift-const-vals-list.txt / source-file-list.txt"
+            exit 1
+          fi
           echo "--- swift-const-vals-list ($(wc -l < swift-const-vals-list.txt) files) ---"
           cat swift-const-vals-list.txt
-          if [ ! -s swift-const-vals-list.txt ]; then
-            echo "::error::No .swiftconstvalues files were emitted by the build — AppIntents metadata cannot be extracted"
+
+          # Confirm the exact flag spelling from the tool itself first
+          # (SPI build logs come from older Xcodes; this runner's may differ).
+          HELP="$("${PROCESSOR}" --help 2>&1 || true)"
+          echo "${HELP}"
+          if ! grep -q -- "--swift-const-vals-list" <<< "${HELP}"; then
+            echo "::error::This appintentsmetadataprocessor does not support --swift-const-vals-list"
             exit 1
           fi
 
+          ARGS=(
+            --output "${PWD}/appintents-out/Metadata.appintents"
+            --toolchain-dir "${TOOLCHAIN_DIR}"
+            --module-name MimiMoneyCore
+            --sdk-root "${IOS_SDK_PATH}"
+            --xcode-version "${XCODE_VERSION}"
+            --platform-family iOS
+            --deployment-target 17.0
+            --target-triple arm64-apple-ios17.0
+            --source-file-list "${PWD}/source-file-list.txt"
+            --swift-const-vals-list "${PWD}/swift-const-vals-list.txt"
+            --force
+            --deployment-aware-processing
+          )
+          # Flags that exist only on some Xcode versions (older SPI logs show
+          # --binary-file / --bundle-identifier / --compile-time-extraction):
+          # include each only when this processor's --help actually lists it.
+          if grep -q -- "--binary-file" <<< "${HELP}"; then ARGS+=(--binary-file "${BIN_PATH}"); fi
+          if grep -q -- "--bundle-identifier" <<< "${HELP}"; then ARGS+=(--bundle-identifier com.jinghao.mimimoney); fi
+          if grep -q -- "--compile-time-extraction" <<< "${HELP}"; then ARGS+=(--compile-time-extraction); fi
+          if grep -q -- "--validate-assistant-intents" <<< "${HELP}"; then ARGS+=(--validate-assistant-intents); fi
+
           rm -rf appintents-out
           mkdir -p appintents-out
-          "${PROCESSOR}" \
-            --output "${PWD}/appintents-out/Metadata.appintents" \
-            --toolchain-dir "${TOOLCHAIN_DIR}" \
-            --module-name MimiMoneyCore \
-            --sdk-root "${IOS_SDK_PATH}" \
-            --xcode-version "${XCODE_VERSION}" \
-            --platform-family iOS \
-            --deployment-target 17.0 \
-            --target-triple arm64-apple-ios17.0 \
-            --source-file-list "${PWD}/source-file-list.txt" \
-            --swift-const-vals-list "${PWD}/swift-const-vals-list.txt" \
-            --deployment-aware-processing \
-            --validate-assistant-intents
+          "${PROCESSOR}" "${ARGS[@]}"
 
           echo "--- generated files ---"
           find appintents-out -type f | sort
