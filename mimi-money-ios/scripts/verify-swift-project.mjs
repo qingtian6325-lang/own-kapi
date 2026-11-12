@@ -350,7 +350,7 @@ function verifyTask6() {
   for (const label of [
     'public struct RecordAndAISheetView: View',
     '手动记账',
-    'AI助手',
+    'AI 助手',
     '支出',
     '收入',
     '转账',
