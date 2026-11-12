@@ -155,14 +155,9 @@ public struct BillDetailSheetView: View {
                                             .foregroundColor(MimiTheme.textMuted)
                                             .frame(width: 58, height: 58)
                                             .overlay(
-                                                VStack(spacing: 3) {
-                                                    Image(systemName: "camera.badge.ellipsis")
-                                                        .font(.system(size: 18))
-                                                        .foregroundColor(MimiTheme.expenseBlue)
-                                                    Text("加小票")
-                                                        .font(.system(size: 9, weight: .medium))
-                                                        .foregroundColor(MimiTheme.textSecondary)
-                                                }
+                                                Image(systemName: "plus")
+                                                    .font(.system(size: 20, weight: .medium))
+                                                    .foregroundColor(MimiTheme.textMuted)
                                             )
                                     }
                                     .buttonStyle(.plain)
@@ -204,9 +199,17 @@ public struct BillDetailSheetView: View {
                         Divider().padding(.leading, 16)
 
                         detailRow(label: "所属账本") {
-                            Text(editableBill.ledgerName)
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(MimiTheme.textPrimary)
+                            HStack(spacing: 6) {
+                                Image(systemName: "book.closed.fill")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(MimiTheme.vipGold)
+                                Text(editableBill.ledgerName)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(MimiTheme.textPrimary)
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(MimiTheme.textMuted)
+                            }
                         }
                     }
                     .background(RoundedRectangle(cornerRadius: 18).fill(Color.white))
@@ -269,7 +272,7 @@ public struct BillDetailSheetView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(action: onDismiss) {
-                        Image(systemName: "xmark")
+                        Image(systemName: "chevron.down")
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(MimiTheme.textSecondary)
                     }

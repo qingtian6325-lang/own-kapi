@@ -238,26 +238,6 @@ public struct AssetsAndAccountDetailView: View {
                 }
             }
 
-            Divider()
-
-            Button {
-                newAccountName = ""
-                newAccountBalance = "0.00"
-                showAddAccountSheet = true
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(MimiTheme.expenseBlue)
-                    Text("添加自定义资产账户 (如 Maybank, GrabPay 等)")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(MimiTheme.expenseBlue)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xEAF1FF)))
-            }
-            .buttonStyle(.plain)
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
@@ -273,50 +253,60 @@ public struct AssetsAndAccountDetailView: View {
         return NavigationStack {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 14) {
-                    // Top Blue Account Balance Card
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text(liveAccount.name)
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(MimiTheme.textPrimary)
-                            Spacer()
+                    // Gold: 明细 | 账单 toggle under title
+                    HStack(spacing: 0) {
+                        ForEach(["明细", "账单"], id: \.self) { tab in
                             Button {
-                                showBalanceEditSheet.toggle()
+                                detailTabMode = tab
                             } label: {
-                                Text("修改账户余额")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundColor(MimiTheme.expenseBlue)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 5)
-                                    .background(Capsule().fill(Color.white))
+                                Text(tab)
+                                    .font(.system(size: 14, weight: detailTabMode == tab ? .bold : .medium))
+                                    .foregroundColor(detailTabMode == tab ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 8)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(detailTabMode == tab ? Color.white : Color.clear)
+                                    )
                             }
                             .buttonStyle(.plain)
                         }
+                    }
+                    .padding(4)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xE9ECF4)))
 
-                        Text(MimiTheme.formatRM(liveAccount.balance))
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundColor(liveAccount.balance < -0.0001 ? Color(hex: 0xE53935) : MimiTheme.expenseBlue)
+                    HStack {
+                        Text(detailTabMode == "明细" ? "账户明细" : "账户账单")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(MimiTheme.textPrimary)
+                        Spacer()
+                        Text("2026年11月")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(MimiTheme.textSecondary)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(MimiTheme.textMuted)
+                    }
 
-                        HStack(spacing: 20) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("记账前起始资金")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(MimiTheme.textMuted)
-                                Text(MimiTheme.formatRM(liveAccount.initialBalance))
-                                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                                    .foregroundColor(MimiTheme.textPrimary)
-                            }
-
-                            let delta = store.accountTransactionDelta(accountId: liveAccount.id)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("期间流水净变动")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(MimiTheme.textMuted)
-                                Text(MimiTheme.formatRM(delta))
-                                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                                    .foregroundColor(delta < -0.0001 ? Color(hex: 0xE53935) : MimiTheme.balanceGreen)
-                            }
+                    // Compact balance + edit (gold prioritizes feed list)
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text(liveAccount.name)
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(MimiTheme.textPrimary)
+                            Spacer()
+                            Text("余额: \(MimiTheme.formatRM(liveAccount.balance))")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundColor(liveAccount.balance < -0.0001 ? Color(hex: 0xE53935) : MimiTheme.expenseBlue)
                         }
+                        Button {
+                            showBalanceEditSheet.toggle()
+                        } label: {
+                            Text("修改账户余额")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(MimiTheme.expenseBlue)
+                        }
+                        .buttonStyle(.plain)
 
                         if showBalanceEditSheet {
                             VStack(alignment: .leading, spacing: 8) {
@@ -355,35 +345,8 @@ public struct AssetsAndAccountDetailView: View {
                             }
                         }
                     }
-                    .padding(16)
-                    .background(RoundedRectangle(cornerRadius: 20).fill(Color(hex: 0xEAF1FF)))
-
-                    // Toggle Header: 明细 (Audit Log) vs 账单 (Clean Bills)
-                    HStack {
-                        Text(detailTabMode == "明细" ? "账户操作审计明细" : "入账账单记录")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(MimiTheme.textPrimary)
-
-                        Spacer()
-
-                        HStack(spacing: 4) {
-                            ForEach(["明细", "账单"], id: \.self) { tab in
-                                Button {
-                                    detailTabMode = tab
-                                } label: {
-                                    Text(tab)
-                                        .font(.system(size: 12, weight: detailTabMode == tab ? .bold : .medium))
-                                        .foregroundColor(detailTabMode == tab ? .white : MimiTheme.textSecondary)
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 5)
-                                        .background(
-                                            Capsule().fill(detailTabMode == tab ? MimiTheme.expenseBlue : Color.white)
-                                        )
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    }
+                    .padding(14)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
 
                     if detailTabMode == "明细" {
                         VStack(spacing: 0) {

@@ -18,6 +18,8 @@ public struct RecordAndAISheetView: View {
     @State private var selectedAccountName: String = "TNGewallet"
     @State private var targetAccountName: String = "PBBank"
     @State private var includeInStats: Bool = true
+    @State private var includeInBudget: Bool = true
+    @State private var markPendingReimbursement: Bool = false
     @State private var discountAmountText: String = ""
     @State private var showDiscountInput: Bool = false
     @State private var selectedCurrency: CurrencyCode = .myr
@@ -285,43 +287,41 @@ public struct RecordAndAISheetView: View {
     }
 
     private var sheetTopHeader: some View {
-        HStack {
-            Button(action: onDismiss) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(MimiTheme.textSecondary)
-                    .frame(width: 32, height: 32)
-                    .background(Circle().fill(Color(hex: 0xF2F4F8)))
-            }
-
-            Button {
-                withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
-                    isAIMode.toggle()
-                }
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "arrow.left.arrow.right")
-                        .font(.system(size: 11, weight: .bold))
-                    Text(isAIMode ? "手动记账" : "AI助手")
-                        .font(.system(size: 12, weight: .semibold))
-                }
-                .foregroundColor(MimiTheme.expenseBlue)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Capsule().fill(Color(hex: 0xE8F0FE)))
-            }
-            .buttonStyle(.plain)
-
-            Spacer()
-
+        HStack(spacing: 10) {
             if isAIMode {
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(MimiTheme.textSecondary)
+                        .frame(width: 32, height: 32)
+                        .background(Circle().fill(Color(hex: 0xF2F4F8)))
+                }
+                Button {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                        isAIMode = false
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.left.arrow.right")
+                            .font(.system(size: 11, weight: .bold))
+                        Text("手动记账")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .foregroundColor(MimiTheme.expenseBlue)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                }
+                .buttonStyle(.plain)
+                Spacer()
                 Text("任何事都能问我")
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
                 Color.clear.frame(width: 44, height: 32)
             } else {
-                HStack(spacing: 18) {
+                // Gold: 支出 | 收入 | 转账 ····· AI 助手 · ✕
+                HStack(spacing: 16) {
                     ForEach(
                         [
                             (TransactionType.expense, "支出"),
@@ -338,7 +338,11 @@ public struct RecordAndAISheetView: View {
                             VStack(spacing: 4) {
                                 Text(titleText)
                                     .font(.system(size: 15, weight: selectedTab == tab ? .bold : .medium))
-                                    .foregroundColor(selectedTab == tab ? MimiTheme.textPrimary : MimiTheme.textMuted)
+                                    .foregroundColor(
+                                        selectedTab == tab
+                                            ? (tab == .income ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
+                                            : MimiTheme.textMuted
+                                    )
                                 Capsule()
                                     .fill(
                                         selectedTab == tab
@@ -354,11 +358,28 @@ public struct RecordAndAISheetView: View {
 
                 Spacer()
 
-                Button(action: onOpenCategorySettings) {
-                    Text("设置")
+                Button {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                        isAIMode = true
+                    }
+                } label: {
+                    Text("AI 助手")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(MimiTheme.textSecondary)
+                        .foregroundColor(MimiTheme.expenseBlue)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Capsule().fill(Color(hex: 0xE8F0FE)))
                 }
+                .buttonStyle(.plain)
+
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(MimiTheme.textSecondary)
+                        .frame(width: 30, height: 30)
+                        .background(Circle().fill(Color(hex: 0xF2F4F8)))
+                }
+                .buttonStyle(.plain)
             }
         }
     }
@@ -369,8 +390,8 @@ public struct RecordAndAISheetView: View {
         VStack(spacing: 0) {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 12) {
-                    // 6-column Primary Category Grid
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 6), spacing: 12) {
+                    // 5-column Primary Category Grid (gold manual entry)
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5), spacing: 12) {
                         ForEach(Array(activeCategories.enumerated()), id: \.element.id) { idx, group in
                             let isSelected = idx == selectedGroupIndex
                             Button {
@@ -485,11 +506,31 @@ public struct RecordAndAISheetView: View {
                     .buttonStyle(.plain)
 
                     Button {
+                        markPendingReimbursement.toggle()
+                    } label: {
+                        pillLabel(
+                            icon: markPendingReimbursement ? "checkmark.circle.fill" : "clock",
+                            text: "待报销"
+                        )
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
                         includeInStats.toggle()
                     } label: {
                         pillLabel(
                             icon: includeInStats ? "checkmark.circle.fill" : "slash.circle",
                             text: includeInStats ? "计入收支" : "不计入收支"
+                        )
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        includeInBudget.toggle()
+                    } label: {
+                        pillLabel(
+                            icon: includeInBudget ? "checkmark.circle.fill" : "slash.circle",
+                            text: includeInBudget ? "计入预算" : "不计入预算"
                         )
                     }
                     .buttonStyle(.plain)
@@ -511,7 +552,7 @@ public struct RecordAndAISheetView: View {
                             }
                         }
                     } label: {
-                        pillLabel(icon: "number", text: selectedTags.isEmpty ? "选标签" : selectedTags.joined(separator: ","))
+                        pillLabel(icon: "number", text: selectedTags.isEmpty ? "标签" : selectedTags.joined(separator: ","))
                     }
 
                     Menu {
@@ -545,7 +586,7 @@ public struct RecordAndAISheetView: View {
                 }
 
                 HStack(spacing: 10) {
-                    TextField("点此输入备注...", text: $noteText)
+                    TextField("点击填写备注信息", text: $noteText)
                         .font(.system(size: 14))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
@@ -695,6 +736,10 @@ public struct RecordAndAISheetView: View {
             return
         }
         let discountVal = Double(discountAmountText) ?? 0.0
+        var tags = selectedTags
+        if markPendingReimbursement, !tags.contains("待报销") {
+            tags.append("待报销")
+        }
         let tx = TransactionItem(
             type: selectedTab,
             categoryPath: selectedTab == .transfer ? "转账" : composedCategoryPath,
@@ -705,7 +750,8 @@ public struct RecordAndAISheetView: View {
             note: noteText,
             discountAmount: discountVal,
             includeInStats: selectedTab == .transfer ? false : includeInStats,
-            tags: selectedTags,
+            includeInBudget: selectedTab == .transfer ? false : includeInBudget,
+            tags: tags,
             receiptImageLabels: attachedReceiptFilenames,
             date: selectedDate
         )
@@ -715,6 +761,8 @@ public struct RecordAndAISheetView: View {
         discountAmountText = ""
         selectedTags = []
         attachedReceiptFilenames = []
+        markPendingReimbursement = false
+        includeInBudget = true
         if dismissAfter {
             onDismiss()
         }

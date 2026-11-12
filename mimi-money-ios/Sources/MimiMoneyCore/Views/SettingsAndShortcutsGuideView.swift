@@ -1165,7 +1165,7 @@ public struct SettingsAndShortcutsGuideView: View {
 
     private var tagManagementSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("🏷️ 标签管理 (\(store.tags.count))")
+            Text("标签管理 (\(store.tags.count))")
                 .font(.system(size: 16, weight: .bold))
                 .foregroundColor(MimiTheme.textPrimary)
 
