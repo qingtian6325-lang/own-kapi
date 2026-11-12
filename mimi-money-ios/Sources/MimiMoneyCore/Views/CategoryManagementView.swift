@@ -26,99 +26,120 @@ public struct CategoryManagementView: View {
     public var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Top Segmented Tab: 支出分类 | 收入分类 (IMG_2267 & IMG_2283)
-                HStack(spacing: 0) {
-                    ForEach([(TransactionType.expense, "支出分类"), (TransactionType.income, "收入分类")], id: \.0) { tab, title in
-                        Button {
-                            selectedTab = tab
-                        } label: {
-                            VStack(spacing: 6) {
-                                Text(title)
-                                    .font(.system(size: 15, weight: selectedTab == tab ? .bold : .medium))
-                                    .foregroundColor(selectedTab == tab ? MimiTheme.textPrimary : MimiTheme.textSecondary)
-                                Capsule()
-                                    .fill(selectedTab == tab ? (tab == .income ? MimiTheme.incomeOrange : MimiTheme.expenseBlue) : Color.clear)
-                                    .frame(width: 28, height: 3)
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.top, 10)
-                .background(Color.white)
-
                 ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 10) {
-                        ForEach(activeGroups) { group in
-                            Button {
-                                selectedGroupForSubSheet = group
-                            } label: {
-                                HStack(spacing: 12) {
-                                    MimiStickerIconView(
-                                        iconName: group.displayBadgeToken,
-                                        categoryName: group.name,
-                                        transactionType: selectedTab,
-                                        useFirstCharIcon: group.useFirstCharIcon,
-                                        size: 38
-                                    )
+                    VStack(alignment: .leading, spacing: 14) {
+                        // Gold: 标准分类 summary card
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("标准分类")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(MimiTheme.textPrimary)
+                                Spacer()
+                                Image(systemName: "ellipsis")
+                                    .foregroundColor(MimiTheme.textMuted)
+                            }
+                            Text("支出 \(store.expenseCategories.count) 类 | 收入 \(store.incomeCategories.count) 类")
+                                .font(.system(size: 12))
+                                .foregroundColor(MimiTheme.textSecondary)
+                        }
+                        .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
 
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text(group.name)
-                                            .font(.system(size: 15, weight: .semibold))
-                                            .foregroundColor(MimiTheme.textPrimary)
-                                        if !group.subcategories.isEmpty {
-                                            Text(group.subcategories.map(\.name).joined(separator: " · "))
-                                                .font(.system(size: 11))
-                                                .foregroundColor(MimiTheme.textMuted)
-                                                .lineLimit(1)
-                                        } else {
-                                            Text("无二级分类")
-                                                .font(.system(size: 11))
-                                                .foregroundColor(MimiTheme.textMuted)
-                                        }
-                                    }
-
-                                    Spacer()
-
-                                    Text("\(group.subcategories.count)个子类")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(MimiTheme.textSecondary)
-
-                                    Image(systemName: "line.3.horizontal")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(MimiTheme.textMuted)
-                                }
-                                .padding(14)
-                                .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+                        // Pill tabs: 支出 | 收入
+                        HStack(spacing: 0) {
+                            Button { selectedTab = .expense } label: {
+                                Text("支出")
+                                    .font(.system(size: 13, weight: selectedTab == .expense ? .bold : .medium))
+                                    .foregroundColor(selectedTab == .expense ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 8)
+                                    .background(Capsule().fill(selectedTab == .expense ? Color.white : Color.clear))
+                            }
+                            .buttonStyle(.plain)
+                            Button { selectedTab = .income } label: {
+                                Text("收入")
+                                    .font(.system(size: 13, weight: selectedTab == .income ? .bold : .medium))
+                                    .foregroundColor(selectedTab == .income ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 8)
+                                    .background(Capsule().fill(selectedTab == .income ? Color.white : Color.clear))
                             }
                             .buttonStyle(.plain)
                         }
+                        .padding(4)
+                        .background(Capsule().fill(Color(hex: 0xEEF0F6)))
+
+                        // 4-column category grid (gold 标准分类 modal)
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 16) {
+                            ForEach(activeGroups) { group in
+                                Button {
+                                    selectedGroupForSubSheet = group
+                                } label: {
+                                    VStack(spacing: 6) {
+                                        ZStack(alignment: .bottomTrailing) {
+                                            MimiStickerIconView(
+                                                iconName: group.displayBadgeToken,
+                                                categoryName: group.name,
+                                                transactionType: selectedTab,
+                                                useFirstCharIcon: group.useFirstCharIcon,
+                                                size: 48
+                                            )
+                                            if !group.subcategories.isEmpty {
+                                                Text("\(group.subcategories.count)")
+                                                    .font(.system(size: 9, weight: .bold))
+                                                    .foregroundColor(.white)
+                                                    .padding(.horizontal, 4)
+                                                    .padding(.vertical, 1)
+                                                    .background(Capsule().fill(Color(hex: 0x9CA3AF)))
+                                                    .offset(x: 4, y: 4)
+                                            }
+                                        }
+                                        Text(group.name)
+                                            .font(.system(size: 11, weight: .medium))
+                                            .foregroundColor(MimiTheme.textPrimary)
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.8)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                }
+                                .buttonStyle(.plain)
+                            }
+
+                            Button {
+                                newCategoryName = ""
+                                useFirstCharAsIcon = false
+                                showAddPrimarySheet = true
+                            } label: {
+                                VStack(spacing: 6) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color(hex: 0xF3F4F6))
+                                            .frame(width: 48, height: 48)
+                                        Image(systemName: "plus")
+                                            .font(.system(size: 18, weight: .semibold))
+                                            .foregroundColor(MimiTheme.textSecondary)
+                                    }
+                                    Text("添加")
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundColor(MimiTheme.textSecondary)
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(16)
+                        .background(RoundedRectangle(cornerRadius: 18).fill(Color.white))
+
+                        Text("点击编辑，长按排序")
+                            .font(.system(size: 12))
+                            .foregroundColor(MimiTheme.textMuted)
+                            .frame(maxWidth: .infinity)
                     }
                     .padding(16)
-                    .padding(.bottom, 80)
+                    .padding(.bottom, 40)
                 }
 
-                // Bottom + 添加分类 Button (IMG_2267)
-                Button {
-                    newCategoryName = ""
-                    useFirstCharAsIcon = false
-                    showAddPrimarySheet = true
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "plus")
-                        Text("+ 添加分类")
-                    }
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Capsule().fill(selectedTab == .income ? MimiTheme.incomeOrange : MimiTheme.expenseBlue))
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                }
-                .buttonStyle(.plain)
-                .background(Color.white)
             }
             .background(MimiTheme.background.ignoresSafeArea())
             .navigationTitle("分类方案管理")
@@ -164,33 +185,53 @@ public struct CategoryManagementView: View {
                         useFirstCharIcon: group.useFirstCharIcon,
                         size: 42
                     )
-                    Text("\(group.name) · 二级分类管理")
+                    Text(group.name)
                         .font(.system(size: 17, weight: .bold))
                     Spacer()
+                    Image(systemName: "ellipsis")
+                        .foregroundColor(MimiTheme.textMuted)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
 
                 ScrollView(.vertical, showsIndicators: false) {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 14) {
+                    VStack(spacing: 10) {
                         ForEach(group.subcategories) { sub in
-                            VStack(spacing: 6) {
+                            HStack(spacing: 12) {
                                 MimiStickerIconView(
                                     iconName: sub.iconName,
                                     categoryName: sub.name,
                                     transactionType: selectedTab,
                                     useFirstCharIcon: sub.useFirstCharIcon,
-                                    size: 42
+                                    size: 36
                                 )
                                 Text(sub.name)
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(.system(size: 15, weight: .medium))
                                     .foregroundColor(MimiTheme.textPrimary)
-                                    .lineLimit(1)
+                                Image(systemName: "pencil")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(MimiTheme.textMuted)
+                                Spacer()
+                                Image(systemName: "line.3.horizontal")
+                                    .foregroundColor(MimiTheme.textMuted)
+                                Image(systemName: "ellipsis")
+                                    .foregroundColor(MimiTheme.textMuted)
                             }
-                            .padding(10)
-                            .frame(maxWidth: .infinity)
-                            .background(RoundedRectangle(cornerRadius: 14).fill(Color.white))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xF5F6FA)))
                         }
+
+                        HStack {
+                            Image(systemName: "plus")
+                            Text("添加二级分类")
+                            Spacer()
+                        }
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(MimiTheme.textSecondary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xF5F6FA)))
                     }
                     .padding(16)
                 }
