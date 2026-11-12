@@ -15,7 +15,7 @@ public struct AICategoryTableRow: Identifiable, Equatable, Sendable {
 
 public enum AIChatResponseBlock: Equatable, Sendable {
     case text(String)
-    /// 问账等待态：回复到达前显示「正在查账…」＋转圈，回复/报错后被整块替换。
+    /// 问账等待态：回复到达前显示「咪咪思考中…」，回复/报错后被整块替换。
     case pendingAnswer
     case draftBills([ParsedDraftBill])
     case categoryTable(expenseRows: [(String, String)], incomeRows: [(String, String)], customNote: String)
@@ -106,10 +106,10 @@ public final class MimiAIEngine: ObservableObject {
         "怎样加入共享账本？"
     ]
 
-    /// Kapi 式示例问题气泡（点即发送）
+    /// 金标 AI 记账空状态建议气泡（点即发送）
     public static let exampleQuestions: [String] = [
         "查询本月单笔消费超过200块的账单",
-        "我本周支出最高的一笔是什么？",
+        "查看我最近3天的消费记录？",
         "我最近一次购物买了什么？"
     ]
 

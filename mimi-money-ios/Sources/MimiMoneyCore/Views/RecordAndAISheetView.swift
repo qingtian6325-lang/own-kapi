@@ -203,31 +203,17 @@ public struct RecordAndAISheetView: View {
 
     // MARK: - Top Header with ⇄ Mode Switcher (IMG_2245 & IMG_2247)
 
-    // MARK: - AI Chat Header (Kapi 布局：[猫头像] 记账查账，问问题 [⇌ 手动记账] [✕])
+    // MARK: - AI Chat Header（金标：[猫头像] 来记笔账吧 · [⇌ 手动记账] [✕]）
 
     private var aiChatTopHeader: some View {
         HStack(spacing: 10) {
-            ZStack {
-                Circle().fill(Color(hex: 0xFFE8CC)).frame(width: 34, height: 34)
-                Text("🐱").font(.system(size: 18))
-            }
+            MimiAskMascotView(size: 34)
 
-            Text("记账查账，问问题")
-                .font(.system(size: 16, weight: .bold))
+            Text("来记笔账吧")
+                .font(.system(size: 17, weight: .bold))
                 .foregroundColor(MimiTheme.textPrimary)
 
-            Spacer()
-
-            Button {
-                aiEngine.clearHistory()
-            } label: {
-                Text("清空")
-                    .font(.system(size: 12))
-                    .foregroundColor(MimiTheme.textMuted)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 6)
-            }
-            .buttonStyle(.plain)
+            Spacer(minLength: 8)
 
             Button {
                 withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
@@ -236,23 +222,27 @@ public struct RecordAndAISheetView: View {
             } label: {
                 HStack(spacing: 5) {
                     Image(systemName: "arrow.left.arrow.right")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: 13, weight: .bold))
                     Text("手动记账")
                         .font(.system(size: 13, weight: .semibold))
                 }
-                .foregroundColor(MimiTheme.expenseBlue)
+                .foregroundColor(MimiTheme.textPrimary)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(Capsule().strokeBorder(Color(hex: 0xD8DEEA), lineWidth: 1))
+                .background(
+                    Capsule()
+                        .strokeBorder(Color(hex: 0xD5DAE6), lineWidth: 1)
+                        .background(Capsule().fill(Color.white))
+                )
             }
             .buttonStyle(.plain)
 
             Button(action: onDismiss) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 13, weight: .bold))
                     .foregroundColor(MimiTheme.textSecondary)
-                    .frame(width: 32, height: 32)
-                    .background(Circle().fill(Color(hex: 0xF2F4F8)))
+                    .frame(width: 30, height: 30)
+                    .background(Circle().strokeBorder(Color(hex: 0xD5DAE6), lineWidth: 1))
             }
             .buttonStyle(.plain)
         }
@@ -893,74 +883,35 @@ public struct RecordAndAISheetView: View {
         }
     }
 
-    // MARK: - AI Assistant Mode (IMG_2247 & IMG_2248)
+    // MARK: - AI Assistant Mode（金标 AI 记账）
 
     private var aiAssistantBody: some View {
         VStack(spacing: 0) {
-            // 示例问题：空状态时放在欢迎语下方，更像聊天引导
             ScrollViewReader { proxy in
                 ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 12) {
                         if aiEngine.messages.isEmpty {
-                            HStack(alignment: .top, spacing: 10) {
-                                MimiAskMascotView(size: 34)
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("你好，我是咪咪")
-                                        .font(.system(size: 15, weight: .bold))
-                                        .foregroundColor(MimiTheme.textPrimary)
-                                    Text("直接说「午餐 38」就能记账，也可以问「本月花了多少」「哪一笔最贵」。")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(MimiTheme.textSecondary)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                                .padding(14)
-                                .background(
-                                    UnevenRoundedRectangle(
-                                        topLeadingRadius: 4,
-                                        bottomLeadingRadius: 18,
-                                        bottomTrailingRadius: 18,
-                                        topTrailingRadius: 18,
-                                        style: .continuous
-                                    )
-                                    .fill(Color.white)
-                                )
-                                Spacer(minLength: 20)
-                            }
-
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("试试这样问")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundColor(MimiTheme.textMuted)
-                                    .padding(.leading, 4)
+                            VStack(alignment: .leading, spacing: 10) {
                                 ForEach(MimiAIEngine.exampleQuestions, id: \.self) { question in
                                     Button {
                                         aiEngine.handleUserMessage(question, store: store)
                                     } label: {
-                                        HStack(spacing: 8) {
-                                            Image(systemName: "sparkles")
-                                                .font(.system(size: 11, weight: .semibold))
-                                                .foregroundColor(MimiTheme.expenseBlue)
-                                            Text(question)
-                                                .font(.system(size: 13, weight: .medium))
-                                                .foregroundColor(MimiTheme.textPrimary)
-                                                .multilineTextAlignment(.leading)
-                                            Spacer(minLength: 0)
-                                        }
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 10)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                                .fill(Color.white)
-                                        )
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                                .stroke(Color(hex: 0xE8ECF4), lineWidth: 1)
-                                        )
+                                        Text(question)
+                                            .font(.system(size: 14))
+                                            .foregroundColor(Color(hex: 0x6B7280))
+                                            .multilineTextAlignment(.leading)
+                                            .padding(.horizontal, 14)
+                                            .padding(.vertical, 11)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                                    .fill(Color(hex: 0xF3F4F8))
+                                            )
                                     }
                                     .buttonStyle(.plain)
                                 }
                             }
-                            .padding(.leading, 44)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 8)
                         }
 
                         ForEach(aiEngine.messages) { msg in
@@ -968,16 +919,11 @@ public struct RecordAndAISheetView: View {
                                 .id(msg.id)
                         }
                     }
-                    .padding(16)
-                    .padding(.bottom, 8)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 4)
+                    .padding(.bottom, 12)
                 }
-                .background(
-                    LinearGradient(
-                        colors: [Color(hex: 0xF3F6FC), MimiTheme.background],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
+                .background(Color.white)
                 .onChange(of: aiEngine.messages.count) { _, _ in
                     if let last = aiEngine.messages.last {
                         withAnimation(.easeOut(duration: 0.22)) {
@@ -986,32 +932,6 @@ public struct RecordAndAISheetView: View {
                     }
                 }
             }
-
-            // Quick Prompt Chips
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(["有哪些分类", "怎么记退款", "怎么记报销", "一句话记多笔"], id: \.self) { chip in
-                        Button {
-                            if chip == "一句话记多笔" {
-                                aiEngine.handleUserMessage("午饭 24.5 咖啡 12.9 打车 18", store: store)
-                            } else {
-                                aiEngine.handleUserMessage(chip, store: store)
-                            }
-                        } label: {
-                            Text(chip)
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(MimiTheme.expenseBlue)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 7)
-                                .background(Capsule().fill(Color(hex: 0xE8F0FE)))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-            }
-            .background(Color.white.opacity(0.96))
 
             if showChatAttachmentPanel {
                 AIAttachmentPanelView(
@@ -1023,7 +943,7 @@ public struct RecordAndAISheetView: View {
                     }
                 )
                 .padding(.horizontal, 16)
-                .padding(.bottom, 10)
+                .padding(.bottom, 8)
                 .background(Color.white)
             }
 
@@ -1034,50 +954,25 @@ public struct RecordAndAISheetView: View {
                     .foregroundColor(MimiTheme.expenseBlue)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 6)
-                    .background(Color.white)
+                    .padding(.bottom, 4)
             } else if !speechTranscriber.statusText.isEmpty {
                 Text(speechTranscriber.statusText)
                     .font(.system(size: 12))
                     .foregroundColor(MimiTheme.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 6)
-                    .background(Color.white)
+                    .padding(.bottom, 4)
             }
             #endif
 
+            // 金标输入条：胶囊「任何事情都能问我」内嵌 ＋，外侧蓝色发送
             HStack(spacing: 10) {
-                Button {
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
-                        showChatAttachmentPanel.toggle()
-                    }
-                } label: {
-                    Image(systemName: showChatAttachmentPanel ? "xmark" : "plus")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(MimiTheme.textSecondary)
-                        .frame(width: 36, height: 36)
-                        .background(Circle().fill(Color(hex: 0xF0F2F7)))
-                }
-                .buttonStyle(.plain)
-
-                TextField("发消息或按住说话…", text: $aiInputText)
-                    .font(.system(size: 14))
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 11)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(Color(hex: 0xF5F6FA))
-                    )
-
-                #if canImport(Speech) && canImport(AVFoundation)
-                if aiInputText.trimmingCharacters(in: .whitespaces).isEmpty {
-                    Image(systemName: speechTranscriber.isRecording ? "mic.fill" : "mic")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(speechTranscriber.isRecording ? MimiTheme.dangerRed : MimiTheme.textMuted)
-                        .frame(width: 28, height: 28)
-                        .contentShape(Rectangle())
-                        .onLongPressGesture(minimumDuration: 0.25, maximumDistance: 60, pressing: { isPressing in
+                HStack(spacing: 8) {
+                    TextField("任何事情都能问我", text: $aiInputText)
+                        .font(.system(size: 14))
+                        #if canImport(Speech) && canImport(AVFoundation)
+                        .onLongPressGesture(minimumDuration: 0.35, maximumDistance: 60, pressing: { isPressing in
+                            guard aiInputText.trimmingCharacters(in: .whitespaces).isEmpty else { return }
                             if isPressing {
                                 Task {
                                     if await speechTranscriber.requestAuthorization() {
@@ -1091,8 +986,27 @@ public struct RecordAndAISheetView: View {
                                 }
                             }
                         }, perform: {})
+                        #endif
+
+                    Button {
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                            showChatAttachmentPanel.toggle()
+                        }
+                    } label: {
+                        Image(systemName: showChatAttachmentPanel ? "xmark" : "plus")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(MimiTheme.textMuted)
+                            .frame(width: 28, height: 28)
+                    }
+                    .buttonStyle(.plain)
                 }
-                #endif
+                .padding(.leading, 14)
+                .padding(.trailing, 8)
+                .padding(.vertical, 8)
+                .background(
+                    Capsule()
+                        .fill(Color(hex: 0xF5F6FA))
+                )
 
                 Button {
                     let prompt = aiInputText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1103,7 +1017,7 @@ public struct RecordAndAISheetView: View {
                     Image(systemName: "arrow.up")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(.white)
-                        .frame(width: 34, height: 34)
+                        .frame(width: 36, height: 36)
                         .background(
                             Circle().fill(
                                 aiInputText.trimmingCharacters(in: .whitespaces).isEmpty
@@ -1116,14 +1030,9 @@ public struct RecordAndAISheetView: View {
                 .disabled(aiInputText.trimmingCharacters(in: .whitespaces).isEmpty)
             }
             .padding(.horizontal, 14)
-            .padding(.top, 10)
-            .padding(.bottom, 14)
+            .padding(.top, 8)
+            .padding(.bottom, 12)
             .background(Color.white)
-            .overlay(alignment: .top) {
-                Rectangle()
-                    .fill(Color(hex: 0xE8ECF4))
-                    .frame(height: 1)
-            }
         }
     }
 
@@ -1184,35 +1093,48 @@ public struct RecordAndAISheetView: View {
     private func chatBubbleView(for message: AIChatMessage) -> some View {
         HStack(alignment: .top, spacing: 8) {
             if message.isUser {
-                Spacer(minLength: 36)
-            } else {
-                MimiAskMascotView(size: 30)
+                Spacer(minLength: 48)
             }
 
-            VStack(alignment: message.isUser ? .trailing : .leading, spacing: 10) {
-                ForEach(Array(message.blocks.enumerated()), id: \.offset) { _, block in
+            VStack(alignment: message.isUser ? .trailing : .leading, spacing: 8) {
+                ForEach(Array(message.blocks.enumerated()), id: \.offset) { idx, block in
                     switch block {
                     case .pendingAnswer:
-                        HStack(spacing: 8) {
-                            ProgressView()
-                                .controlSize(.small)
-                            Text("正在查账…")
-                                .font(.system(size: 14))
-                                .foregroundColor(MimiTheme.textSecondary)
+                        // 金标：紫色闪点 +「咪咪思考中…」
+                        HStack(spacing: 6) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(Color(hex: 0x8B5CF6))
+                            Text("咪咪思考中…")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(Color(hex: 0x8B5CF6))
                         }
-                        .padding(12)
-                        .background(chatBubbleShape(isUser: false).fill(Color.white))
+                        .padding(.vertical, 4)
 
                     case .text(let text):
-                        Text(text)
-                            .font(.system(size: 14))
-                            .foregroundColor(message.isUser ? .white : MimiTheme.textPrimary)
-                            .padding(.horizontal, 13)
-                            .padding(.vertical, 11)
-                            .background(
-                                chatBubbleShape(isUser: message.isUser)
-                                    .fill(message.isUser ? MimiTheme.expenseBlue : Color.white)
-                            )
+                        if message.isUser {
+                            Text(text)
+                                .font(.system(size: 15))
+                                .foregroundColor(MimiTheme.textPrimary)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 11)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(Color(hex: 0xE8EEFF))
+                                )
+                        } else {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(text)
+                                    .font(.system(size: 15))
+                                    .foregroundColor(MimiTheme.textPrimary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                if idx == message.blocks.count - 1 {
+                                    Text("\(aiGeneratedTimeLabel) 内容由AI生成")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(MimiTheme.textMuted)
+                                }
+                            }
+                        }
 
                     case .categoryTable(let expenseRows, let incomeRows, let customNote):
                         VStack(alignment: .leading, spacing: 10) {
@@ -1233,22 +1155,26 @@ public struct RecordAndAISheetView: View {
                             }
                         }
                         .padding(14)
-                        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.white))
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(Color(hex: 0xF7F8FC))
+                        )
 
                     case .spendingSummary(let title, let amount, let count, let details):
                         VStack(alignment: .leading, spacing: 6) {
                             Text(title)
-                                .font(.system(size: 14, weight: .bold))
+                                .font(.system(size: 15, weight: .bold))
                                 .foregroundColor(MimiTheme.textPrimary)
                             Text("总支出 \(MimiTheme.formatRM(amount)) · 共 \(count) 笔")
-                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                .font(.system(size: 14, weight: .semibold, design: .rounded))
                                 .foregroundColor(MimiTheme.expenseBlue)
                             Text(details)
-                                .font(.system(size: 12))
+                                .font(.system(size: 13))
                                 .foregroundColor(MimiTheme.textSecondary)
+                            Text("\(aiGeneratedTimeLabel) 内容由AI生成")
+                                .font(.system(size: 11))
+                                .foregroundColor(MimiTheme.textMuted)
                         }
-                        .padding(14)
-                        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.white))
 
                     case .draftBills(let drafts):
                         chatDraftCard(message: message, drafts: drafts)
@@ -1262,23 +1188,10 @@ public struct RecordAndAISheetView: View {
         }
     }
 
-    private func chatBubbleShape(isUser: Bool) -> UnevenRoundedRectangle {
-        if isUser {
-            return UnevenRoundedRectangle(
-                topLeadingRadius: 18,
-                bottomLeadingRadius: 18,
-                bottomTrailingRadius: 18,
-                topTrailingRadius: 4,
-                style: .continuous
-            )
-        }
-        return UnevenRoundedRectangle(
-            topLeadingRadius: 4,
-            bottomLeadingRadius: 18,
-            bottomTrailingRadius: 18,
-            topTrailingRadius: 18,
-            style: .continuous
-        )
+    private var aiGeneratedTimeLabel: String {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm"
+        return f.string(from: Date())
     }
 
     private func categoryTableBox(rows: [(String, String)]) -> some View {
