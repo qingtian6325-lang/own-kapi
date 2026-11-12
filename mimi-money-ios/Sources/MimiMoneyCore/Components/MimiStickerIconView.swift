@@ -276,3 +276,49 @@ public struct MimiStickerIconView: View {
         ("人情社交", ["🎁", "🧧", "💌", "💐", "🌹", "🥀", "🌺", "🌸", "💮", "🏵️", "🌻", "🌼", "🌷", "🪷", "🎂", "🍰", "🧁", "🍾", "🥂", "🍻", "🎉", "🎊", "🎈", "🎀", "🪅", "🪩", "💃", "🕺", "👯", "🧑‍🤝‍🧑", "👨‍👩‍👧", "👨‍👩‍👦", "💑", "💏", "🤝", "👍", "👏", "🙏", "💪", "❤️", "🧡", "💛", "💚", "💙", "💜", "🤎", "🖤", "🤍"])
     ]
 }
+
+/// Orange-brown capybara face for the home ask bar. Approximate of gold A, not a cropped asset.
+public struct MimiAskMascotView: View {
+    public var size: CGFloat = 28
+
+    public init(size: CGFloat = 28) {
+        self.size = size
+    }
+
+    public var body: some View {
+        Canvas { context, canvasSize in
+            let w = canvasSize.width
+            let h = canvasSize.height
+            let fur = Color(hex: 0xE39A4B)
+            let ear = Color(hex: 0xC4783A)
+            let innerEar = Color(hex: 0xF0C08A)
+            let muzzle = Color(hex: 0xF6D7B0)
+            let ink = Color(hex: 0x3A2A22)
+            let nose = Color(hex: 0xC4654A)
+
+            func ellipse(_ x: CGFloat, _ y: CGFloat, _ ew: CGFloat, _ eh: CGFloat) -> Path {
+                Path(ellipseIn: CGRect(x: x * w, y: y * h, width: ew * w, height: eh * h))
+            }
+
+            context.fill(ellipse(0.10, 0.00, 0.26, 0.30), with: .color(ear))
+            context.fill(ellipse(0.64, 0.00, 0.26, 0.30), with: .color(ear))
+            context.fill(ellipse(0.06, 0.14, 0.88, 0.82), with: .color(fur))
+            context.fill(ellipse(0.16, 0.06, 0.14, 0.16), with: .color(innerEar))
+            context.fill(ellipse(0.70, 0.06, 0.14, 0.16), with: .color(innerEar))
+            context.fill(ellipse(0.24, 0.50, 0.52, 0.38), with: .color(muzzle))
+            context.fill(ellipse(0.30, 0.38, 0.10, 0.12), with: .color(ink))
+            context.fill(ellipse(0.60, 0.38, 0.10, 0.12), with: .color(ink))
+            context.fill(ellipse(0.43, 0.55, 0.14, 0.10), with: .color(nose))
+
+            var smile = Path()
+            smile.move(to: CGPoint(x: 0.40 * w, y: 0.70 * h))
+            smile.addQuadCurve(
+                to: CGPoint(x: 0.60 * w, y: 0.70 * h),
+                control: CGPoint(x: 0.50 * w, y: 0.78 * h)
+            )
+            context.stroke(smile, with: .color(nose), lineWidth: max(1, w * 0.04))
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+}

@@ -20,9 +20,9 @@ public struct AIAttachmentPanelView: View {
 
     public var body: some View {
         HStack(spacing: 12) {
-            tile(icon: "photo.on.rectangle.angled", title: "相册", action: onPickFromAlbum)
-            tile(icon: "camera.fill", title: "拍照", action: onTakePhoto)
-            tile(icon: "square.and.arrow.up.on.square", title: "导入导出", action: onOpenImportExport)
+            tile(icon: "photo.on.rectangle", title: "相册", action: onPickFromAlbum)
+            tile(icon: "camera", title: "拍照", action: onTakePhoto)
+            tile(icon: "square.and.arrow.up", title: "导入导出", action: onOpenImportExport)
         }
     }
 
@@ -30,16 +30,16 @@ public struct AIAttachmentPanelView: View {
         Button(action: action) {
             VStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.system(size: 24, weight: .medium))
-                    .foregroundColor(MimiTheme.textPrimary)
+                    .font(.system(size: 26, weight: .regular))
+                    .foregroundColor(Color(hex: 0x8B93A7))
                 Text(title)
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(MimiTheme.textPrimary)
+                    .foregroundColor(MimiTheme.textSecondary)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 84)
+            .frame(height: 88)
             .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(Color(hex: 0xF5F6FA))
             )
         }

@@ -851,32 +851,26 @@ public struct HomeRecordView: View {
         return "\(m)月\(d)日 (\(wName))"
     }
 
-    // MARK: - Floating Bottom Bar (🐱 任何事情都能问我 [＋/✕] + 展开面板)
+    // MARK: - Floating Bottom Bar (mascot + 任何事情都能问我 [＋/✕] + 展开面板)
 
     private var floatingBottomBar: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 0) {
             if isAskPanelExpanded {
-                AIAttachmentPanelView(
-                    onPickFromAlbum: {
+                Button {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
                         isAskPanelExpanded = false
-                        onPickFromAlbum()
-                    },
-                    onTakePhoto: {
-                        isAskPanelExpanded = false
-                        onTakePhoto()
-                    },
-                    onOpenImportExport: {
-                        isAskPanelExpanded = false
-                        onOpenImportExport()
                     }
-                )
-                .padding(12)
-                .background(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(Color.white)
-                        .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 4)
-                )
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
+                } label: {
+                    Image(systemName: "chevron.compact.up")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(Color(hex: 0xC5C8D0))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 18)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(.bottom, 6)
+                .transition(.opacity)
             }
 
             HStack(spacing: 8) {
@@ -884,12 +878,11 @@ public struct HomeRecordView: View {
                     onOpenRecordSheet(true)
                 } label: {
                     HStack(spacing: 8) {
-                        Text("🐱")
-                            .font(.system(size: 20))
+                        MimiAskMascotView(size: 32)
                         Text("任何事情都能问我")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: 15, weight: .medium))
                             .foregroundColor(MimiTheme.textSecondary)
-                        Spacer()
+                        Spacer(minLength: 0)
                     }
                     .contentShape(Rectangle())
                 }
@@ -901,25 +894,55 @@ public struct HomeRecordView: View {
                     }
                 } label: {
                     Image(systemName: isAskPanelExpanded ? "xmark" : "plus")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 34, height: 34)
+                        .font(.system(size: isAskPanelExpanded ? 15 : 16, weight: .bold))
+                        .foregroundColor(isAskPanelExpanded ? MimiTheme.textSecondary : .white)
+                        .frame(width: 32, height: 32)
                         .background(
                             Circle()
-                                .fill(MimiTheme.expenseBlue)
-                                .shadow(color: MimiTheme.expenseBlue.opacity(0.35), radius: 8, x: 0, y: 3)
+                                .fill(isAskPanelExpanded ? Color.clear : MimiTheme.expenseBlue)
+                                .shadow(
+                                    color: isAskPanelExpanded ? Color.clear : MimiTheme.expenseBlue.opacity(0.35),
+                                    radius: 8,
+                                    x: 0,
+                                    y: 3
+                                )
                         )
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.leading, 16)
+            .padding(.leading, 8)
             .padding(.trailing, 8)
-            .frame(height: 50)
+            .frame(height: MimiTheme.askBarHeight)
             .background(
-                Capsule()
+                RoundedRectangle(cornerRadius: MimiTheme.askBarCornerRadius, style: .continuous)
                     .fill(Color.white)
                     .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 4)
             )
+
+            if isAskPanelExpanded {
+                AIAttachmentPanelView(
+                    onPickFromAlbum: {
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                            isAskPanelExpanded = false
+                        }
+                        onPickFromAlbum()
+                    },
+                    onTakePhoto: {
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                            isAskPanelExpanded = false
+                        }
+                        onTakePhoto()
+                    },
+                    onOpenImportExport: {
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                            isAskPanelExpanded = false
+                        }
+                        onOpenImportExport()
+                    }
+                )
+                .padding(.top, 10)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
         }
     }
 
