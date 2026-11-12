@@ -1312,10 +1312,12 @@ public struct SettingsAndShortcutsGuideView: View {
             ForEach(store.scheduledTransactions) { item in
                 VStack(spacing: 10) {
                     HStack(spacing: 10) {
-                        Text(item.iconName)
-                            .font(.system(size: 24))
-                            .frame(width: 36, height: 36)
-                            .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                        MimiStickerIconView(
+                            iconName: item.iconName,
+                            categoryName: item.categoryPath,
+                            transactionType: item.type,
+                            size: 36
+                        )
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.title)
@@ -1498,7 +1500,7 @@ public struct SettingsAndShortcutsGuideView: View {
                             .stroke(Color(hex: 0xEEF0F6), lineWidth: 8)
                             .frame(width: 80, height: 80)
                         Circle()
-                            .trim(from: 0, to: 0.65)
+                            .trim(from: 0, to: 0.72)
                             .stroke(MimiTheme.expenseBlue, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                             .rotationEffect(.degrees(-90))
                             .frame(width: 80, height: 80)
@@ -1506,17 +1508,17 @@ public struct SettingsAndShortcutsGuideView: View {
                             Text("今日可用")
                                 .font(.system(size: 9))
                                 .foregroundColor(MimiTheme.textSecondary)
-                            Text("RM92.26")
+                            Text(MimiTheme.formatRM(store.monthlyBudgetRemaining(year: 2026, month: 11) / 21.0))
                                 .font(.system(size: 13, weight: .bold, design: .rounded))
                                 .foregroundColor(MimiTheme.textPrimary)
                         }
                     }
                     Spacer()
                     VStack(alignment: .trailing, spacing: 4) {
-                        Text("🦫 动态结余滚入")
+                        Text("动态结余滚入")
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(MimiTheme.expenseBlue)
-                        Text("今日已花费 RM0.00")
+                        Text("今日已花费 \(MimiTheme.formatRM(0))")
                             .font(.system(size: 10))
                             .foregroundColor(MimiTheme.textMuted)
                         Text("实时同步当前账本")
@@ -1525,7 +1527,11 @@ public struct SettingsAndShortcutsGuideView: View {
                     }
                 }
                 .padding(14)
-                .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white)
+                        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
+                )
             }
 
             // 2. Medium Widget Preview (7日趋势与本周收支)
@@ -1553,9 +1559,15 @@ public struct SettingsAndShortcutsGuideView: View {
                     }
                 }
                 .padding(14)
-                .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white)
+                        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
+                )
             }
         }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 20).fill(Color(hex: 0xF7F8FA)))
     }
 
     // MARK: - 5. 通用设置 (General Settings Section)

@@ -27,6 +27,7 @@ public struct BudgetManagementView: View {
     @State private var newCategoryBudgetInput: String = ""
     @State private var selectedDayKeyForCustomBudget: String?
     @State private var customDayBudgetInput: String = ""
+    @State private var categoryBudgetsExpanded: Bool = true
 
     public init(store: MimiStore, onDismiss: @escaping () -> Void) {
         self.store = store
@@ -449,73 +450,90 @@ public struct BudgetManagementView: View {
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
+                Text(MimiTheme.formatRM(categorizedBudgetTotal))
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundColor(MimiTheme.textPrimary)
                 Button {
                     activeSheetType = .selectNewCategory
                 } label: {
-                    HStack(spacing: 3) {
-                        Image(systemName: "plus.circle.fill")
-                        Text("增加分类预算")
-                    }
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(MimiTheme.expenseBlue)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(MimiTheme.expenseBlue)
                 }
                 .buttonStyle(.plain)
             }
 
-            ForEach(store.categoryBudgets) { item in
-                let spent = store.categorySpent(for: item.categoryName, year: currentYear, month: currentMonth)
-                let rem = item.monthlyLimit - spent
-                let ratio = item.monthlyLimit > 0 ? min(1.0, spent / item.monthlyLimit) : 0
+            if categoryBudgetsExpanded {
+                ForEach(store.categoryBudgets) { item in
+                    let spent = store.categorySpent(for: item.categoryName, year: currentYear, month: currentMonth)
+                    let rem = item.monthlyLimit - spent
+                    let ratio = item.monthlyLimit > 0 ? min(1.0, spent / item.monthlyLimit) : 0
 
-                Button {
-                    categoryBudgetInput = String(format: "%.2f", item.monthlyLimit)
-                    activeSheetType = .editCategory(item)
-                } label: {
-                    VStack(spacing: 8) {
-                        HStack(spacing: 10) {
-                            MimiStickerIconView(
-                                iconName: item.iconName,
-                                categoryName: item.categoryName,
-                                transactionType: .expense,
-                                useFirstCharIcon: item.useFirstCharIcon,
-                                size: 34
-                            )
+                    Button {
+                        categoryBudgetInput = String(format: "%.2f", item.monthlyLimit)
+                        activeSheetType = .editCategory(item)
+                    } label: {
+                        VStack(spacing: 8) {
+                            HStack(spacing: 10) {
+                                MimiStickerIconView(
+                                    iconName: item.iconName,
+                                    categoryName: item.categoryName,
+                                    transactionType: .expense,
+                                    useFirstCharIcon: item.useFirstCharIcon,
+                                    size: 34
+                                )
 
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(item.categoryName)
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(MimiTheme.textPrimary)
-                                Text("已用\(MimiTheme.formatRM(spent)) | \(MimiTheme.formatRM(item.monthlyLimit))")
-                                    .font(.system(size: 12, design: .rounded))
-                                    .foregroundColor(MimiTheme.textSecondary)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(item.categoryName)
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(MimiTheme.textPrimary)
+                                    Text("已用\(MimiTheme.formatRM(spent)) | \(MimiTheme.formatRM(item.monthlyLimit))")
+                                        .font(.system(size: 12, design: .rounded))
+                                        .foregroundColor(MimiTheme.textSecondary)
+                                }
+
+                                Spacer()
+
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(MimiTheme.textMuted)
                             }
 
-                            Spacer()
-
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(MimiTheme.textMuted)
-                        }
-
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                Capsule()
-                                    .fill(Color(hex: 0xEEF0F6))
-                                    .frame(height: 8)
-                                Capsule()
-                                    .fill(rem >= 0 ? MimiTheme.expenseBlue : MimiTheme.dangerRed)
-                                    .frame(width: geo.size.width * CGFloat(ratio), height: 8)
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    Capsule()
+                                        .fill(Color(hex: 0xEEF0F6))
+                                        .frame(height: 8)
+                                    Capsule()
+                                        .fill(rem >= 0 ? MimiTheme.expenseBlue : MimiTheme.dangerRed)
+                                        .frame(width: geo.size.width * CGFloat(ratio), height: 8)
+                                }
                             }
+                            .frame(height: 8)
                         }
-                        .frame(height: 8)
+                        .padding(.vertical, 4)
                     }
-                    .padding(.vertical, 4)
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    categoryBudgetsExpanded.toggle()
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Spacer()
+                    Text(categoryBudgetsExpanded ? "收起" : "展开")
+                        .font(.system(size: 12, weight: .semibold))
+                    Image(systemName: categoryBudgetsExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 11, weight: .bold))
+                    Spacer()
+                }
+                .foregroundColor(MimiTheme.textSecondary)
+                .padding(.top, 2)
+            }
+            .buttonStyle(.plain)
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
