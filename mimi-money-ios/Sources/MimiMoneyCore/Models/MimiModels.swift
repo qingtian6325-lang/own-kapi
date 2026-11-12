@@ -160,6 +160,7 @@ public struct AccountAuditLog: Identifiable, Codable, Equatable, Sendable {
     public var balanceAfter: Double
     public var billDate: Date
     public var loggedAt: Date
+    public var transactionId: UUID?
 
     public var title: String { categoryTitle }
     public var subtitle: String { note }
@@ -177,7 +178,8 @@ public struct AccountAuditLog: Identifiable, Codable, Equatable, Sendable {
         amount: Double,
         balanceAfter: Double,
         billDate: Date,
-        loggedAt: Date = Date()
+        loggedAt: Date = Date(),
+        transactionId: UUID? = nil
     ) {
         self.id = id
         self.accountId = accountId
@@ -189,6 +191,7 @@ public struct AccountAuditLog: Identifiable, Codable, Equatable, Sendable {
         self.balanceAfter = balanceAfter
         self.billDate = billDate
         self.loggedAt = loggedAt
+        self.transactionId = transactionId
     }
 }
 

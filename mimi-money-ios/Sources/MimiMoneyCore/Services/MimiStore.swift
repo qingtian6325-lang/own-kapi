@@ -900,9 +900,24 @@ public final class MimiStore: ObservableObject {
             amount: max(0.0, tx.amount - tx.discountAmount - tx.refundAmount),
             balanceAfter: acc.balance,
             billDate: tx.date,
-            loggedAt: loggedAt
+            loggedAt: loggedAt,
+            transactionId: tx.id
         )
         auditLogs.insert(log, at: 0)
+    }
+
+    public func transaction(forAuditLog log: AccountAuditLog) -> TransactionItem? {
+        if let tid = log.transactionId,
+           let exact = transactions.first(where: { $0.id == tid }) {
+            return exact
+        }
+        // Fallback for older logs without transactionId
+        return transactions.first { tx in
+            abs(tx.amount - log.amount) < 0.009
+                && tx.type == log.transactionType
+                && (tx.accountId == log.accountId || tx.accountName == log.accountId)
+                && abs(tx.date.timeIntervalSince(log.billDate)) < 86_400
+        }
     }
 
     /// Reloads persisted state from disk. Used when the Shortcuts intent (running in a

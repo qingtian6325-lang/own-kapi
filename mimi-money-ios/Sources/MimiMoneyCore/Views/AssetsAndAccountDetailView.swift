@@ -12,6 +12,7 @@ public struct AssetsAndAccountDetailView: View {
     @State private var showAddAccountSheet: Bool = false
     @State private var newAccountName: String = ""
     @State private var newAccountBalance: String = ""
+    @State private var billForDetail: TransactionItem? = nil
 
     public init(store: MimiStore, onDismiss: @escaping () -> Void) {
         self.store = store
@@ -57,6 +58,11 @@ public struct AssetsAndAccountDetailView: View {
             }
             .sheet(item: $selectedAccount) { account in
                 accountDetailSheet(for: account)
+                    .sheet(item: $billForDetail) { tx in
+                        BillDetailSheetView(store: store, transaction: tx) {
+                            billForDetail = nil
+                        }
+                    }
             }
             .sheet(isPresented: $showAddAccountSheet) {
                 NavigationStack {
@@ -402,68 +408,77 @@ public struct AssetsAndAccountDetailView: View {
 
                         VStack(spacing: 0) {
                             ForEach(Array(auditLogs.enumerated()), id: \.element.id) { idx, log in
-                                HStack(alignment: .top, spacing: 10) {
-                                    Text(formattedBillTime(log.loggedAt))
-                                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                                        .foregroundColor(MimiTheme.textMuted)
-                                        .frame(width: 36, alignment: .leading)
-
-                                    VStack(spacing: 0) {
-                                        Text(log.action.rawValue)
-                                            .font(.system(size: 10, weight: .bold))
-                                            .foregroundColor(.white)
-                                            .frame(width: 22, height: 22)
-                                            .background(Circle().fill(badgeColor(for: log.action)))
-                                        if idx < auditLogs.count - 1 {
-                                            Rectangle()
-                                                .fill(Color(hex: 0xE5E7EB))
-                                                .frame(width: 1)
-                                                .frame(maxHeight: .infinity)
-                                        }
+                                Button {
+                                    if let tx = store.transaction(forAuditLog: log) {
+                                        billForDetail = tx
                                     }
-                                    .frame(width: 22)
-
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text(auditTypeLabel(log))
-                                            .font(.system(size: 13, weight: .semibold))
-                                            .foregroundColor(MimiTheme.textPrimary)
-                                        if !log.note.isEmpty {
-                                            Text(log.note)
-                                                .font(.system(size: 12))
-                                                .foregroundColor(MimiTheme.textSecondary)
-                                                .lineLimit(2)
-                                        }
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "calendar")
-                                                .font(.system(size: 10))
-                                            Text("账单日期 \(formattedBillDate(log.billDate))")
-                                                .font(.system(size: 11))
-                                        }
-                                        .foregroundColor(MimiTheme.textMuted)
-                                    }
-
-                                    Spacer(minLength: 6)
-
-                                    VStack(alignment: .trailing, spacing: 3) {
-                                        Text("余额: \(MimiTheme.formatRM(log.balanceAfter))")
-                                            .font(.system(size: 11, design: .rounded))
+                                } label: {
+                                    HStack(alignment: .top, spacing: 10) {
+                                        Text(formattedBillTime(log.loggedAt))
+                                            .font(.system(size: 12, weight: .medium, design: .rounded))
                                             .foregroundColor(MimiTheme.textMuted)
-                                        Text(
-                                            log.deltaAmount >= 0
-                                                ? MimiTheme.formatRM(log.deltaAmount)
-                                                : "-\(MimiTheme.formatRM(abs(log.deltaAmount)))"
-                                        )
-                                        .font(.system(size: 15, weight: .bold, design: .rounded))
-                                        .strikethrough(log.action == .deleted && log.deltaAmount < 0, color: MimiTheme.textMuted)
-                                        .foregroundColor(
-                                            log.action == .deleted && log.deltaAmount < 0
-                                                ? MimiTheme.textMuted
-                                                : (log.deltaAmount >= 0 ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
-                                        )
+                                            .frame(width: 36, alignment: .leading)
+
+                                        VStack(spacing: 0) {
+                                            Text(log.action.rawValue)
+                                                .font(.system(size: 10, weight: .bold))
+                                                .foregroundColor(.white)
+                                                .frame(width: 22, height: 22)
+                                                .background(Circle().fill(badgeColor(for: log.action)))
+                                            if idx < auditLogs.count - 1 {
+                                                Rectangle()
+                                                    .fill(Color(hex: 0xE5E7EB))
+                                                    .frame(width: 1)
+                                                    .frame(maxHeight: .infinity)
+                                            }
+                                        }
+                                        .frame(width: 22)
+
+                                        VStack(alignment: .leading, spacing: 3) {
+                                            Text(auditTypeLabel(log))
+                                                .font(.system(size: 13, weight: .semibold))
+                                                .foregroundColor(MimiTheme.textPrimary)
+                                            if !log.note.isEmpty {
+                                                Text(log.note)
+                                                    .font(.system(size: 12))
+                                                    .foregroundColor(MimiTheme.textSecondary)
+                                                    .lineLimit(2)
+                                            }
+                                            HStack(spacing: 4) {
+                                                Image(systemName: "calendar")
+                                                    .font(.system(size: 10))
+                                                Text("账单日期 \(formattedBillDate(log.billDate))")
+                                                    .font(.system(size: 11))
+                                            }
+                                            .foregroundColor(MimiTheme.textMuted)
+                                        }
+
+                                        Spacer(minLength: 6)
+
+                                        VStack(alignment: .trailing, spacing: 3) {
+                                            Text("余额: \(MimiTheme.formatRM(log.balanceAfter))")
+                                                .font(.system(size: 11, design: .rounded))
+                                                .foregroundColor(MimiTheme.textMuted)
+                                            Text(
+                                                log.deltaAmount >= 0
+                                                    ? MimiTheme.formatRM(log.deltaAmount)
+                                                    : "-\(MimiTheme.formatRM(abs(log.deltaAmount)))"
+                                            )
+                                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                                            .strikethrough(log.action == .deleted && log.deltaAmount < 0, color: MimiTheme.textMuted)
+                                            .foregroundColor(
+                                                log.action == .deleted && log.deltaAmount < 0
+                                                    ? MimiTheme.textMuted
+                                                    : (log.deltaAmount >= 0 ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
+                                            )
+                                        }
                                     }
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 12)
+                                    .contentShape(Rectangle())
                                 }
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 12)
+                                .buttonStyle(.plain)
+                                .disabled(store.transaction(forAuditLog: log) == nil)
                             }
                         }
                         .background(RoundedRectangle(cornerRadius: 18).fill(Color.white))
@@ -582,45 +597,54 @@ public struct AssetsAndAccountDetailView: View {
                             .padding(.bottom, 6)
 
                         ForEach(Array(group.items.enumerated()), id: \.element.id) { idx, tx in
-                            HStack(spacing: 12) {
-                                MimiStickerIconView(
-                                    iconName: tx.iconName,
-                                    categoryName: tx.categoryPath,
-                                    transactionType: tx.type,
-                                    size: 34
-                                )
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(tx.categoryPath.components(separatedBy: "-").last ?? tx.categoryPath)
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundColor(MimiTheme.textPrimary)
-                                    HStack(spacing: 4) {
-                                        Text(formattedBillTime(tx.date))
-                                            .font(.system(size: 11))
-                                            .foregroundColor(MimiTheme.textMuted)
-                                        if !tx.note.isEmpty {
-                                            Text("| \(tx.note)")
+                            Button {
+                                billForDetail = tx
+                            } label: {
+                                HStack(spacing: 12) {
+                                    MimiStickerIconView(
+                                        iconName: tx.iconName,
+                                        categoryName: tx.categoryPath,
+                                        transactionType: tx.type,
+                                        size: 34
+                                    )
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(tx.categoryPath.components(separatedBy: "-").last ?? tx.categoryPath)
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(MimiTheme.textPrimary)
+                                        HStack(spacing: 4) {
+                                            Text(formattedBillTime(tx.date))
                                                 .font(.system(size: 11))
-                                                .foregroundColor(MimiTheme.textSecondary)
-                                                .lineLimit(1)
+                                                .foregroundColor(MimiTheme.textMuted)
+                                            if !tx.note.isEmpty {
+                                                Text("| \(tx.note)")
+                                                    .font(.system(size: 11))
+                                                    .foregroundColor(MimiTheme.textSecondary)
+                                                    .lineLimit(1)
+                                            }
                                         }
+                                        Text(tx.accountName)
+                                            .font(.system(size: 10, weight: .medium))
+                                            .foregroundColor(MimiTheme.textSecondary)
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 2)
+                                            .background(Capsule().fill(Color(hex: 0xF0F2F6)))
                                     }
-                                    Text(tx.accountName)
-                                        .font(.system(size: 10, weight: .medium))
-                                        .foregroundColor(MimiTheme.textSecondary)
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
-                                        .background(Capsule().fill(Color(hex: 0xF0F2F6)))
+                                    Spacer()
+                                    Text(tx.type == .expense || tx.type == .transfer
+                                         ? "-\(MimiTheme.formatRM(tx.amount))"
+                                         : MimiTheme.formatRM(tx.amount))
+                                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                                        .foregroundColor(tx.type == .expense || tx.type == .transfer
+                                                         ? MimiTheme.expenseBlue
+                                                         : MimiTheme.incomeOrange)
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundColor(Color(hex: 0xC5C8D0))
                                 }
-                                Spacer()
-                                Text(tx.type == .expense || tx.type == .transfer
-                                     ? "-\(MimiTheme.formatRM(tx.amount))"
-                                     : MimiTheme.formatRM(tx.amount))
-                                    .font(.system(size: 15, weight: .bold, design: .rounded))
-                                    .foregroundColor(tx.type == .expense || tx.type == .transfer
-                                                     ? MimiTheme.expenseBlue
-                                                     : MimiTheme.incomeOrange)
+                                .padding(14)
+                                .contentShape(Rectangle())
                             }
-                            .padding(14)
+                            .buttonStyle(.plain)
                             if idx < group.items.count - 1 {
                                 Divider().padding(.leading, 60)
                             }
