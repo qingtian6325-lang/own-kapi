@@ -36,201 +36,222 @@ public struct SideDrawerMenuView: View {
         DynamicBudgetEngine.buildMonthDayCells(year: 2026, month: 11, transactions: store.transactions)
     }
 
+    private var threeColumnGrid: [GridItem] {
+        [
+            GridItem(.flexible()),
+            GridItem(.flexible()),
+            GridItem(.flexible())
+        ]
+    }
+
     public var body: some View {
-        ZStack(alignment: .leading) {
-            Color.black.opacity(0.32)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    onClose()
+        GeometryReader { geo in
+            let panelWidth = geo.size.width * MimiTheme.drawerWidthFraction
+            ZStack(alignment: .leading) {
+                Color.black.opacity(0.32)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        onClose()
+                    }
+
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: MimiTheme.drawerSectionSpacing) {
+                        profileRow
+                        heatmapCard
+                        moreFeaturesCard
+                        quickBookkeepingCard
+                        footerListCard
+                    }
+                    .padding(MimiTheme.drawerContentPadding)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
-                    // User Profile Header (IMG_2249)
-                    HStack(spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .fill(Color(hex: 0xFFE8CC))
-                                .frame(width: 48, height: 48)
-                            Text("🐱")
-                                .font(.system(size: 26))
-                        }
-
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(store.userNickname)
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(MimiTheme.textPrimary)
-                            Text("已开启智能记账守护")
-                                .font(.system(size: 11))
-                                .foregroundColor(MimiTheme.textSecondary)
-                        }
-
-                        Spacer()
-
-                        Button {
-                            onSelectDestination(.settings)
-                        } label: {
-                            Image(systemName: "gearshape")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(MimiTheme.textPrimary)
-                                .frame(width: 36, height: 36)
-                                .background(Circle().fill(Color.white))
-                        }
-                    }
-                    .padding(.top, 12)
-
-                    // November 2026 Heatmap & Stats Card (IMG_2249 + User Requested Calendar Entry)
-                    Button {
-                        onSelectDestination(.calendar)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack {
-                                Text("November 2026")
-                                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                                    .foregroundColor(MimiTheme.textPrimary)
-
-                                Spacer()
-
-                                HStack(spacing: 2) {
-                                    Text("全部记录")
-                                        .font(.system(size: 11, weight: .semibold))
-                                        .foregroundColor(MimiTheme.expenseBlue)
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 9, weight: .bold))
-                                        .foregroundColor(MimiTheme.expenseBlue)
-                                }
-                            }
-
-                            // Mini Month Calendar Heatmap (1-30 days, deep/light blue & orange)
-                            VStack(spacing: 4) {
-                                HStack(spacing: 0) {
-                                    ForEach(["一", "二", "三", "四", "五", "六", "日"], id: \.self) { w in
-                                        Text(w)
-                                            .font(.system(size: 9, weight: .medium))
-                                            .foregroundColor(MimiTheme.textMuted)
-                                            .frame(maxWidth: .infinity)
-                                    }
-                                }
-
-                                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 3), count: 7), spacing: 3) {
-                                    // 2026年11月1日是周日，周一开始排前面空6格
-                                    ForEach(0..<6, id: \.self) { _ in
-                                        Color.clear
-                                            .frame(height: 18)
-                                    }
-                                    ForEach(monthDayCells, id: \.id) { cell in
-                                        ZStack {
-                                            RoundedRectangle(cornerRadius: 3, style: .continuous)
-                                                .fill(heatmapMiniColor(for: cell))
-                                                .frame(height: 18)
-
-                                            Text("\(cell.day)")
-                                                .font(.system(size: 9, weight: cell.isToday ? .bold : .regular, design: .rounded))
-                                                .foregroundColor(cell.isToday ? MimiTheme.expenseBlue : (cell.expense > 0 || cell.income > 0 ? MimiTheme.textPrimary : MimiTheme.textMuted))
-                                        }
-                                    }
-                                }
-                            }
-                            .padding(.vertical, 4)
-
-                            // Heatmap Legend Indicator
-                            HStack(spacing: 4) {
-                                Text("收入多")
-                                    .font(.system(size: 9))
-                                    .foregroundColor(MimiTheme.textMuted)
-                                RoundedRectangle(cornerRadius: 1.5).fill(Color(hex: 0xFFD8B5)).frame(width: 8, height: 6)
-                                RoundedRectangle(cornerRadius: 1.5).fill(Color(hex: 0xFFEBD9)).frame(width: 8, height: 6)
-                                RoundedRectangle(cornerRadius: 1.5).fill(Color(hex: 0xF0F2F6)).frame(width: 8, height: 6)
-                                RoundedRectangle(cornerRadius: 1.5).fill(Color(hex: 0xDDE9FD)).frame(width: 8, height: 6)
-                                RoundedRectangle(cornerRadius: 1.5).fill(Color(hex: 0x90B8F8)).frame(width: 8, height: 6)
-                                Text("支出多")
-                                    .font(.system(size: 9))
-                                    .foregroundColor(MimiTheme.textMuted)
-
-                                Spacer()
-                            }
-
-                            Divider().opacity(0.6)
-
-                            HStack(spacing: 0) {
-                                statColumn(value: "\(store.recordedDaysCount)", label: "记录天数")
-                                Divider().frame(height: 24)
-                                statColumn(value: "\(store.totalRecordsCount)", label: "总记录")
-                                Divider().frame(height: 24)
-                                statColumn(value: "\(store.streakDaysCount)", label: "连续天数")
-                            }
-                        }
-                        .padding(14)
-                        .background(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(Color.white)
-                                .shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 2)
-                        )
-                    }
-                    .buttonStyle(.plain)
-
-                    // 更多功能 (7-item grid matching IMG_2249)
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("更多功能")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(MimiTheme.textSecondary)
-
-                        LazyVGrid(
-                            columns: [
-                                GridItem(.flexible()),
-                                GridItem(.flexible()),
-                                GridItem(.flexible()),
-                                GridItem(.flexible())
-                            ],
-                            spacing: 16
-                        ) {
-                            drawerGridButton(icon: "📊", title: "图表统计", dest: .stats)
-                            drawerGridButton(icon: "🏦", title: "资产管理", dest: .assets)
-                            drawerGridButton(icon: "📒", title: "账本管理", dest: .ledgers)
-                            drawerGridButton(icon: "🎯", title: "预算管理", dest: .budgets)
-                            drawerGridButton(icon: "🧩", title: "小组件", dest: .widgets)
-                            drawerGridButton(icon: "🗂️", title: "分类管理", dest: .categories)
-                            drawerGridButton(icon: "🏷️", title: "标签管理", dest: .tags)
-                        }
-                    }
-                    .padding(16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(Color.white)
-                    )
-
-                    // 快捷记账 (3-item grid matching IMG_2249)
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("快捷记账")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(MimiTheme.textSecondary)
-
-                        LazyVGrid(
-                            columns: [
-                                GridItem(.flexible()),
-                                GridItem(.flexible()),
-                                GridItem(.flexible()),
-                                GridItem(.flexible())
-                            ],
-                            spacing: 16
-                        ) {
-                            drawerGridButton(icon: "📥", title: "导入导出", dest: .importExport)
-                            drawerGridButton(icon: "⚡", title: "自动记账", dest: .autoBookkeeping)
-                            drawerGridButton(icon: "⏰", title: "定时记账", dest: .scheduledBookkeeping)
-                        }
-                    }
-                    .padding(16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(Color.white)
-                    )
-                }
-                .padding(18)
+                .frame(width: panelWidth, height: geo.size.height, alignment: .top)
+                .background(MimiTheme.background.ignoresSafeArea())
             }
-            .frame(width: 315)
-            .background(MimiTheme.background.ignoresSafeArea())
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+        .ignoresSafeArea()
+    }
+
+    // MARK: - Profile (gold D0)
+
+    private var profileRow: some View {
+        Button {
+            onSelectDestination(.settings)
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(Color(hex: 0xFFE8CC))
+                        .frame(width: MimiTheme.drawerAvatarSize, height: MimiTheme.drawerAvatarSize)
+                    Text("🐱")
+                        .font(.system(size: 26))
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text(store.userNickname)
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(MimiTheme.textPrimary)
+                        Text("Pro")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Capsule().fill(MimiTheme.proBadgeBlue))
+                    }
+                    HStack(spacing: 4) {
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(MimiTheme.vipGold)
+                        Text("VIP")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(MimiTheme.vipGold)
+                    }
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(MimiTheme.textMuted)
+            }
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 12)
+    }
+
+    // MARK: - Heatmap card
+
+    private var heatmapCard: some View {
+        Button {
+            onSelectDestination(.calendar)
+        } label: {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("November 2026")
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundColor(MimiTheme.textPrimary)
+
+                LazyVGrid(
+                    columns: Array(repeating: GridItem(.flexible(), spacing: 3), count: 7),
+                    spacing: 3
+                ) {
+                    // 2026-11-01 is Sunday; week starts Monday → 6 leading blanks
+                    ForEach(0..<6, id: \.self) { _ in
+                        Color.clear
+                            .frame(height: MimiTheme.drawerHeatmapCellHeight)
+                    }
+                    ForEach(monthDayCells, id: \.id) { cell in
+                        heatmapCell(cell)
+                    }
+                }
+                .padding(.vertical, 4)
+
+                Divider().opacity(0.6)
+
+                HStack(spacing: 0) {
+                    statColumn(value: "\(store.recordedDaysCount)", label: "记录天数")
+                    Divider().frame(height: 24)
+                    statColumn(value: "\(store.totalRecordsCount)", label: "总记录")
+                    Divider().frame(height: 24)
+                    statColumn(value: "\(store.streakDaysCount)", label: "连续天数")
+                }
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius, style: .continuous)
+                    .fill(Color.white)
+                    .shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 2)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func heatmapCell(_ cell: CalendarDaySummary) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .fill(cell.isToday ? Color(hex: 0xDDE9FD) : heatmapMiniColor(for: cell))
+                .frame(height: MimiTheme.drawerHeatmapCellHeight)
+
+            if cell.isToday {
+                Text("今")
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                    .foregroundColor(MimiTheme.expenseBlue)
+            } else {
+                Text("\(cell.day)")
+                    .font(.system(size: 9, weight: .regular, design: .rounded))
+                    .foregroundColor(
+                        cell.expense > 0 || cell.income > 0
+                            ? MimiTheme.textPrimary
+                            : MimiTheme.textMuted
+                    )
+            }
         }
     }
+
+    // MARK: - Feature grids
+
+    private var moreFeaturesCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("更多功能")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(MimiTheme.textSecondary)
+
+            LazyVGrid(columns: threeColumnGrid, spacing: 16) {
+                drawerGridButton(systemName: "chart.pie", title: "图表统计", dest: .stats)
+                drawerGridButton(systemName: "creditcard", title: "资产管理", dest: .assets)
+                drawerGridButton(systemName: "book.closed", title: "账本管理", dest: .ledgers)
+                drawerGridButton(systemName: "list.bullet.clipboard", title: "预算管理", dest: .budgets)
+                drawerGridButton(systemName: "square.grid.2x2", title: "小组件", dest: .widgets)
+                drawerGridButton(systemName: "square.grid.3x3", title: "分类管理", dest: .categories)
+                drawerGridButton(systemName: "bookmark", title: "标签管理", dest: .tags)
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius, style: .continuous)
+                .fill(Color.white)
+        )
+    }
+
+    private var quickBookkeepingCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("快捷记账")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(MimiTheme.textSecondary)
+
+            LazyVGrid(columns: threeColumnGrid, spacing: 16) {
+                drawerGridButton(systemName: "square.and.arrow.up", title: "导入导出", dest: .importExport)
+                drawerGridButton(systemName: "doc.text", title: "自动记账", dest: .autoBookkeeping)
+                drawerGridButton(systemName: "clock.arrow.circlepath", title: "定时记账", dest: .scheduledBookkeeping)
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius, style: .continuous)
+                .fill(Color.white)
+        )
+    }
+
+    // MARK: - Footer list
+
+    private var footerListCard: some View {
+        VStack(spacing: 0) {
+            drawerListRow(systemName: "gearshape", title: "设置") {
+                onSelectDestination(.settings)
+            }
+            Divider().padding(.leading, 44)
+            drawerListRow(systemName: "newspaper", title: "填问卷参与共建") {
+                onClose()
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius, style: .continuous)
+                .fill(Color.white)
+        )
+    }
+
+    // MARK: - Helpers
 
     private func statColumn(value: String, label: String) -> some View {
         VStack(spacing: 4) {
@@ -257,23 +278,47 @@ public struct SideDrawerMenuView: View {
         return Color(hex: 0xF5F7FA)
     }
 
-    private func drawerGridButton(icon: String, title: String, dest: DrawerDestination) -> some View {
+    private func drawerGridButton(systemName: String, title: String, dest: DrawerDestination) -> some View {
         Button {
             onSelectDestination(dest)
         } label: {
             VStack(spacing: 8) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    RoundedRectangle(cornerRadius: MimiTheme.drawerGridIconCorner, style: .continuous)
                         .fill(Color(hex: 0xF5F6FA))
-                        .frame(width: 48, height: 48)
-                    Text(icon)
-                        .font(.system(size: 22))
+                        .frame(width: MimiTheme.drawerGridIconSize, height: MimiTheme.drawerGridIconSize)
+                    Image(systemName: systemName)
+                        .font(.system(size: 20, weight: .regular))
+                        .foregroundColor(MimiTheme.textPrimary)
                 }
                 Text(title)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(MimiTheme.textPrimary)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func drawerListRow(systemName: String, title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: systemName)
+                    .font(.system(size: 18))
+                    .foregroundColor(MimiTheme.textPrimary)
+                    .frame(width: 28)
+                Text(title)
+                    .font(.system(size: 15))
+                    .foregroundColor(MimiTheme.textPrimary)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(MimiTheme.textMuted)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

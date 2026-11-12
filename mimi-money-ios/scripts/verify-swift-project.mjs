@@ -300,6 +300,8 @@ function verifyTask5() {
     '记录天数',
     '总记录',
     '连续天数',
+    '更多功能',
+    '快捷记账',
     '图表统计',
     '资产管理',
     '账本管理',
@@ -309,7 +311,12 @@ function verifyTask5() {
     '标签管理',
     '导入导出',
     '自动记账',
-    '定时记账'
+    '定时记账',
+    '设置',
+    '填问卷参与共建',
+    'Pro',
+    'VIP',
+    '今'
   ]) {
     assertContains(drawer, label, 'SideDrawerMenuView.swift');
   }
