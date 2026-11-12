@@ -204,13 +204,27 @@ public struct SideDrawerMenuView: View {
                 .foregroundColor(MimiTheme.textSecondary)
 
             LazyVGrid(columns: threeColumnGrid, spacing: 16) {
-                drawerGridButton(systemName: "chart.pie", title: "图表统计", dest: .stats)
-                drawerGridButton(systemName: "creditcard", title: "资产管理", dest: .assets)
-                drawerGridButton(systemName: "book.closed", title: "账本管理", dest: .ledgers)
-                drawerGridButton(systemName: "list.bullet.clipboard", title: "预算管理", dest: .budgets)
-                drawerGridButton(systemName: "square.grid.2x2", title: "小组件", dest: .widgets)
-                drawerGridButton(systemName: "square.grid.3x3", title: "分类管理", dest: .categories)
-                drawerGridButton(systemName: "bookmark", title: "标签管理", dest: .tags)
+                drawerGridButton(title: "图表统计", dest: .stats) {
+                    Image(systemName: "chart.pie")
+                }
+                drawerGridButton(title: "资产管理", dest: .assets) {
+                    Image(systemName: "wallet.pass")
+                }
+                drawerGridButton(title: "账本管理", dest: .ledgers) {
+                    Image(systemName: "book.closed")
+                }
+                drawerGridButton(title: "预算管理", dest: .budgets) {
+                    Image(systemName: "pencil.and.list.clipboard")
+                }
+                drawerGridButton(title: "小组件", dest: .widgets) {
+                    Image(systemName: "square.grid.2x2")
+                }
+                drawerGridButton(title: "分类管理", dest: .categories) {
+                    Image(systemName: "folder.badge.plus")
+                }
+                drawerGridButton(title: "标签管理", dest: .tags) {
+                    Image(systemName: "bookmark")
+                }
             }
         }
         .padding(16)
@@ -227,9 +241,20 @@ public struct SideDrawerMenuView: View {
                 .foregroundColor(MimiTheme.textSecondary)
 
             LazyVGrid(columns: threeColumnGrid, spacing: 16) {
-                drawerGridButton(systemName: "doc.text", title: "自动记账", dest: .autoBookkeeping)
-                drawerGridButton(systemName: "clock.arrow.circlepath", title: "定时记账", dest: .scheduledBookkeeping)
-                drawerGridButton(systemName: "square.and.arrow.up", title: "导入导出", dest: .importExport)
+                drawerGridButton(title: "自动记账", dest: .autoBookkeeping) {
+                    drawerDocGlyph("A")
+                }
+                drawerGridButton(title: "定时记账", dest: .scheduledBookkeeping) {
+                    ZStack(alignment: .bottomTrailing) {
+                        Image(systemName: "doc")
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.system(size: 10, weight: .semibold))
+                            .offset(x: 2, y: 2)
+                    }
+                }
+                drawerGridButton(title: "导入导出", dest: .importExport) {
+                    Image(systemName: "doc.badge.plus")
+                }
             }
         }
         .padding(16)
@@ -266,18 +291,32 @@ public struct SideDrawerMenuView: View {
         return Color(hex: 0xF5F7FA)
     }
 
-    private func drawerGridButton(systemName: String, title: String, dest: DrawerDestination) -> some View {
+    private func drawerDocGlyph(_ letter: String) -> some View {
+        ZStack {
+            Image(systemName: "doc")
+            Text(letter)
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .offset(y: 2)
+        }
+    }
+
+    private func drawerGridButton<Icon: View>(
+        title: String,
+        dest: DrawerDestination,
+        @ViewBuilder icon: () -> Icon
+    ) -> some View {
         Button {
             onSelectDestination(dest)
         } label: {
             VStack(spacing: 8) {
                 ZStack {
                     RoundedRectangle(cornerRadius: MimiTheme.drawerGridIconCorner, style: .continuous)
-                        .fill(Color(hex: 0xF5F6FA))
+                        .fill(Color(hex: 0xF3F4F8))
                         .frame(width: MimiTheme.drawerGridIconSize, height: MimiTheme.drawerGridIconSize)
-                    Image(systemName: systemName)
-                        .font(.system(size: 20, weight: .regular))
-                        .foregroundColor(MimiTheme.textPrimary)
+                    icon()
+                        .font(.system(size: 21, weight: .light))
+                        .foregroundColor(Color(hex: 0x2C2F36))
+                        .symbolRenderingMode(.monochrome)
                 }
                 Text(title)
                     .font(.system(size: 12, weight: .medium))
