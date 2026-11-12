@@ -907,16 +907,25 @@ public final class MimiStore: ObservableObject {
     }
 
     public func transaction(forAuditLog log: AccountAuditLog) -> TransactionItem? {
+        if log.action == .deleted { return nil }
         if let tid = log.transactionId,
            let exact = transactions.first(where: { $0.id == tid }) {
             return exact
         }
+        let accountNames: Set<String> = {
+            var names: Set<String> = [log.accountId]
+            if let acc = accounts.first(where: { $0.id == log.accountId || $0.name == log.accountId }) {
+                names.insert(acc.id)
+                names.insert(acc.name)
+            }
+            return names
+        }()
         // Fallback for older logs without transactionId
         return transactions.first { tx in
             abs(tx.amount - log.amount) < 0.009
                 && tx.type == log.transactionType
-                && (tx.accountId == log.accountId || tx.accountName == log.accountId)
-                && abs(tx.date.timeIntervalSince(log.billDate)) < 86_400
+                && (accountNames.contains(tx.accountId ?? "") || accountNames.contains(tx.accountName))
+                && abs(tx.date.timeIntervalSince(log.billDate)) < 86_400 * 2
         }
     }
 

@@ -58,11 +58,12 @@ public struct AssetsAndAccountDetailView: View {
             }
             .sheet(item: $selectedAccount) { account in
                 accountDetailSheet(for: account)
-                    .sheet(item: $billForDetail) { tx in
-                        BillDetailSheetView(store: store, transaction: tx) {
-                            billForDetail = nil
-                        }
-                    }
+            }
+            // 与账户 sheet 同级弹出，避免嵌套 sheet 点了没反应
+            .sheet(item: $billForDetail) { tx in
+                BillDetailSheetView(store: store, transaction: tx) {
+                    billForDetail = nil
+                }
             }
             .sheet(isPresented: $showAddAccountSheet) {
                 NavigationStack {
@@ -254,7 +255,9 @@ public struct AssetsAndAccountDetailView: View {
     private func accountDetailSheet(for initialAccount: AccountItem) -> some View {
         let liveAccount = store.accounts.first(where: { $0.id == initialAccount.id }) ?? initialAccount
         let auditLogs = store.auditLogs(for: liveAccount.name)
-        let bills = store.transactions.filter { $0.accountName == liveAccount.name }
+        let bills = store.transactions.filter {
+            $0.accountName == liveAccount.name || $0.accountId == liveAccount.id
+        }
 
         return NavigationStack {
             ScrollView(.vertical, showsIndicators: false) {
