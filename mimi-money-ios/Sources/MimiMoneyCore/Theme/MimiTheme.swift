@@ -44,6 +44,19 @@ public enum MimiTheme {
     public static let homeCardShadowRadius: CGFloat = 10
     public static let homeCardShadowY: CGFloat = 3
 
+    // MARK: - Drawer layout tokens (gold screenshot D0)
+    public static let drawerWidthFraction: CGFloat = 0.82
+    public static let drawerContentPadding: CGFloat = 18
+    public static let drawerSectionSpacing: CGFloat = 18
+    public static let drawerGridIconSize: CGFloat = 48
+    public static let drawerGridIconCorner: CGFloat = 14
+    public static let drawerAvatarSize: CGFloat = 48
+    public static let drawerHeatmapCellHeight: CGFloat = 22
+    public static let proBadgeBlueHex: UInt32 = 0x2D5AF0
+    public static let vipGoldHex: UInt32 = 0xE6A23C
+    public static var proBadgeBlue: Color { Color(hex: proBadgeBlueHex) }
+    public static var vipGold: Color { Color(hex: vipGoldHex) }
+
     public static func formatRM(_ value: Double) -> String {
         formatAmount(value, currency: .myr, signed: false)
     }
