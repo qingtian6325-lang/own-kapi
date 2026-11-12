@@ -20,6 +20,9 @@ public struct MimiStatsView: View {
     @State private var customStartDate: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
     @State private var customEndDate: Date = Date()
 
+    @State private var drillCategoryName: String? = nil
+    @State private var billForDetail: TransactionItem? = nil
+
     public init(
         store: MimiStore,
         onOpenDrawer: @escaping () -> Void,
@@ -183,20 +186,48 @@ public struct MimiStatsView: View {
     }
 
     public var body: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 14) {
-                topBar
-                periodSegmentedControl
-                capybaraBalanceCard
-                donutBreakdownCard
-                dailyTrendBarCard
-                top10SingleExpenseCard
-                tabularBillSummaryCard
+        NavigationStack {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 14) {
+                    topBar
+                    periodSegmentedControl
+                    capybaraBalanceCard
+                    donutBreakdownCard
+                    dailyTrendBarCard
+                    top10SingleExpenseCard
+                    tabularBillSummaryCard
+                }
+                .padding(16)
+                .padding(.bottom, 40)
             }
-            .padding(16)
-            .padding(.bottom, 40)
+            .background(MimiTheme.background.ignoresSafeArea())
+            .navigationDestination(isPresented: Binding(
+                get: { drillCategoryName != nil },
+                set: { if !$0 { drillCategoryName = nil } }
+            )) {
+                if let name = drillCategoryName {
+                    CategoryBillsListView(
+                        store: store,
+                        categoryName: name,
+                        transactionType: selectedChartType,
+                        year: statsYear,
+                        month: statsMonth,
+                        onSelectTransaction: { tx in
+                            billForDetail = tx
+                        },
+                        onDismiss: {
+                            drillCategoryName = nil
+                        }
+                    )
+                    .navigationBarBackButtonHidden(true)
+                }
+            }
+            .sheet(item: $billForDetail) { tx in
+                BillDetailSheetView(store: store, transaction: tx) {
+                    billForDetail = nil
+                }
+            }
         }
-        .background(MimiTheme.background.ignoresSafeArea())
     }
 
     // MARK: - Top Navigation Bar (< 记录 | 统计 ⌄ | 全部账本 ⌄ | 筛选)
@@ -467,47 +498,53 @@ public struct MimiStatsView: View {
             } else {
                 VStack(spacing: 12) {
                     ForEach(Array(categoryBreakdown.enumerated()), id: \.offset) { _, row in
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack(spacing: 10) {
-                                MimiStickerIconView(
-                                    iconName: row.icon,
-                                    categoryName: row.name,
-                                    transactionType: selectedChartType,
-                                    size: 32
-                                )
-                                VStack(alignment: .leading, spacing: 2) {
-                                    HStack(spacing: 6) {
-                                        Text(row.name)
-                                            .font(.system(size: 14, weight: .semibold))
+                        Button {
+                            drillCategoryName = row.name
+                        } label: {
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack(spacing: 10) {
+                                    MimiStickerIconView(
+                                        iconName: row.icon,
+                                        categoryName: row.name,
+                                        transactionType: selectedChartType,
+                                        size: 32
+                                    )
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        HStack(spacing: 6) {
+                                            Text(row.name)
+                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundColor(MimiTheme.textPrimary)
+                                            Text(String(format: "%.2f%%", row.percent * 100))
+                                                .font(.system(size: 12, design: .rounded))
+                                                .foregroundColor(MimiTheme.textMuted)
+                                        }
+                                        GeometryReader { geo in
+                                            ZStack(alignment: .leading) {
+                                                Capsule().fill(Color(hex: 0xEEF0F6)).frame(height: 6)
+                                                Capsule()
+                                                    .fill(row.color.opacity(0.85))
+                                                    .frame(width: max(4, geo.size.width * CGFloat(row.percent)), height: 6)
+                                            }
+                                        }
+                                        .frame(height: 6)
+                                    }
+                                    Spacer(minLength: 8)
+                                    VStack(alignment: .trailing, spacing: 2) {
+                                        Text(MimiTheme.formatRM(row.amount))
+                                            .font(.system(size: 14, weight: .bold, design: .rounded))
                                             .foregroundColor(MimiTheme.textPrimary)
-                                        Text(String(format: "%.2f%%", row.percent * 100))
-                                            .font(.system(size: 12, design: .rounded))
+                                        Text("\(row.count)笔")
+                                            .font(.system(size: 11))
                                             .foregroundColor(MimiTheme.textMuted)
                                     }
-                                    GeometryReader { geo in
-                                        ZStack(alignment: .leading) {
-                                            Capsule().fill(Color(hex: 0xEEF0F6)).frame(height: 6)
-                                            Capsule()
-                                                .fill(row.color.opacity(0.85))
-                                                .frame(width: max(4, geo.size.width * CGFloat(row.percent)), height: 6)
-                                        }
-                                    }
-                                    .frame(height: 6)
-                                }
-                                Spacer(minLength: 8)
-                                VStack(alignment: .trailing, spacing: 2) {
-                                    Text(MimiTheme.formatRM(row.amount))
-                                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                                        .foregroundColor(MimiTheme.textPrimary)
-                                    Text("\(row.count)笔")
-                                        .font(.system(size: 11))
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 11, weight: .semibold))
                                         .foregroundColor(MimiTheme.textMuted)
                                 }
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundColor(MimiTheme.textMuted)
                             }
+                            .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
                     }
                 }
             }
