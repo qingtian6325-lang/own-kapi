@@ -222,46 +222,41 @@ public struct CategoryManagementView: View {
                             .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xF5F6FA)))
                         }
 
-                        HStack {
-                            Image(systemName: "plus")
-                            Text("添加二级分类")
-                            Spacer()
+                        VStack(spacing: 10) {
+                            TextField("输入新二级分类名称...", text: $newSubcategoryName)
+                                .font(.system(size: 14))
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+                                .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xF5F6FA)))
+
+                            Button {
+                                let trimmed = newSubcategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+                                guard !trimmed.isEmpty else { return }
+                                store.addSubcategory(
+                                    toGroupId: group.id,
+                                    type: selectedTab,
+                                    name: trimmed,
+                                    iconName: group.iconName,
+                                    useFirstCharIcon: false
+                                )
+                                newSubcategoryName = ""
+                            } label: {
+                                HStack {
+                                    Image(systemName: "plus")
+                                    Text("添加二级分类")
+                                    Spacer()
+                                }
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(MimiTheme.expenseBlue)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+                                .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xE8F0FE)))
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(MimiTheme.textSecondary)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 12)
-                        .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xF5F6FA)))
                     }
                     .padding(16)
                 }
-
-                HStack(spacing: 10) {
-                    TextField("输入新二级分类名称...", text: $newSubcategoryName)
-                        .font(.system(size: 14))
-                        .padding(10)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color.white))
-
-                    Button("+ 添加子类") {
-                        let trimmed = newSubcategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
-                        guard !trimmed.isEmpty else { return }
-                        store.addSubcategory(
-                            toGroupId: group.id,
-                            type: selectedTab,
-                            name: trimmed,
-                            iconName: group.iconName,
-                            useFirstCharIcon: false
-                        )
-                        newSubcategoryName = ""
-                        selectedGroupForSubSheet = nil
-                    }
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(Capsule().fill(MimiTheme.expenseBlue))
-                }
-                .padding(16)
             }
             .background(MimiTheme.background.ignoresSafeArea())
             .toolbar {

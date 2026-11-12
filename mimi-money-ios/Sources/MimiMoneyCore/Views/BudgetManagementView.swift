@@ -78,6 +78,25 @@ public struct BudgetManagementView: View {
         return store.expenseCategories.filter { !budgetedNames.contains($0.name) }
     }
 
+    /// Pool left for uncategorized spend (gold: 未分类预算 已用 | 限额).
+    private var categorizedBudgetTotal: Double {
+        store.categoryBudgets.reduce(0.0) { $0 + $1.monthlyLimit }
+    }
+
+    private var uncategorizedBudgetLimit: Double {
+        max(0.0, store.monthlyBudgetTotal - categorizedBudgetTotal)
+    }
+
+    private var categorizedSpentTotal: Double {
+        store.categoryBudgets.reduce(0.0) { partial, item in
+            partial + store.categorySpent(for: item.categoryName, year: currentYear, month: currentMonth)
+        }
+    }
+
+    private var uncategorizedSpentTotal: Double {
+        max(0.0, monthlySpent - categorizedSpentTotal)
+    }
+
     public var body: some View {
         NavigationStack {
             ScrollView(.vertical, showsIndicators: false) {
@@ -466,24 +485,19 @@ public struct BudgetManagementView: View {
                             )
 
                             VStack(alignment: .leading, spacing: 2) {
-                                HStack(spacing: 4) {
-                                    Text(item.categoryName)
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundColor(MimiTheme.textPrimary)
-                                    Image(systemName: "pencil.circle.fill")
-                                        .font(.system(size: 11))
-                                        .foregroundColor(MimiTheme.expenseBlue)
-                                }
-                                Text("预算 \(MimiTheme.formatRM(item.monthlyLimit)) · 已支 \(MimiTheme.formatRM(spent)) (点击调整)")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(MimiTheme.textMuted)
+                                Text(item.categoryName)
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(MimiTheme.textPrimary)
+                                Text("已用\(MimiTheme.formatRM(spent)) | \(MimiTheme.formatRM(item.monthlyLimit))")
+                                    .font(.system(size: 12, design: .rounded))
+                                    .foregroundColor(MimiTheme.textSecondary)
                             }
 
                             Spacer()
 
-                            Text(rem >= 0 ? "剩余 \(MimiTheme.formatRM(rem))" : "超支 \(MimiTheme.formatRM(abs(rem)))")
-                                .font(.system(size: 13, weight: .bold, design: .rounded))
-                                .foregroundColor(rem >= 0 ? MimiTheme.textPrimary : MimiTheme.dangerRed)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(MimiTheme.textMuted)
                         }
 
                         GeometryReader { geo in
@@ -510,46 +524,75 @@ public struct BudgetManagementView: View {
     // MARK: - 未分类预算 (IMG_2264: Remaining categories with spent amounts)
 
     private var uncategorizedBudgetListCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("未分类预算 (\(unbudgetedCategories.count))")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundColor(MimiTheme.textPrimary)
+        let overspent = uncategorizedSpentTotal > uncategorizedBudgetLimit + 0.009
 
-            ForEach(unbudgetedCategories) { group in
-                let spent = store.categorySpent(for: group.name, year: currentYear, month: currentMonth)
-                HStack(spacing: 10) {
-                    MimiStickerIconView(
-                        iconName: group.displayBadgeToken,
-                        categoryName: group.name,
-                        transactionType: .expense,
-                        useFirstCharIcon: group.useFirstCharIcon,
-                        size: 32
-                    )
-                    Text(group.name)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(MimiTheme.textPrimary)
-                    Spacer()
-                    Text("已用 \(MimiTheme.formatRM(spent))")
-                        .font(.system(size: 12, design: .rounded))
-                        .foregroundColor(MimiTheme.textSecondary)
-
-                    Button {
-                        newCategoryBudgetInput = "200.00"
-                        activeSheetType = .addCategory(group)
-                    } label: {
-                        HStack(spacing: 2) {
-                            Image(systemName: "plus.circle.fill")
-                            Text("设预算")
-                        }
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(MimiTheme.expenseBlue)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Capsule().fill(Color(hex: 0xE8F0FE)))
-                    }
-                    .buttonStyle(.plain)
+        return VStack(alignment: .leading, spacing: 12) {
+            // Gold: single pool card 未分类预算 已用 | 限额 (highlight when over)
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(hex: 0xFFE8CC))
+                        .frame(width: 40, height: 40)
+                    Image(systemName: "shippingbox.fill")
+                        .foregroundColor(MimiTheme.incomeOrange)
                 }
-                .padding(.vertical, 4)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("未分类预算")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(MimiTheme.textPrimary)
+                    Text("已用\(MimiTheme.formatRM(uncategorizedSpentTotal)) | \(MimiTheme.formatRM(uncategorizedBudgetLimit))")
+                        .font(.system(size: 12, design: .rounded))
+                        .foregroundColor(overspent ? MimiTheme.dangerRed : MimiTheme.textSecondary)
+                }
+                Spacer()
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(overspent ? Color(hex: 0xEAF1FF) : Color(hex: 0xF7F8FA))
+            )
+
+            if !unbudgetedCategories.isEmpty {
+                Text("可设预算的分类")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(MimiTheme.textMuted)
+
+                ForEach(unbudgetedCategories.prefix(8)) { group in
+                    let spent = store.categorySpent(for: group.name, year: currentYear, month: currentMonth)
+                    HStack(spacing: 10) {
+                        MimiStickerIconView(
+                            iconName: group.displayBadgeToken,
+                            categoryName: group.name,
+                            transactionType: .expense,
+                            useFirstCharIcon: group.useFirstCharIcon,
+                            size: 32
+                        )
+                        Text(group.name)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(MimiTheme.textPrimary)
+                        Spacer()
+                        Text("已用 \(MimiTheme.formatRM(spent))")
+                            .font(.system(size: 12, design: .rounded))
+                            .foregroundColor(MimiTheme.textSecondary)
+
+                        Button {
+                            newCategoryBudgetInput = "200.00"
+                            activeSheetType = .addCategory(group)
+                        } label: {
+                            HStack(spacing: 2) {
+                                Image(systemName: "plus.circle.fill")
+                                Text("设预算")
+                            }
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(MimiTheme.expenseBlue)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.vertical, 2)
+                }
             }
         }
         .padding(16)

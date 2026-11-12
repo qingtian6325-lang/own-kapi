@@ -1014,12 +1014,13 @@ public struct RecordAndAISheetView: View {
                     .padding(.vertical, 10)
                     .background(Capsule().fill(Color(hex: 0xF5F6FA)))
 
+                // Gold: send arrow always visible (blue); mic via long-press on field when empty
+                #if canImport(Speech) && canImport(AVFoundation)
                 if aiInputText.trimmingCharacters(in: .whitespaces).isEmpty {
-                    #if canImport(Speech) && canImport(AVFoundation)
                     Image(systemName: speechTranscriber.isRecording ? "mic.fill" : "mic")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(speechTranscriber.isRecording ? MimiTheme.dangerRed : MimiTheme.expenseBlue)
-                        .frame(width: 30, height: 30)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(speechTranscriber.isRecording ? MimiTheme.dangerRed : MimiTheme.textMuted)
+                        .frame(width: 28, height: 28)
                         .contentShape(Rectangle())
                         .onLongPressGesture(minimumDuration: 0.25, maximumDistance: 60, pressing: { isPressing in
                             if isPressing {
@@ -1035,19 +1036,25 @@ public struct RecordAndAISheetView: View {
                                 }
                             }
                         }, perform: {})
-                    #endif
-                } else {
-                    Button {
-                        let prompt = aiInputText
-                        aiInputText = ""
-                        aiEngine.handleUserMessage(prompt, store: store)
-                    } label: {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: 30))
-                            .foregroundColor(MimiTheme.expenseBlue)
-                    }
-                    .buttonStyle(.plain)
                 }
+                #endif
+
+                Button {
+                    let prompt = aiInputText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !prompt.isEmpty else { return }
+                    aiInputText = ""
+                    aiEngine.handleUserMessage(prompt, store: store)
+                } label: {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 30))
+                        .foregroundColor(
+                            aiInputText.trimmingCharacters(in: .whitespaces).isEmpty
+                                ? MimiTheme.textMuted
+                                : MimiTheme.expenseBlue
+                        )
+                }
+                .buttonStyle(.plain)
+                .disabled(aiInputText.trimmingCharacters(in: .whitespaces).isEmpty)
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 14)
