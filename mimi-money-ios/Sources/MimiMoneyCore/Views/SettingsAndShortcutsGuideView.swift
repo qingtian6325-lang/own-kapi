@@ -535,10 +535,9 @@ public struct SettingsAndShortcutsGuideView: View {
 
     @State private var expandedTriggerSection: Int? = 4
     @State private var showShortcutTutorial: Bool = false
-    @State private var autoBookkeepingTab: String = "自动记账" // 自动记账 | 语音记账
     @Environment(\.openURL) private var openURL
 
-    // MARK: - 自动记账指南 (Kapi 式四种触发方式 + 添加专属指令)
+    // MARK: - 自动记账指南（截屏识别 + 四种触发；去掉未接入的语音记账）
 
     private func guideStepRow(_ text: String) -> some View {
         Text(text)
@@ -629,40 +628,13 @@ public struct SettingsAndShortcutsGuideView: View {
 
     private var shortcutsCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 0) {
-                ForEach(["自动记账", "语音记账"], id: \.self) { tab in
-                    Button {
-                        autoBookkeepingTab = tab
-                    } label: {
-                        Text(tab)
-                            .font(.system(size: 13, weight: autoBookkeepingTab == tab ? .bold : .medium))
-                            .foregroundColor(autoBookkeepingTab == tab ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
-                            .background(Capsule().fill(autoBookkeepingTab == tab ? Color.white : Color.clear))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(4)
-            .background(Capsule().fill(Color(hex: 0xEEF0F6)))
-
-            if autoBookkeepingTab == "语音记账" {
-                Text("语音记账：说出金额与分类即可入账（后续接入）。当前请用「自动记账」截屏识别。")
-                    .font(.system(size: 13))
-                    .foregroundColor(MimiTheme.textSecondary)
-                    .padding(.vertical, 8)
-            }
-
             Text("自动记账 · 截屏识别记账")
                 .font(.system(size: 15, weight: .bold))
                 .foregroundColor(MimiTheme.textPrimary)
-                .opacity(autoBookkeepingTab == "自动记账" ? 1 : 0.45)
 
-            Text("付款完成后触发一次「咪咪记账 · 识别账单」快捷指令：系统自动截屏 → AI 识别金额、商户与扣款账户 → 在当前付款 App 上方弹出卡片。点「修改 (View)」跳进 App 编辑该笔；点「确认 (Got it)」原地入账，不离开当前 App。下方四种触发方式任选一种绑定即可。")
+            Text("付款完成后触发一次「咪咪记账 · 识别账单」快捷指令：系统自动截屏 → AI 识别金额、商户与扣款账户 → 在当前付款 App 上方弹出卡片。点「修改」跳进 App 编辑；点「确认」原地入账。下方四种触发方式任选一种绑定即可。也可直接用「读取剪贴板截图」。")
                 .font(.system(size: 12))
                 .foregroundColor(MimiTheme.textSecondary)
-                .opacity(autoBookkeepingTab == "自动记账" ? 1 : 0.45)
 
             triggerSection(
                 index: 1,
@@ -831,7 +803,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "camera.viewfinder")
                         .font(.system(size: 14))
-                    Text("📸 无需快捷指令 · 读取剪贴板截图（确认后入账）")
+                    Text("无需快捷指令 · 读取剪贴板截图（确认后入账）")
                         .font(.system(size: 13, weight: .bold))
                 }
                 .foregroundColor(MimiTheme.incomeOrange)

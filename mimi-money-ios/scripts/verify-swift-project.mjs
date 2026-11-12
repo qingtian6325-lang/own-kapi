@@ -315,7 +315,7 @@ function verifyTask5() {
     '自动记账',
     '定时记账',
     '设置',
-    '填问卷参与共建',
+    'gearshape',
     'Pro',
     'VIP',
     '今'
@@ -438,7 +438,7 @@ function verifyTask7() {
     'public struct CategoryManagementView: View',
     '分类方案管理',
     '添加1级支出分类',
-    '首字作为图标（包含emoji）'
+    '首字作为图标'
   ]) {
     assertContains(catMgr, label, 'CategoryManagementView.swift');
   }
@@ -448,8 +448,8 @@ function verifyTask7() {
   for (const label of [
     'public struct SettingsAndShortcutsGuideView: View',
     '自动记账',
-    '修改 (View)',
-    '确认 (Got it)'
+    '截屏识别记账',
+    '读取剪贴板截图'
   ]) {
     assertContains(settings, label, 'SettingsAndShortcutsGuideView.swift');
   }

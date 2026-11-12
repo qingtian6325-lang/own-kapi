@@ -375,7 +375,7 @@ public struct CategoryManagementView: View {
             .padding(.bottom, 14)
 
             Toggle(isOn: $useFirstCharAsIcon) {
-                Text("首字作为图标（包含emoji）")
+                Text("首字作为图标")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(MimiTheme.textPrimary)
             }
