@@ -81,30 +81,32 @@ public struct HomeRecordView: View {
     }
 
     public var body: some View {
-        ZStack(alignment: .bottom) {
-            MimiTheme.background
-                .ignoresSafeArea()
-
-            VStack(spacing: 0) {
+        ZStack {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: MimiTheme.homeCardSpacing) {
+                    monthlyBudgetCard
+                    netWorthSummaryCard
+                    transactionFeedSection
+                }
+                .padding(.horizontal, MimiTheme.homeHorizontalPadding)
+                .padding(.bottom, 24)
+            }
+            .safeAreaInset(edge: .top, spacing: 0) {
                 topNavigationBar
                     .padding(.horizontal, MimiTheme.homeHorizontalPadding)
-                    .padding(.top, 8)
+                    .padding(.top, 6)
                     .padding(.bottom, 10)
-
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: MimiTheme.homeCardSpacing) {
-                        monthlyBudgetCard
-                        netWorthSummaryCard
-                        transactionFeedSection
-                    }
-                    .padding(.horizontal, MimiTheme.homeHorizontalPadding)
-                    .padding(.bottom, 110)
-                }
+                    .frame(maxWidth: .infinity)
+                    .background(MimiTheme.background)
             }
-
-            floatingBottomBar
-                .padding(.horizontal, MimiTheme.homeHorizontalPadding)
-                .padding(.bottom, 12)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                floatingBottomBar
+                    .padding(.horizontal, MimiTheme.homeHorizontalPadding)
+                    .padding(.top, 8)
+                    .padding(.bottom, 8)
+                    .frame(maxWidth: .infinity)
+                    .background(MimiTheme.background.opacity(0.001))
+            }
 
             if showDeleteToast {
                 Text("删除成功")
@@ -119,6 +121,7 @@ public struct HomeRecordView: View {
                     .allowsHitTesting(false)
             }
         }
+        .background(MimiTheme.background.ignoresSafeArea())
         .sheet(isPresented: $showLedgerSwitcherSheet) {
             ledgerPickerSheet
                 .presentationDetents([.height(260)])
