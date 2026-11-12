@@ -152,7 +152,9 @@ function verifyTask3() {
   for (const sym of [
     'public enum ReceiptRecognitionFailure',
     'public static func recognize(imageData:',
-    'GeminiClient.recognizeBill'
+    'GroqClient.recognizeBill',
+    'GeminiClient.recognizeBill',
+    'AIEngineSettings.provider'
   ]) {
     assertContains(recognizer, sym, 'SmartReceiptRecognizer.swift');
   }
@@ -211,9 +213,25 @@ function verifyTask3() {
     assertContains(gemini, sym, 'GeminiClient.swift');
   }
 
+  const groq = assertFileExists('Sources/MimiMoneyCore/Services/GroqClient.swift');
+  checkBalancedBraces(groq, 'GroqClient.swift');
+  for (const sym of [
+    'public enum GroqClient',
+    'qwen/qwen3.8-27b',
+    'image_url',
+    'recognizeBill',
+    'answerQuestion'
+  ]) {
+    assertContains(groq, sym, 'GroqClient.swift');
+  }
+
+  const provider = assertFileExists('Sources/MimiMoneyCore/Services/AIEngineProvider.swift');
+  checkBalancedBraces(provider, 'AIEngineProvider.swift');
+  assertContains(provider, 'case groq', 'AIEngineProvider.swift');
+
   assertContains(recognizer, 'GeminiImagePreprocessor', 'SmartReceiptRecognizer.swift');
 
-  console.log('Task 3 verified: ParsedDraftBill, SmartReceiptRecognizer (pure AI, no OCR), GeminiClient, LocalBookkeepingAnswerer and MimiAIEngine valid');
+  console.log('Task 3 verified: ParsedDraftBill, SmartReceiptRecognizer, Gemini/Groq clients, LocalBookkeepingAnswerer and MimiAIEngine valid');
 }
 
 function verifyTask4() {

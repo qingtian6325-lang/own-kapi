@@ -499,6 +499,24 @@ XCTAssertEqual(bills[0].accountId, "acc_pbb")
 XCTAssertEqual(bills[0].accountDisplayName, "PBBank")
 }
 
+func testGroqExtractJSONObjectTextFromFence() throws {
+let raw = """
+```json
+{"type":"expense","amount":1}
+```
+"""
+let extracted = try GroqClient.extractJSONObjectText(from: raw)
+XCTAssertTrue(extracted.hasPrefix("{"))
+XCTAssertTrue(extracted.contains("\"amount\":1"))
+}
+
+func testGroqConnectionProbeBodyUsesVisionCapableDefaultModel() {
+let body = GroqClient.testConnectionProbeBody(model: GroqSettings.defaultModelName)
+XCTAssertEqual(body["model"] as? String, "qwen/qwen3.8-27b")
+XCTAssertEqual(body["reasoning_effort"] as? String, "none")
+XCTAssertEqual(AIEngineProvider.groq.supportsImageInput, true)
+}
+
 func testLegacyLLMAPIKeyIsNotPersistedInUserDefaults() {
 UserDefaults.standard.set("sk-leak-test", forKey: "mimi_llm_api_key")
 let engine = MimiAIEngine()

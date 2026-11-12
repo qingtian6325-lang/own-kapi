@@ -236,10 +236,11 @@ public final class MimiAIEngine: ObservableObject {
             return
         }
 
-        guard GeminiSettings.hasAPIKey else {
+        guard AIEngineSettings.hasAPIKey else {
+            let provider = AIEngineSettings.provider
             messages.append(
                 AIChatMessageItem(isUser: false, userText: "", blocks: [
-                    .text("小金主，这个问题要联网查账才能答：请先到「设置 → AI 识别引擎」填入你的 Gemini API Key（在 Google AI Studio 免费申请），填好后就能问我「本月单笔超过 200 的账单」「本周最贵的一笔」这类问题了 🐱")
+                    .text("小金主，这个问题要联网查账才能答：请先到「设置 → AI 识别引擎」填入你的 \(provider.displayName) API Key（\(provider.keyApplyHint)），填好后就能问我「本月单笔超过 200 的账单」「本周最贵的一笔」这类问题了 🐱")
                 ])
             )
             saveHistory()
@@ -250,15 +251,22 @@ public final class MimiAIEngine: ObservableObject {
         messages.append(placeholder)
         saveHistory()
         let placeholderId = placeholder.id
+        let providerName = AIEngineSettings.provider.displayName
         Task { [weak self] in
             guard let self else { return }
             do {
-                let answer = try await GeminiClient.answerQuestion(trimmed, store: store)
-                GeminiSettings.recordCallStatus(success: true, message: "问账成功（Gemini）")
+                let answer: String
+                switch AIEngineSettings.provider {
+                case .groq:
+                    answer = try await GroqClient.answerQuestion(trimmed, store: store)
+                case .gemini:
+                    answer = try await GeminiClient.answerQuestion(trimmed, store: store)
+                }
+                AIEngineSettings.recordCallStatus(success: true, message: "问账成功（\(providerName)）")
                 self.replaceMessageBlocks(id: placeholderId, blocks: [.text(answer)])
             } catch {
                 let reason = (error as? GeminiError)?.description ?? error.localizedDescription
-                GeminiSettings.recordCallStatus(success: false, message: "问账失败：\(reason)")
+                AIEngineSettings.recordCallStatus(success: false, message: "问账失败：\(reason)")
                 self.replaceMessageBlocks(id: placeholderId, blocks: [
                     .text("问账暂时不可用：\(reason)。请检查网络，或到「设置 → AI 识别引擎」点测试连接；也可以直接问我「有哪些分类」「这个月花了多少」，或用一句话记账（如：午餐 38）。")
                 ])

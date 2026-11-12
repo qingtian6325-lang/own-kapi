@@ -76,7 +76,7 @@ public enum ReceiptRecognitionFailure: Error, Equatable, Sendable {
     public var dialogText: String {
         switch self {
         case .missingAPIKey:
-            return "AI 识别没成功：还没有填 Gemini API Key。请到「咪咪记账 → 设置 → AI 识别引擎」填入 Key 后再试。"
+            return "AI 识别没成功：还没有填 \(AIEngineSettings.provider.displayName) API Key。请到「咪咪记账 → 设置 → AI 识别引擎」填入 Key 后再试。"
         case .noImage:
             return "AI 识别没成功：没有收到截图。请先截屏付款页面再运行，或把截图复制到剪贴板后再试。"
         case .failed(let reason):
@@ -88,7 +88,7 @@ public enum ReceiptRecognitionFailure: Error, Equatable, Sendable {
     public var statusText: String {
         switch self {
         case .missingAPIKey:
-            return "AI 识别失败：尚未填写 Gemini API Key"
+            return "AI 识别失败：尚未填写 \(AIEngineSettings.provider.displayName) API Key"
         case .noImage:
             return "AI 识别失败：没有收到截图"
         case .failed(let reason):
@@ -112,37 +112,46 @@ public enum SmartReceiptRecognizer {
         }
     }
 
-    /// 识别执行体（默认直连 GeminiClient）；单元测试可替换以离线验证成功/失败路径。
+    /// 识别执行体（默认按 AIEngineSettings.provider 分流；单测可替换）。
     static var recognitionProvider: @Sendable (Data, Date) async throws -> ParsedDraftBill = { imageData, now in
-        try await GeminiClient.recognizeBill(imageData: imageData, now: now)
+        switch AIEngineSettings.provider {
+        case .groq:
+            return try await GroqClient.recognizeBill(imageData: imageData, now: now)
+        case .gemini:
+            return try await GeminiClient.recognizeBill(imageData: imageData, now: now)
+        }
     }
 
     public static func recognize(imageData: Data, now: Date = Date()) async throws -> Result {
         let prepared = GeminiImagePreprocessor.prepareForUpload(imageData)
+        let providerName = AIEngineSettings.provider.displayName
         do {
             var draft = try await recognitionProvider(prepared, now)
             // 保留压缩后的图，便于确认入账时附上小票（调用方可再覆盖）
             if draft.rawImageData == nil {
                 draft.rawImageData = prepared
             }
-            GeminiSettings.recordCallStatus(success: true, message: "截图识别成功（Gemini）")
+            AIEngineSettings.recordCallStatus(success: true, message: "截图识别成功（\(providerName)）")
             return Result(
                 draft: draft,
                 isSuspiciousAmount: BillAmountSanity.isSuspicious(draft: draft)
             )
         } catch let error as GeminiError {
             let failure = ReceiptRecognitionFailure(geminiError: error)
-            GeminiSettings.recordCallStatus(success: false, message: failure.statusText)
+            AIEngineSettings.recordCallStatus(success: false, message: failure.statusText)
             throw failure
         } catch {
             let reason: String
             if let urlError = error as? URLError, urlError.code == .timedOut {
-                reason = "请求超时（\(Int(GeminiClient.recognitionTimeoutSeconds)) 秒）"
+                let timeout = AIEngineSettings.provider == .groq
+                    ? GroqClient.recognitionTimeoutSeconds
+                    : GeminiClient.recognitionTimeoutSeconds
+                reason = "请求超时（\(Int(timeout)) 秒）"
             } else {
                 reason = error.localizedDescription
             }
             let failure = ReceiptRecognitionFailure.failed(reason: reason)
-            GeminiSettings.recordCallStatus(success: false, message: failure.statusText)
+            AIEngineSettings.recordCallStatus(success: false, message: failure.statusText)
             throw failure
         }
     }

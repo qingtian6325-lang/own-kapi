@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.2.5] - 2026-11-12
+
+### 🎯 Highlights
+- **试用 Groq 识图引擎**：识别与问账默认改走 Groq（`qwen/qwen3.8-27b`，支持图片 data URL 输入 + JSON mode）；设置页改为填 Groq API Key（console.groq.com），保存/测试连接会把引擎固定为 Groq。
+- **Gemini 代码保留可回切**：`AIEngineSettings.provider` 仍支持 gemini，本版默认与设置页面向 Groq 试用。
+- **其余不动**：草稿确认才入账、可疑金额拦截、图片压缩、Keychain 存 Key 等逻辑保持。
+
 ## [v1.2.4] - 2026-11-12
 
 ### 🎯 Highlights

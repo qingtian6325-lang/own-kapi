@@ -44,7 +44,8 @@ final class PureAIRecognitionTests: XCTestCase {
             XCTFail("没有 key 时识别必须抛错，不许返回草稿")
         } catch let failure as ReceiptRecognitionFailure {
             XCTAssertEqual(failure, .missingAPIKey)
-            XCTAssertTrue(failure.dialogText.contains("还没有填 Gemini API Key"))
+            XCTAssertTrue(failure.dialogText.contains("还没有填"))
+            XCTAssertTrue(failure.dialogText.contains("API Key"))
         } catch {
             XCTFail("应抛 ReceiptRecognitionFailure，实际为：\(error)")
         }

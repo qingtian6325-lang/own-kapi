@@ -114,7 +114,7 @@ case transport(String)
 public var description: String {
 switch self {
 case .missingAPIKey:
-return "尚未填写 Gemini API Key"
+return "尚未填写 \(AIEngineSettings.provider.displayName) API Key"
 case .httpStatus(let code, let message):
 if code == 429 {
 return "HTTP 429：免费额度已用完或请求过于频繁"

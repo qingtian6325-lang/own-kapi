@@ -48,11 +48,11 @@ public struct SettingsAndShortcutsGuideView: View {
     // General settings
     @State private var editingNickname: String = ""
 
-    // Gemini AI 识别引擎设置（key 只存 iOS Keychain，界面状态仅作编辑缓冲）
-    @State private var geminiKeyInput: String = GeminiSettings.apiKey ?? ""
-    @State private var geminiModelInput: String = GeminiSettings.modelName
-    @State private var geminiTestStatus: String? = nil
-    @State private var geminiIsTesting: Bool = false
+    // AI 识别引擎设置（当前试用 Groq 识图；key 只存 iOS Keychain）
+    @State private var groqKeyInput: String = GroqSettings.apiKey ?? ""
+    @State private var groqModelInput: String = GroqSettings.modelName
+    @State private var groqTestStatus: String? = nil
+    @State private var groqIsTesting: Bool = false
 
     public init(
         store: MimiStore,
@@ -816,19 +816,19 @@ public struct SettingsAndShortcutsGuideView: View {
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
     }
 
-    // MARK: - AI Engine Settings Card (Gemini 单引擎：识别 + 问账)
+    // MARK: - AI Engine Settings Card（当前：Groq 识图 + 问账）
 
     private var aiEngineCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("🤖 AI 识别引擎（Gemini）")
+            Text("🤖 AI 识别引擎（Groq · 支持图片）")
                 .font(.system(size: 15, weight: .bold))
                 .foregroundColor(MimiTheme.textPrimary)
 
-            Text("填入 Google AI Studio 的免费 Gemini API Key 后，截图识别与 AI 问账全部走 Gemini（纯 AI 识别，不再使用本机 OCR）；未填 Key、没网或额度用完时，识别会明确提示失败原因，不会用其他方式凑数，也不会记错账。Key 只保存在 iOS 钥匙串里，不会上传到任何其他地方。请注意：Google 免费层条款说明，提交的内容可能被用于改进其产品。")
+            Text("当前试用 Groq 视觉模型（默认 qwen/qwen3.8-27b）：截图识别与 AI 问账都走 Groq，支持图片输入。到 console.groq.com 免费申请 API Key 后填入即可。未填 Key、没网或额度用完时会明确提示失败，不会凑数记错账。Key 只保存在 iOS 钥匙串。")
                 .font(.system(size: 12))
                 .foregroundColor(MimiTheme.textSecondary)
 
-            SecureField("Gemini API Key（在 aistudio.google.com 免费申请）", text: $geminiKeyInput)
+            SecureField("Groq API Key（console.groq.com 免费申请）", text: $groqKeyInput)
                 .font(.system(size: 13))
                 .padding(10)
                 .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
@@ -838,7 +838,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 #endif
 
             HStack(spacing: 10) {
-                TextField("模型名", text: $geminiModelInput)
+                TextField("模型名", text: $groqModelInput)
                     .font(.system(size: 13))
                     .padding(10)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
@@ -848,9 +848,10 @@ public struct SettingsAndShortcutsGuideView: View {
                     #endif
 
                 Button {
-                    GeminiSettings.saveAPIKey(geminiKeyInput)
-                    GeminiSettings.modelName = geminiModelInput
-                    geminiTestStatus = "已保存到钥匙串"
+                    AIEngineSettings.provider = .groq
+                    GroqSettings.saveAPIKey(groqKeyInput)
+                    GroqSettings.modelName = groqModelInput
+                    groqTestStatus = "已保存到钥匙串（引擎=Groq）"
                 } label: {
                     Text("保存")
                         .font(.system(size: 13, weight: .semibold))
@@ -864,19 +865,20 @@ public struct SettingsAndShortcutsGuideView: View {
 
             HStack(spacing: 10) {
                 Button {
-                    GeminiSettings.saveAPIKey(geminiKeyInput)
-                    GeminiSettings.modelName = geminiModelInput
-                    geminiIsTesting = true
-                    geminiTestStatus = "正在测试连接…"
+                    AIEngineSettings.provider = .groq
+                    GroqSettings.saveAPIKey(groqKeyInput)
+                    GroqSettings.modelName = groqModelInput
+                    groqIsTesting = true
+                    groqTestStatus = "正在测试连接…"
                     Task {
-                        let result = await GeminiClient.testConnection()
+                        let result = await GroqClient.testConnection()
                         await MainActor.run {
-                            geminiIsTesting = false
-                            geminiTestStatus = result.message
+                            groqIsTesting = false
+                            groqTestStatus = result.message
                         }
                     }
                 } label: {
-                    Text(geminiIsTesting ? "测试中…" : "测试连接")
+                    Text(groqIsTesting ? "测试中…" : "测试连接")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(MimiTheme.expenseBlue)
                         .padding(.horizontal, 16)
@@ -884,21 +886,27 @@ public struct SettingsAndShortcutsGuideView: View {
                         .background(Capsule().fill(Color(hex: 0xE8F0FE)))
                 }
                 .buttonStyle(.plain)
-                .disabled(geminiIsTesting)
+                .disabled(groqIsTesting)
 
-                if let geminiTestStatus {
-                    Text(geminiTestStatus)
+                if let groqTestStatus {
+                    Text(groqTestStatus)
                         .font(.system(size: 12))
                         .foregroundColor(MimiTheme.textSecondary)
                 }
             }
 
-            Text("最近一次调用状态：\(GeminiSettings.lastCallStatusText ?? "暂无调用记录")")
+            Text("当前引擎：Groq · 最近一次调用：\(GroqSettings.lastCallStatusText ?? "暂无调用记录")")
                 .font(.system(size: 12))
                 .foregroundColor(MimiTheme.textMuted)
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
+        .onAppear {
+            AIEngineSettings.provider = .groq
+            if groqModelInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                groqModelInput = GroqSettings.defaultModelName
+            }
+        }
     }
 
     // MARK: - Data Management Card
