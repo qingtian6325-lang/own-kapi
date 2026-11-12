@@ -15,8 +15,8 @@ public struct RecordAndAISheetView: View {
     @State private var selectedSubIndex: Int? = 5 // defaults to 零食甜品 or first sub
     @State private var expression: String = ""
     @State private var noteText: String = ""
-    @State private var selectedAccountName: String = "TNGewallet"
-    @State private var targetAccountName: String = "PBBank"
+    @State private var selectedAccountName: String = "不选账户"
+    @State private var targetAccountName: String = ""
     @State private var includeInStats: Bool = true
     @State private var includeInBudget: Bool = true
     @State private var markPendingReimbursement: Bool = false
@@ -468,22 +468,9 @@ public struct RecordAndAISheetView: View {
 
             Divider()
 
-            // Metadata pills — transfer only needs date (accounts picked above)
+            // Gold pills: 日期 · 账本 · 无账户 · 优惠 / 待报销 · 计入收支 · 计入预算 · 标签
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    if selectedTab != .transfer {
-                        Menu {
-                            Button("不选账户") { selectedAccountName = "不选账户" }
-                            ForEach(store.accounts) { acc in
-                                Button("\(acc.name) (\(MimiTheme.formatRM(acc.balance)))") {
-                                    selectedAccountName = acc.name
-                                }
-                            }
-                        } label: {
-                            pillLabel(icon: "creditcard", text: selectedAccountName == "不选账户" ? "无账户" : selectedAccountName)
-                        }
-                    }
-
                     Button {
                         showDatePickerSheet = true
                     } label: {
@@ -494,6 +481,29 @@ public struct RecordAndAISheetView: View {
                     .buttonStyle(.plain)
 
                     if selectedTab != .transfer {
+                        Menu {
+                            ForEach(store.ledgers) { ledger in
+                                Button(ledger.name) {
+                                    store.currentLedgerName = ledger.name
+                                }
+                            }
+                        } label: {
+                            let ledgerName = store.currentLedgerName
+                            let short = ledgerName.count > 6 ? String(ledgerName.prefix(4)) + "…" : ledgerName
+                            pillLabel(icon: "book.closed", text: short.isEmpty ? "Main…" : short)
+                        }
+
+                        Menu {
+                            Button("不选账户") { selectedAccountName = "不选账户" }
+                            ForEach(store.accounts) { acc in
+                                Button("\(acc.name) (\(MimiTheme.formatRM(acc.balance)))") {
+                                    selectedAccountName = acc.name
+                                }
+                            }
+                        } label: {
+                            pillLabel(icon: "creditcard", text: selectedAccountName == "不选账户" ? "无账户" : selectedAccountName)
+                        }
+
                         Button {
                             showDiscountInput.toggle()
                         } label: {
@@ -551,57 +561,63 @@ public struct RecordAndAISheetView: View {
                             pillLabel(icon: "number", text: selectedTags.isEmpty ? "标签" : selectedTags.joined(separator: ","))
                         }
                     }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+            }
+
+            // Amount + Note Row (gold: RM0.00 + MYR ⌄, 点击填写备注信息 + 相册/拍照)
+            VStack(spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(expression.isEmpty ? "RM0.00" : "RM\(expression)")
+                        .font(.system(size: 30, weight: .bold, design: .rounded))
+                        .foregroundColor(selectedTab == .income ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
 
                     Menu {
                         ForEach(CurrencyCode.allCases, id: \.self) { code in
                             Button(code.rawValue) { selectedCurrency = code }
                         }
                     } label: {
-                        pillLabel(icon: "globe", text: selectedCurrency.rawValue)
+                        HStack(spacing: 2) {
+                            Text(selectedCurrency.rawValue)
+                                .font(.system(size: 12, weight: .semibold))
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 9, weight: .bold))
+                        }
+                        .foregroundColor(MimiTheme.textMuted)
                     }
+
+                    Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-            }
 
-            // Amount + Note Row (RM0.00 MYR ⌄ + 点此输入备注...)
-            VStack(spacing: 8) {
-                HStack(alignment: .firstTextBaseline) {
-                    if selectedTab != .transfer {
-                        Text(composedCategoryPath)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(MimiTheme.textSecondary)
-                    }
-
-                    Spacer()
-
-                    Text(expression.isEmpty ? "RM0.00" : "RM\(expression)")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundColor(selectedTab == .income ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
-
-                    Text(selectedCurrency.rawValue)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(MimiTheme.textMuted)
-                }
-
-                HStack(spacing: 10) {
+                HStack(spacing: 8) {
                     TextField("点击填写备注信息", text: $noteText)
                         .font(.system(size: 14))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                        .foregroundColor(MimiTheme.textPrimary)
 
                     Button {
                         showImageSourceDialog = true
                     } label: {
-                        Image(systemName: "camera.fill")
+                        Image(systemName: "photo.on.rectangle")
                             .font(.system(size: 15))
-                            .foregroundColor(MimiTheme.expenseBlue)
-                            .frame(width: 36, height: 36)
-                            .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xE8F0FE)))
+                            .foregroundColor(Color(hex: 0x9AA0B0))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        showImageSourceDialog = true
+                    } label: {
+                        Image(systemName: "camera")
+                            .font(.system(size: 15))
+                            .foregroundColor(Color(hex: 0x9AA0B0))
                     }
                     .buttonStyle(.plain)
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(hex: 0xF5F6FA)))
+                .padding(.horizontal, 16)
 
                 if !attachedReceiptFilenames.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
