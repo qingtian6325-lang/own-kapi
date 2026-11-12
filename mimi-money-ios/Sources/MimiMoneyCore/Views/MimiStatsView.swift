@@ -8,6 +8,8 @@ public struct MimiStatsView: View {
 
     @State private var selectedPeriod: String = "月" // 周 | 月 | 年 | 自定义
     @State private var selectedChartType: TransactionType = .expense
+    @State private var trendMode: String = "支出" // 支出 | 收入 | 结余
+    @State private var rankingMode: String = "支出" // 支出 | 收入
     @State private var selectedLedgerFilterId: String? = nil // nil = current ledger
     @State private var selectedFilterType: String = "全部" // 全部 | 仅支出 | 仅收入
 
@@ -529,40 +531,74 @@ public struct MimiStatsView: View {
 
     private var dailyTrendBarCard: some View {
         let cal = Calendar(identifier: .gregorian)
-        let expenses = periodTransactions.filter { $0.type == .expense }
         let labels = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
-        let weekdayMap = [2, 3, 4, 5, 6, 7, 1] // Gregorian weekday: 2=Mon ... 7=Sat, 1=Sun
+        let weekdayMap = [2, 3, 4, 5, 6, 7, 1]
         let bars: [(label: String, value: Double)] = zip(labels, weekdayMap).map { label, wd in
-            let sum = expenses
-                .filter { cal.component(.weekday, from: $0.date) == wd }
-                .reduce(0.0) { $0 + $1.amount }
-            return (label: label, value: sum)
+            let dayTx = periodTransactions.filter { cal.component(.weekday, from: $0.date) == wd }
+            let exp = dayTx.filter { $0.type == .expense }.reduce(0.0) { $0 + $1.amount }
+            let inc = dayTx.filter { $0.type == .income }.reduce(0.0) { $0 + $1.amount }
+            let value: Double
+            switch trendMode {
+            case "收入": value = inc
+            case "结余": value = inc - exp
+            default: value = exp
+            }
+            return (label: label, value: value)
         }
-        let maxVal = max(1.0, bars.map(\.value).max() ?? 1.0)
-        let dailyAvg = totalExpense / 7.0
+        let maxVal = max(1.0, bars.map { abs($0.value) }.max() ?? 1.0)
+        let avgBase: Double = {
+            switch trendMode {
+            case "收入": return totalIncome / 7.0
+            case "结余": return netBalance / 7.0
+            default: return totalExpense / 7.0
+            }
+        }()
+        let barColor: Color = {
+            switch trendMode {
+            case "收入": return MimiTheme.incomeOrange
+            case "结余": return MimiTheme.balanceGreen
+            default: return MimiTheme.expenseBlue
+            }
+        }()
 
         return VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("每日支出趋势")
+                Text(trendMode == "支出" ? "每日支出趋势" : (trendMode == "收入" ? "每日收入趋势" : "每日结余趋势"))
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
-                Text("日均 \(MimiTheme.formatRM(dailyAvg))")
-                    .font(.system(size: 11))
-                    .foregroundColor(MimiTheme.textMuted)
+                HStack(spacing: 0) {
+                    ForEach(["支出", "收入", "结余"], id: \.self) { mode in
+                        Button { trendMode = mode } label: {
+                            Text(mode)
+                                .font(.system(size: 11, weight: trendMode == mode ? .bold : .medium))
+                                .foregroundColor(trendMode == mode ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Capsule().fill(trendMode == mode ? Color.white : Color.clear))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(3)
+                .background(Capsule().fill(Color(hex: 0xEEF0F6)))
             }
+
+            Text("日均 \(MimiTheme.formatRM(avgBase))")
+                .font(.system(size: 11))
+                .foregroundColor(MimiTheme.textMuted)
 
             HStack(alignment: .bottom, spacing: 12) {
                 ForEach(bars, id: \.label) { bar in
                     VStack(spacing: 6) {
-                        if bar.value > 0 {
+                        if abs(bar.value) > 0.009 {
                             Text(String(format: "%.0f", bar.value))
                                 .font(.system(size: 9, weight: .semibold, design: .rounded))
-                                .foregroundColor(MimiTheme.expenseBlue)
+                                .foregroundColor(barColor)
                         }
                         RoundedRectangle(cornerRadius: 6)
-                            .fill(bar.value > 0 ? MimiTheme.expenseBlue : Color(hex: 0xEEF0F6))
-                            .frame(height: max(8, CGFloat(bar.value / maxVal) * 110))
+                            .fill(abs(bar.value) > 0.009 ? barColor : Color(hex: 0xEEF0F6))
+                            .frame(height: max(8, CGFloat(abs(bar.value) / maxVal) * 110))
                         Text(bar.label)
                             .font(.system(size: 10))
                             .foregroundColor(MimiTheme.textSecondary)
@@ -579,23 +615,41 @@ public struct MimiStatsView: View {
     // MARK: - Top 10 List: 单笔支出排行 (IMG_2256)
 
     private var top10SingleExpenseCard: some View {
-        let topExpenses = periodTransactions
-            .filter { $0.type == .expense }
+        let ranked = periodTransactions
+            .filter { rankingMode == "收入" ? $0.type == .income : $0.type == .expense }
             .sorted { $0.amount > $1.amount }
             .prefix(10)
 
         return VStack(alignment: .leading, spacing: 12) {
-            Text("单笔支出排行")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundColor(MimiTheme.textPrimary)
+            HStack {
+                Text(rankingMode == "收入" ? "单笔收入排行" : "单笔支出排行")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(MimiTheme.textPrimary)
+                Spacer()
+                HStack(spacing: 0) {
+                    ForEach(["支出", "收入"], id: \.self) { mode in
+                        Button { rankingMode = mode } label: {
+                            Text(mode)
+                                .font(.system(size: 11, weight: rankingMode == mode ? .bold : .medium))
+                                .foregroundColor(rankingMode == mode ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Capsule().fill(rankingMode == mode ? Color.white : Color.clear))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(3)
+                .background(Capsule().fill(Color(hex: 0xEEF0F6)))
+            }
 
-            if topExpenses.isEmpty {
-                Text("暂无单笔支出记录")
+            if ranked.isEmpty {
+                Text(rankingMode == "收入" ? "暂无单笔收入记录" : "暂无单笔支出记录")
                     .font(.system(size: 13))
                     .foregroundColor(MimiTheme.textMuted)
                     .padding(.vertical, 8)
             } else {
-                ForEach(Array(topExpenses.enumerated()), id: \.element.id) { idx, item in
+                ForEach(Array(ranked.enumerated()), id: \.element.id) { idx, item in
                     HStack(spacing: 10) {
                         Text("\(idx + 1)")
                             .font(.system(size: 12, weight: .bold, design: .rounded))
@@ -605,7 +659,7 @@ public struct MimiStatsView: View {
                         MimiStickerIconView(
                             iconName: item.iconName,
                             categoryName: item.categoryPath,
-                            transactionType: .expense,
+                            transactionType: item.type,
                             size: 32
                         )
 
@@ -623,9 +677,11 @@ public struct MimiStatsView: View {
 
                         Spacer()
 
-                        Text("-\(MimiTheme.formatRM(item.amount))")
+                        Text(rankingMode == "收入"
+                             ? MimiTheme.formatRM(item.amount)
+                             : "-\(MimiTheme.formatRM(item.amount))")
                             .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .foregroundColor(MimiTheme.expenseBlue)
+                            .foregroundColor(rankingMode == "收入" ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
                     }
                     .padding(.vertical, 4)
                 }

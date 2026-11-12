@@ -556,7 +556,19 @@ public struct BudgetManagementView: View {
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
     }
 
-    // MARK: - 动态日预算 Calendar Sheet (IMG_2266)
+    // MARK: - 动态日预算 Calendar Sheet (gold)
+
+    private var dynamicDailyLeadingBlanks: Int {
+        var cal = Calendar(identifier: .gregorian)
+        cal.firstWeekday = 2 // Monday-first per gold budget calendar
+        var comps = DateComponents()
+        comps.year = currentYear
+        comps.month = currentMonth
+        comps.day = 1
+        guard let first = cal.date(from: comps) else { return 0 }
+        let weekday = cal.component(.weekday, from: first) // 1=Sun
+        return (weekday + 5) % 7
+    }
 
     private var dynamicDailyBudgetCalendarSheet: some View {
         let cells = DynamicBudgetEngine.buildMonthDayCells(
@@ -569,24 +581,32 @@ public struct BudgetManagementView: View {
         return NavigationStack {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 14) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("今日剩余可用")
-                            .font(.system(size: 12))
-                            .foregroundColor(MimiTheme.textSecondary)
-                        Text(MimiTheme.formatRM(todayRemainingAvailable))
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                    HStack {
+                        Text("动态日预算")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(MimiTheme.textPrimary)
+                        Spacer()
+                        Button {
+                            // Focus edit on today cell when available
+                            if let today = cells.first(where: { $0.isToday }) {
+                                selectedDayKeyForCustomBudget = today.id
+                                customDayBudgetInput = String(format: "%.2f", today.dynamicAvailableBudget)
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "pencil")
+                                    .font(.system(size: 11, weight: .semibold))
+                                Text("日预算设置")
+                                    .font(.system(size: 12, weight: .semibold))
+                            }
                             .foregroundColor(MimiTheme.expenseBlue)
-                        Text("今日预算 \(MimiTheme.formatRM(dailyAvailable)) · 今日已花费 \(MimiTheme.formatRM(todaySpent)) · 结余会滚入后续日期")
-                            .font(.system(size: 12))
-                            .foregroundColor(MimiTheme.textSecondary)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(16)
-                    .background(RoundedRectangle(cornerRadius: 18).fill(Color(hex: 0xEAF1FF)))
 
                     if let editingKey = selectedDayKeyForCustomBudget {
                         HStack(spacing: 8) {
-                            Text("调整 \(editingKey) 预算:")
+                            Text("调整 \(editingKey)")
                                 .font(.system(size: 12, weight: .semibold))
                             TextField("输入金额", text: $customDayBudgetInput)
                                 .font(.system(size: 13))
@@ -608,28 +628,27 @@ public struct BudgetManagementView: View {
                         .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xE8F0FE)))
                     }
 
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 7), spacing: 8) {
-                        ForEach(cells) { cell in
-                            VStack(spacing: 2) {
-                                Text("\(cell.day)")
-                                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                                    .foregroundColor(cell.day == 8 ? .white : MimiTheme.textPrimary)
-                                Text(cell.expense > 0 ? String(format: "-%.0f", cell.expense) : String(format: "%.0f", cell.dynamicAvailableBudget))
-                                    .font(.system(size: 9, design: .rounded))
-                                    .foregroundColor(cell.day == 8 ? .white.opacity(0.9) : (cell.expense > cell.dynamicAvailableBudget ? MimiTheme.dangerRed : MimiTheme.balanceGreen))
+                    VStack(spacing: 8) {
+                        HStack(spacing: 0) {
+                            ForEach(["一", "二", "三", "四", "五", "六", "日"], id: \.self) { w in
+                                Text(w)
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(MimiTheme.textMuted)
+                                    .frame(maxWidth: .infinity)
                             }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(cell.day == 8 ? MimiTheme.expenseBlue : Color.white)
-                            )
-                            .onLongPressGesture {
-                                selectedDayKeyForCustomBudget = cell.id
-                                customDayBudgetInput = String(format: "%.2f", cell.dynamicAvailableBudget)
+                        }
+
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 7), spacing: 8) {
+                            ForEach(0..<dynamicDailyLeadingBlanks, id: \.self) { _ in
+                                Color.clear.frame(height: 58)
+                            }
+                            ForEach(cells) { cell in
+                                dynamicDayCell(cell)
                             }
                         }
                     }
+                    .padding(14)
+                    .background(RoundedRectangle(cornerRadius: 18).fill(Color.white))
                 }
                 .padding(16)
             }
@@ -643,6 +662,49 @@ public struct BudgetManagementView: View {
                     Button("关闭") { showDynamicDailySheet = false }
                 }
             }
+        }
+    }
+
+    private func dynamicDayCell(_ cell: CalendarDaySummary) -> some View {
+        return VStack(spacing: 2) {
+            Text(cell.isToday ? "今" : "\(cell.day)")
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .foregroundColor(cell.isToday ? .white : MimiTheme.textPrimary)
+
+            if cell.isToday {
+                Text(MimiTheme.formatRM(todaySpent))
+                    .font(.system(size: 8, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white.opacity(0.95))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                Text(MimiTheme.formatRM(todayRemainingAvailable))
+                    .font(.system(size: 8, design: .rounded))
+                    .foregroundColor(.white.opacity(0.85))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+            } else if cell.isPast {
+                Text(String(format: "-RM%.2f", cell.expense))
+                    .font(.system(size: 8, weight: .semibold, design: .rounded))
+                    .foregroundColor(MimiTheme.expenseBlue)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+            } else {
+                Text(MimiTheme.formatRM(cell.dynamicAvailableBudget))
+                    .font(.system(size: 8, design: .rounded))
+                    .foregroundColor(MimiTheme.textMuted)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 58)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(cell.isToday ? MimiTheme.expenseBlue : Color(hex: 0xF8F9FC))
+        )
+        .onLongPressGesture {
+            selectedDayKeyForCustomBudget = cell.id
+            customDayBudgetInput = String(format: "%.2f", cell.dynamicAvailableBudget)
         }
     }
 }

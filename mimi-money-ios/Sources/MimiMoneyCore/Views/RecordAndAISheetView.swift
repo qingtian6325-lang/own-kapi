@@ -915,7 +915,7 @@ public struct RecordAndAISheetView: View {
                                 Circle().fill(Color(hex: 0xFFE8CC)).frame(width: 30, height: 30)
                                 Text("🐱").font(.system(size: 16))
                             }
-                            Text("你好，我是咪咪 🐱 任何事都能问我：直接说一句「午餐 38」就能记账，也可以问我「本月花了多少」「哪一笔最贵」。")
+                            Text("你好，我是咪咪。任何事都能问我：直接说「午餐 38」就能记账，也可以问「本月花了多少」「哪一笔最贵」。")
                                 .font(.system(size: 14))
                                 .foregroundColor(MimiTheme.textPrimary)
                                 .padding(12)
