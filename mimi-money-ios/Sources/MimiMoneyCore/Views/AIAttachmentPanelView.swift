@@ -30,17 +30,22 @@ public struct AIAttachmentPanelView: View {
         Button(action: action) {
             VStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.system(size: 26, weight: .regular))
-                    .foregroundColor(Color(hex: 0x8B93A7))
+                    .font(.system(size: 24, weight: .regular))
+                    .foregroundColor(Color(hex: 0x6B7285))
                 Text(title)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(MimiTheme.textSecondary)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 88)
+            .frame(height: 84)
             .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(Color(hex: 0xF5F6FA))
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Color.white.opacity(0.92))
+                    .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 3)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(Color.white.opacity(0.8), lineWidth: 0.5)
             )
         }
         .buttonStyle(.plain)

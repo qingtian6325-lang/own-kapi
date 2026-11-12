@@ -10,6 +10,7 @@ public struct MimiStatsView: View {
     @State private var selectedChartType: TransactionType = .expense
     @State private var trendMode: String = "支出" // 支出 | 收入 | 结余
     @State private var rankingMode: String = "支出" // 支出 | 收入
+    @State private var isRankingExpanded: Bool = true
     @State private var selectedLedgerFilterId: String? = nil // nil = current ledger
     @State private var selectedFilterType: String = "全部" // 全部 | 仅支出 | 仅收入
 
@@ -615,10 +616,11 @@ public struct MimiStatsView: View {
     // MARK: - Top 10 List: 单笔支出排行 (IMG_2256)
 
     private var top10SingleExpenseCard: some View {
-        let ranked = periodTransactions
+        let allRanked = periodTransactions
             .filter { rankingMode == "收入" ? $0.type == .income : $0.type == .expense }
             .sorted { $0.amount > $1.amount }
-            .prefix(10)
+        let ranked = Array(allRanked.prefix(10))
+        let visible = isRankingExpanded ? ranked : Array(ranked.prefix(5))
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -649,7 +651,7 @@ public struct MimiStatsView: View {
                     .foregroundColor(MimiTheme.textMuted)
                     .padding(.vertical, 8)
             } else {
-                ForEach(Array(ranked.enumerated()), id: \.element.id) { idx, item in
+                ForEach(Array(visible.enumerated()), id: \.element.id) { idx, item in
                     HStack(spacing: 10) {
                         Text("\(idx + 1)")
                             .font(.system(size: 12, weight: .bold, design: .rounded))
@@ -675,15 +677,43 @@ public struct MimiStatsView: View {
                             }
                         }
 
-                        Spacer()
+                        Spacer(minLength: 8)
 
                         Text(rankingMode == "收入"
                              ? MimiTheme.formatRM(item.amount)
-                             : "-\(MimiTheme.formatRM(item.amount))")
+                             : MimiTheme.formatRM(item.amount))
                             .font(.system(size: 14, weight: .bold, design: .rounded))
                             .foregroundColor(rankingMode == "收入" ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(Color(hex: 0xC5C8D0))
                     }
-                    .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(idx < 3 ? Color(hex: 0xF0F4FF) : Color.clear)
+                    )
+                }
+
+                if ranked.count > 5 {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isRankingExpanded.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: isRankingExpanded ? "chevron.up" : "chevron.down")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text(isRankingExpanded ? "收起" : "展开全部")
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        .foregroundColor(MimiTheme.textMuted)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 4)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
