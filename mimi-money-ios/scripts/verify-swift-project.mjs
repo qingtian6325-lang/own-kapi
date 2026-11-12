@@ -356,15 +356,32 @@ function verifyTask6() {
     '转账',
     '再记',
     '完成',
-    // 金标 AI 记账界面
-    '来记笔账吧',
     '任何事情都能问我',
     '咪咪思考中',
     '内容由AI生成',
-    'exampleQuestions'
+    'onSwitchToAIOverlay'
   ]) {
     assertContains(recordSheet, label, 'RecordAndAISheetView.swift');
   }
+
+  const aiOverlay = assertFileExists('Sources/MimiMoneyCore/Views/MimiAIAskOverlayView.swift');
+  checkBalancedBraces(aiOverlay, 'MimiAIAskOverlayView.swift');
+  for (const label of [
+    'public struct MimiAIAskOverlayView: View',
+    '记账查账，问问题',
+    '来记笔账吧',
+    '发消息或按住说话',
+    '任何事情都能问我',
+    '手动记账',
+    '咪咪思考中',
+    'exampleQuestions'
+  ]) {
+    assertContains(aiOverlay, label, 'MimiAIAskOverlayView.swift');
+  }
+
+  const root = assertFileExists('Sources/MimiMoneyCore/Views/MimiRootContainerView.swift');
+  assertContains(root, 'showAIAskOverlay', 'MimiRootContainerView.swift');
+  assertContains(root, 'MimiAIAskOverlayView', 'MimiRootContainerView.swift');
 
   const aiEngine = assertFileExists('Sources/MimiMoneyCore/Services/MimiAIEngine.swift');
   for (const label of [

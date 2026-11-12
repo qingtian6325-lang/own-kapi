@@ -883,8 +883,15 @@ public struct HomeRecordView: View {
             }
 
             HStack(spacing: 8) {
+                // 点问账条：按上次习惯开 AI 小窗或手动记账
                 Button {
-                    onOpenRecordSheet(true)
+                    if BookkeepingEntryPreference.current == .manual {
+                        BookkeepingEntryPreference.rememberManual()
+                        onOpenRecordSheet(false)
+                    } else {
+                        BookkeepingEntryPreference.rememberAI()
+                        onOpenRecordSheet(true)
+                    }
                 } label: {
                     HStack(spacing: 8) {
                         MimiAskMascotView(size: 32)
@@ -897,14 +904,10 @@ public struct HomeRecordView: View {
                 }
                 .buttonStyle(.plain)
 
-                // 金标：右侧大 ＋ → 手动记账；长按展开相册/拍照面板
+                // ＋：展开相册 / 拍照 / 导入导出（金标三格）
                 Button {
-                    if isAskPanelExpanded {
-                        withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
-                            isAskPanelExpanded = false
-                        }
-                    } else {
-                        onOpenRecordSheet(false)
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                        isAskPanelExpanded.toggle()
                     }
                 } label: {
                     Image(systemName: isAskPanelExpanded ? "xmark" : "plus")
@@ -923,13 +926,6 @@ public struct HomeRecordView: View {
                         )
                 }
                 .buttonStyle(.plain)
-                .simultaneousGesture(
-                    LongPressGesture(minimumDuration: 0.4).onEnded { _ in
-                        withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
-                            isAskPanelExpanded = true
-                        }
-                    }
-                )
             }
             .padding(.leading, 8)
             .padding(.trailing, 8)

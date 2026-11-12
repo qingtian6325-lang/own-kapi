@@ -181,8 +181,11 @@ public struct BillDetailSheetView: View {
                     // Time, Account & Ledger Card
                     VStack(spacing: 0) {
                         detailRow(label: "账单时间") {
-                            DatePicker("", selection: $editableBill.date, displayedComponents: [.date, .hourAndMinute])
-                                .labelsHidden()
+                            MimiDateFieldButton(
+                                date: $editableBill.date,
+                                mode: .dateAndTime,
+                                title: "选择账单时间"
+                            )
                         }
 
                         Divider().padding(.leading, 16)
@@ -297,18 +300,37 @@ public struct BillDetailSheetView: View {
                     }
                 }
             }
-            .confirmationDialog("添加小票或截图", isPresented: $showingActionSheet, titleVisibility: .visible) {
-                #if canImport(UIKit)
-                Button("📷 拍摄真实小票") {
-                    pickerSourceType = .camera
-                    showingImagePicker = true
-                }
-                Button("🖼️ 从相册选择小票/截图") {
-                    pickerSourceType = .photoLibrary
-                    showingImagePicker = true
-                }
+            .sheet(isPresented: $showingActionSheet) {
+                MimiChoiceSheet(
+                    title: "添加小票或截图",
+                    items: [
+                        MimiChoiceItem(id: "camera", icon: "camera", title: "拍摄真实小票", subtitle: "拍纸质小票"),
+                        MimiChoiceItem(id: "album", icon: "photo.on.rectangle", title: "从相册选择", subtitle: "小票或付款截图")
+                    ],
+                    onSelect: { item in
+                        showingActionSheet = false
+                        #if canImport(UIKit)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
+                            switch item.id {
+                            case "camera":
+                                pickerSourceType = .camera
+                                showingImagePicker = true
+                            case "album":
+                                pickerSourceType = .photoLibrary
+                                showingImagePicker = true
+                            default:
+                                break
+                            }
+                        }
+                        #endif
+                    },
+                    onCancel: { showingActionSheet = false }
+                )
+                #if os(iOS)
+                .presentationDetents([.height(300)])
+                .presentationDragIndicator(.hidden)
+                .presentationCornerRadius(24)
                 #endif
-                Button("取消", role: .cancel) {}
             }
             .sheet(isPresented: $showAmountKeypad) {
                 amountKeypadSheet

@@ -360,17 +360,18 @@ public struct MimiStatsView: View {
 
             if selectedPeriod == "自定义" {
                 HStack(spacing: 8) {
-                    Text("起:")
-                        .font(.system(size: 11))
-                        .foregroundColor(MimiTheme.textSecondary)
-                    DatePicker("", selection: $customStartDate, displayedComponents: .date)
-                        .labelsHidden()
-
-                    Text("止:")
-                        .font(.system(size: 11))
-                        .foregroundColor(MimiTheme.textSecondary)
-                    DatePicker("", selection: $customEndDate, displayedComponents: .date)
-                        .labelsHidden()
+                    MimiDateFieldButton(
+                        label: "起",
+                        date: $customStartDate,
+                        mode: .date,
+                        title: "开始日期"
+                    )
+                    MimiDateFieldButton(
+                        label: "止",
+                        date: $customEndDate,
+                        mode: .date,
+                        title: "结束日期"
+                    )
                 }
                 .padding(8)
                 .background(RoundedRectangle(cornerRadius: 10).fill(Color.white))

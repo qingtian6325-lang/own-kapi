@@ -10,6 +10,9 @@ public struct MimiRootContainerView: View {
     @State private var showAllRecordsCalendar: Bool = false
     @State private var showRecordSheet: Bool = false
     @State private var openRecordSheetInAIMode: Bool = false
+    /// 金标 AI 记账：首页浮层（不是整页 sheet）
+    @State private var showAIAskOverlay: Bool = false
+    @State private var aiOverlayAttachments: [AIPendingAttachment] = []
     @State private var activeBillForEdit: TransactionItem?
     @State private var showAssetsManager: Bool = false
     @State private var showBudgetManager: Bool = false
@@ -41,8 +44,16 @@ public struct MimiRootContainerView: View {
                     pushOpen { showAllRecordsCalendar = true }
                 },
                 onOpenRecordSheet: { aiMode in
-                    openRecordSheetInAIMode = aiMode
-                    showRecordSheet = true
+                    if aiMode {
+                        aiOverlayAttachments = []
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                            showAIAskOverlay = true
+                        }
+                    } else {
+                        BookkeepingEntryPreference.rememberManual()
+                        openRecordSheetInAIMode = false
+                        showRecordSheet = true
+                    }
                 },
                 onSelectTransaction: { tx in
                     pushOpen { activeBillForEdit = tx }
@@ -160,6 +171,44 @@ public struct MimiRootContainerView: View {
                 }
                 .transition(.opacity)
                 .zIndex(25)
+            }
+
+            if showAIAskOverlay {
+                MimiAIAskOverlayView(
+                    store: store,
+                    aiEngine: aiEngine,
+                    initialAttachments: aiOverlayAttachments,
+                    startExpanded: false,
+                    onDismiss: {
+                        withAnimation(.easeOut(duration: 0.22)) {
+                            showAIAskOverlay = false
+                            aiOverlayAttachments = []
+                        }
+                    },
+                    onOpenManual: {
+                        BookkeepingEntryPreference.rememberManual()
+                        withAnimation(.easeOut(duration: 0.18)) {
+                            showAIAskOverlay = false
+                            aiOverlayAttachments = []
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            openRecordSheetInAIMode = false
+                            showRecordSheet = true
+                        }
+                    },
+                    onOpenImportExport: {
+                        withAnimation(.easeOut(duration: 0.18)) {
+                            showAIAskOverlay = false
+                            aiOverlayAttachments = []
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            pushOpen { activeSettingsTitle = DrawerDestination.importExport.rawValue }
+                        }
+                    }
+                )
+                .id(aiOverlayAttachments.map(\.id.uuidString).joined(separator: "-"))
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+                .zIndex(55)
             }
 
             if isDrawerOpen {
@@ -284,6 +333,7 @@ public struct MimiRootContainerView: View {
                 .zIndex(50)
             }
         }
+        .animation(.spring(response: 0.32, dampingFraction: 0.86), value: showAIAskOverlay)
         .animation(Self.pagePushAnimation, value: showStatsView)
         .animation(Self.pagePushAnimation, value: showAllRecordsCalendar)
         .animation(Self.pagePushAnimation, value: showAssetsManager)
@@ -313,6 +363,16 @@ public struct MimiRootContainerView: View {
                     showRecordSheet = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                         pushOpen { activeSettingsTitle = DrawerDestination.importExport.rawValue }
+                    }
+                },
+                onSwitchToAIOverlay: {
+                    BookkeepingEntryPreference.rememberAI()
+                    showRecordSheet = false
+                    aiOverlayAttachments = []
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                            showAIAskOverlay = true
+                        }
                     }
                 }
             )
@@ -381,36 +441,17 @@ public struct MimiRootContainerView: View {
         withAnimation(Self.pagePushAnimation, updates)
     }
 
-    /// 首页问账条面板选图/拍照后的识别：纯 AI（Gemini），成功才出草稿卡等待确认；
-    /// 可疑金额直接以未确认状态入账并打开编辑页（与 Intent 路径一致）；
-    /// 失败弹窗如实说明原因，不生成草稿、不落账。
-    private func recognizeHomeImage(_ imageData: Data) {
-        Task {
-            do {
-                let result = try await SmartReceiptRecognizer.recognize(imageData: imageData)
-                await MainActor.run {
-                    if result.isSuspiciousAmount {
-                        let tx = ShortcutActionCoordinator.makeTransaction(
-                            from: result.draft,
-                            in: store,
-                            isConfirmed: false
-                        )
-                        store.addTransaction(tx)
-                        _ = ShortcutActionCoordinator.markForInAppModification(transactionId: tx.id, in: store)
-                        homeRecognizedDraft = nil
-                        pushOpen { activeBillForEdit = tx }
-                    } else {
-                        homeRecognizedDraft = result.draft
-                    }
-                }
-            } catch {
-                let text = (error as? ReceiptRecognitionFailure)?.dialogText
-                    ?? ReceiptRecognitionFailure.failed(reason: error.localizedDescription).dialogText
-                await MainActor.run {
-                    homeRecognitionFailureText = text
-                }
-            }
+    /// 首页 ＋ 面板选图/拍照：先进入 AI 小窗，带上照片，用户可再打字后一次发送。
+    private func openAIComposer(withImageData imageData: Data, label: String) {
+        BookkeepingEntryPreference.rememberAI()
+        aiOverlayAttachments = [AIPendingAttachment(imageData: imageData, label: label)]
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+            showAIAskOverlay = true
         }
+    }
+
+    private func recognizeHomeImage(_ imageData: Data) {
+        openAIComposer(withImageData: imageData, label: "照片")
     }
 
     private func handleDrawerSelection(_ destination: DrawerDestination) {

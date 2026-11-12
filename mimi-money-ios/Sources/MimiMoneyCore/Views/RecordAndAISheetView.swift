@@ -8,6 +8,8 @@ public struct RecordAndAISheetView: View {
     public var onOpenCategorySettings: () -> Void
     public var onEditRecognizedTransaction: (TransactionItem) -> Void
     public var onOpenImportExport: () -> Void = {}
+    /// 手动页点「AI 助手」时回到首页金标 AI 浮层
+    public var onSwitchToAIOverlay: () -> Void = {}
 
     @State private var isAIMode: Bool
     @State private var selectedTab: TransactionType = .expense
@@ -49,7 +51,8 @@ public struct RecordAndAISheetView: View {
         onDismiss: @escaping () -> Void,
         onOpenCategorySettings: @escaping () -> Void,
         onEditRecognizedTransaction: @escaping (TransactionItem) -> Void,
-        onOpenImportExport: @escaping () -> Void = {}
+        onOpenImportExport: @escaping () -> Void = {},
+        onSwitchToAIOverlay: @escaping () -> Void = {}
     ) {
         self.store = store
         self.aiEngine = aiEngine
@@ -58,6 +61,7 @@ public struct RecordAndAISheetView: View {
         self.onOpenCategorySettings = onOpenCategorySettings
         self.onEditRecognizedTransaction = onEditRecognizedTransaction
         self.onOpenImportExport = onOpenImportExport
+        self.onSwitchToAIOverlay = onSwitchToAIOverlay
         _isAIMode = State(initialValue: initialAIMode)
     }
 
@@ -109,40 +113,52 @@ public struct RecordAndAISheetView: View {
         }
         .background(Color.white.ignoresSafeArea())
         .sheet(isPresented: $showDatePickerSheet) {
-            NavigationStack {
-                VStack {
-                    DatePicker("选择账单时间", selection: $selectedDate, displayedComponents: [.date, .hourAndMinute])
-                        .datePickerStyle(.graphical)
-                        .padding()
-                    Spacer()
-                }
-                .navigationTitle("选择账单时间")
-                #if os(iOS)
-                .navigationBarTitleDisplayMode(.inline)
-                #endif
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("完成") { showDatePickerSheet = false }
-                    }
-                }
-            }
-            .presentationDetents([.medium])
-        }
-        .confirmationDialog("添加小票并自动识别", isPresented: $showImageSourceDialog, titleVisibility: .visible) {
-            #if canImport(UIKit)
-            Button("📷 拍照真实小票") {
-                pickerSourceType = .camera
-                showImagePickerSheet = true
-            }
-            Button("🖼️ 从相册选择小票/截图") {
-                pickerSourceType = .photoLibrary
-                showImagePickerSheet = true
-            }
-            Button("📋 识别剪贴板图片") {
-                readFromClipboard()
-            }
+            MimiDatePickerSheet(
+                selection: $selectedDate,
+                title: "选择账单时间",
+                mode: .dateAndTime,
+                onDone: { showDatePickerSheet = false }
+            )
+            #if os(iOS)
+            .presentationDetents([.height(520)])
+            .presentationDragIndicator(.hidden)
+            .presentationCornerRadius(24)
             #endif
-            Button("取消", role: .cancel) {}
+        }
+        .sheet(isPresented: $showImageSourceDialog) {
+            MimiChoiceSheet(
+                title: "添加小票并自动识别",
+                items: [
+                    MimiChoiceItem(id: "camera", icon: "camera", title: "拍照真实小票", subtitle: "拍纸质小票立刻识别"),
+                    MimiChoiceItem(id: "album", icon: "photo.on.rectangle", title: "从相册选择", subtitle: "小票或付款截图"),
+                    MimiChoiceItem(id: "clipboard", icon: "doc.on.clipboard", title: "识别剪贴板图片", subtitle: "已复制的图片")
+                ],
+                onSelect: { item in
+                    showImageSourceDialog = false
+                    #if canImport(UIKit)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
+                        switch item.id {
+                        case "camera":
+                            pickerSourceType = .camera
+                            showImagePickerSheet = true
+                        case "album":
+                            pickerSourceType = .photoLibrary
+                            showImagePickerSheet = true
+                        case "clipboard":
+                            readFromClipboard()
+                        default:
+                            break
+                        }
+                    }
+                    #endif
+                },
+                onCancel: { showImageSourceDialog = false }
+            )
+            #if os(iOS)
+            .presentationDetents([.height(360)])
+            .presentationDragIndicator(.hidden)
+            .presentationCornerRadius(24)
+            #endif
         }
         .alert("AI 识别失败", isPresented: Binding(
             get: { recognitionFailureText != nil },
@@ -349,9 +365,7 @@ public struct RecordAndAISheetView: View {
                 Spacer()
 
                 Button {
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
-                        isAIMode = true
-                    }
+                    onSwitchToAIOverlay()
                 } label: {
                     Text("AI 助手")
                         .font(.system(size: 13, weight: .semibold))
@@ -965,28 +979,42 @@ public struct RecordAndAISheetView: View {
             }
             #endif
 
-            // 金标输入条：胶囊「任何事情都能问我」内嵌 ＋，外侧蓝色发送
+            // 金标输入条：胶囊内嵌 ＋；语音用独立 mic，避免长按抢 TextField 焦点
             HStack(spacing: 10) {
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     TextField("任何事情都能问我", text: $aiInputText)
                         .font(.system(size: 14))
-                        #if canImport(Speech) && canImport(AVFoundation)
-                        .onLongPressGesture(minimumDuration: 0.35, maximumDistance: 60, pressing: { isPressing in
-                            guard aiInputText.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-                            if isPressing {
-                                Task {
-                                    if await speechTranscriber.requestAuthorization() {
-                                        speechTranscriber.startRecording()
+                        .submitLabel(.send)
+                        .onSubmit {
+                            let prompt = aiInputText.trimmingCharacters(in: .whitespacesAndNewlines)
+                            guard !prompt.isEmpty else { return }
+                            aiInputText = ""
+                            aiEngine.handleUserMessage(prompt, store: store)
+                        }
+
+                    #if canImport(Speech) && canImport(AVFoundation)
+                    if aiInputText.trimmingCharacters(in: .whitespaces).isEmpty {
+                        Image(systemName: speechTranscriber.isRecording ? "mic.fill" : "mic")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(speechTranscriber.isRecording ? MimiTheme.dangerRed : MimiTheme.textMuted)
+                            .frame(width: 28, height: 28)
+                            .contentShape(Rectangle())
+                            .onLongPressGesture(minimumDuration: 0.25, maximumDistance: 60, pressing: { isPressing in
+                                if isPressing {
+                                    Task {
+                                        if await speechTranscriber.requestAuthorization() {
+                                            speechTranscriber.startRecording()
+                                        }
+                                    }
+                                } else if speechTranscriber.isRecording {
+                                    let recognized = speechTranscriber.stopRecording()
+                                    if !recognized.trimmingCharacters(in: .whitespaces).isEmpty {
+                                        aiInputText = recognized
                                     }
                                 }
-                            } else if speechTranscriber.isRecording {
-                                let recognized = speechTranscriber.stopRecording()
-                                if !recognized.trimmingCharacters(in: .whitespaces).isEmpty {
-                                    aiInputText = recognized
-                                }
-                            }
-                        }, perform: {})
-                        #endif
+                            }, perform: {})
+                    }
+                    #endif
 
                     Button {
                         withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
@@ -1041,8 +1069,12 @@ public struct RecordAndAISheetView: View {
         VStack(alignment: .leading, spacing: 10) {
             ForEach(drafts) { draft in
                 HStack(spacing: 10) {
-                    Text(draft.iconName)
-                        .font(.system(size: 20))
+                    MimiStickerIconView(
+                        iconName: draft.iconName,
+                        categoryName: draft.categoryPath,
+                        transactionType: draft.type,
+                        size: 36
+                    )
                     VStack(alignment: .leading, spacing: 2) {
                         Text(draft.categoryPath)
                             .font(.system(size: 14, weight: .semibold))

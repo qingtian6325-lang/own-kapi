@@ -84,6 +84,12 @@ public struct AIChatMessageItem: Identifiable, Equatable, Sendable {
 @MainActor
 public final class MimiAIEngine: ObservableObject {
     @Published public var messages: [AIChatMessageItem] = []
+    /// 正在思考 / 识别中（全屏等待态）
+    @Published public var isAnswering: Bool = false
+    /// 本轮回答刚完成，UI 可短暂显示「回答完毕」
+    @Published public var answerJustCompleted: Bool = false
+    /// 用户消息附带的图片（仅内存，用于气泡缩略图）
+    @Published public var userMessageImages: [UUID: [Data]] = [:]
 
     // 旧版自定义大模型设置（v1.2.0 起识别/问账统一走 Gemini；Key 不再写 UserDefaults）
     @Published public var apiKey: String = ""
@@ -202,75 +208,109 @@ public final class MimiAIEngine: ObservableObject {
 
     // MARK: - Chat Flow (UI 入口)
 
-    /// 聊天发送主流程：
-    /// 1. 明确记账句 → 生成草稿卡（确认才入账）
-    /// 2. 本地可答的问题（分类表/退款/报销/本月汇总）→ 离线直接答
-    /// 3. 其余问账 → 带账目上下文问 Gemini；无 key/无网时在聊天里明说不可用，不编答案
+    /// 聊天发送主流程（可附带图片，一次发送）。
     public func handleUserMessage(_ message: String, store: MimiStore) {
-        let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        messages.append(
-            AIChatMessageItem(isUser: true, userText: trimmed, blocks: [.text(trimmed)])
-        )
+        sendComposed(text: message, imageDataList: [], store: store)
+    }
 
-        let preferred = Self.preferredAccount(from: store)
-        let drafts = parseNaturalLanguageBills(
-            trimmed,
-            preferredAccountId: preferred?.id,
-            preferredAccountName: preferred?.name
-        )
-        if BillMessageClassifier.classify(trimmed, draftCount: drafts.count) == .billDraft {
-            messages.append(
-                AIChatMessageItem(isUser: false, userText: "", blocks: [
-                    .text("小金主，咪咪已为你识别出 \(drafts.count) 笔账单草稿，核对无误后点「确认记账」才会入账："),
-                    .draftBills(drafts)
-                ])
-            )
-            saveHistory()
-            return
-        }
+    /// 文字 + 图片一次发送：先出用户气泡 → 思考中 → 识别图/答问 → 「回答完毕」。
+    public func sendComposed(text: String, imageDataList: [Data], store: MimiStore) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty || !imageDataList.isEmpty else { return }
+        BookkeepingEntryPreference.rememberAI()
+        answerJustCompleted = false
 
-        if let local = LocalBookkeepingAnswerer.blocks(for: trimmed, in: store) {
-            messages.append(AIChatMessageItem(isUser: false, userText: "", blocks: local))
-            saveHistory()
-            return
+        var userLabel = trimmed
+        if !imageDataList.isEmpty {
+            let photoNote = imageDataList.count == 1 ? "[照片 1 张]" : "[照片 \(imageDataList.count) 张]"
+            userLabel = trimmed.isEmpty ? photoNote : "\(photoNote)\n\(trimmed)"
         }
-
-        guard AIEngineSettings.hasAPIKey else {
-            let provider = AIEngineSettings.provider
-            messages.append(
-                AIChatMessageItem(isUser: false, userText: "", blocks: [
-                    .text("小金主，这个问题要联网查账才能答：请先到「设置 → AI 识别引擎」填入你的 \(provider.displayName) API Key（\(provider.keyApplyHint)），填好后就能问我「本月单笔超过 200 的账单」「本周最贵的一笔」这类问题了 🐱")
-                ])
-            )
-            saveHistory()
-            return
+        let userMessage = AIChatMessageItem(isUser: true, userText: userLabel, blocks: [.text(userLabel)])
+        if !imageDataList.isEmpty {
+            userMessageImages[userMessage.id] = imageDataList
         }
+        messages.append(userMessage)
 
         let placeholder = AIChatMessageItem(isUser: false, userText: "", blocks: [.pendingAnswer])
         messages.append(placeholder)
+        isAnswering = true
         saveHistory()
+
         let placeholderId = placeholder.id
         let providerName = AIEngineSettings.provider.displayName
         Task { [weak self] in
             guard let self else { return }
-            do {
-                let answer: String
-                switch AIEngineSettings.provider {
-                case .groq:
-                    answer = try await GroqClient.answerQuestion(trimmed, store: store)
-                case .gemini:
-                    answer = try await GeminiClient.answerQuestion(trimmed, store: store)
+            var replyBlocks: [AIChatResponseBlock] = []
+
+            // 1) 图片 → 识别草稿
+            var drafts: [ParsedDraftBill] = []
+            var recognizeErrors: [String] = []
+            for (idx, data) in imageDataList.enumerated() {
+                do {
+                    let result = try await SmartReceiptRecognizer.recognize(imageData: data)
+                    drafts.append(result.draft)
+                    if result.isSuspiciousAmount {
+                        recognizeErrors.append("第\(idx + 1)张金额可疑，请仔细核对。")
+                    }
+                } catch {
+                    let reason = (error as? ReceiptRecognitionFailure)?.dialogText
+                        ?? error.localizedDescription
+                    recognizeErrors.append("第\(idx + 1)张：\(reason)")
                 }
-                AIEngineSettings.recordCallStatus(success: true, message: "问账成功（\(providerName)）")
-                self.replaceMessageBlocks(id: placeholderId, blocks: [.text(answer)])
-            } catch {
-                let reason = (error as? GeminiError)?.description ?? error.localizedDescription
-                AIEngineSettings.recordCallStatus(success: false, message: "问账失败：\(reason)")
-                self.replaceMessageBlocks(id: placeholderId, blocks: [
-                    .text("问账暂时不可用：\(reason)。请检查网络，或到「设置 → AI 识别引擎」点测试连接；也可以直接问我「有哪些分类」「这个月花了多少」，或用一句话记账（如：午餐 38）。")
-                ])
             }
+            if !drafts.isEmpty {
+                var preface = "小金主，已从照片识别出 \(drafts.count) 笔账单草稿，核对无误后点「确认记账」才会入账："
+                if !recognizeErrors.isEmpty {
+                    preface += "\n" + recognizeErrors.joined(separator: "\n")
+                }
+                replyBlocks.append(.text(preface))
+                replyBlocks.append(.draftBills(drafts))
+            } else if !imageDataList.isEmpty && !recognizeErrors.isEmpty {
+                replyBlocks.append(.text("小金主，照片没识别成功：\n" + recognizeErrors.joined(separator: "\n")))
+            }
+
+            // 2) 文字 → 记账句 / 本地答 / 联网问
+            if !trimmed.isEmpty {
+                let preferred = Self.preferredAccount(from: store)
+                let textDrafts = self.parseNaturalLanguageBills(
+                    trimmed,
+                    preferredAccountId: preferred?.id,
+                    preferredAccountName: preferred?.name
+                )
+                if BillMessageClassifier.classify(trimmed, draftCount: textDrafts.count) == .billDraft {
+                    replyBlocks.append(.text("另外从你的文字里识别出 \(textDrafts.count) 笔草稿："))
+                    replyBlocks.append(.draftBills(textDrafts))
+                } else if let local = LocalBookkeepingAnswerer.blocks(for: trimmed, in: store) {
+                    replyBlocks.append(contentsOf: local)
+                } else if AIEngineSettings.hasAPIKey {
+                    do {
+                        let answer: String
+                        switch AIEngineSettings.provider {
+                        case .groq:
+                            answer = try await GroqClient.answerQuestion(trimmed, store: store)
+                        case .gemini:
+                            answer = try await GeminiClient.answerQuestion(trimmed, store: store)
+                        }
+                        AIEngineSettings.recordCallStatus(success: true, message: "问账成功（\(providerName)）")
+                        replyBlocks.append(.text(answer))
+                    } catch {
+                        let reason = (error as? GeminiError)?.description ?? error.localizedDescription
+                        AIEngineSettings.recordCallStatus(success: false, message: "问账失败：\(reason)")
+                        replyBlocks.append(.text("问账暂时不可用：\(reason)。"))
+                    }
+                } else if imageDataList.isEmpty {
+                    let provider = AIEngineSettings.provider
+                    replyBlocks.append(.text("小金主，这个问题要联网查账：请先到「设置 → AI 识别引擎」填入 \(provider.displayName) API Key（\(provider.keyApplyHint)）。"))
+                }
+            }
+
+            if replyBlocks.isEmpty {
+                replyBlocks = [.text("小金主，我这边没有生成内容。你可以再说一次，或发更清楚的付款截图。")]
+            }
+
+            self.replaceMessageBlocks(id: placeholderId, blocks: replyBlocks)
+            self.isAnswering = false
+            self.answerJustCompleted = true
             self.saveHistory()
         }
     }

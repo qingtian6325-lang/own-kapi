@@ -369,18 +369,26 @@ public struct SettingsAndShortcutsGuideView: View {
                 if exportPeriodOption == "自定义" {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
-                            Text("开始日期:")
+                            Text("开始日期")
                                 .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(MimiTheme.textSecondary)
                             Spacer()
-                            DatePicker("", selection: $exportStartDate, displayedComponents: .date)
-                                .labelsHidden()
+                            MimiDateFieldButton(
+                                date: $exportStartDate,
+                                mode: .date,
+                                title: "开始日期"
+                            )
                         }
                         HStack {
-                            Text("结束日期:")
+                            Text("结束日期")
                                 .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(MimiTheme.textSecondary)
                             Spacer()
-                            DatePicker("", selection: $exportEndDate, displayedComponents: .date)
-                                .labelsHidden()
+                            MimiDateFieldButton(
+                                date: $exportEndDate,
+                                mode: .date,
+                                title: "结束日期"
+                            )
                         }
                     }
                     .padding(12)

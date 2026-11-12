@@ -4,7 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.4] - 2026-11-12
+
+### 🎯 Highlights
+- **AI 记账浮层**：首页下方小窗（附件+打字+三快捷句+切手动），发送后全屏思考并显示「回答完毕」；上滑可放大；记住上次 AI/手动入口。
+- **首页 ＋**：展开相册 / 拍照 / 导入导出；选图先进小窗，可再打字一次发送。
+- **弹窗换皮**：日期选择与小票来源改为自家 `MimiDatePickerSheet` / `MimiChoiceSheet`，替换系统 DatePicker / confirmationDialog。
+- **发版**：`VERSION` / Intent 默认版本升至 1.3.4。
+
 ## [v1.3.3] - 2026-11-12
+
 
 ### 🎯 Highlights
 - **AI 记账界面**：按金标对齐——顶栏「来记笔账吧」、左侧建议气泡、输入「任何事情都能问我」、用户浅蓝气泡、AI 纯文字、「咪咪思考中…」。
