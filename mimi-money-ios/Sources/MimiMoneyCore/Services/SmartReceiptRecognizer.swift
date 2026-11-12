@@ -9,15 +9,17 @@ import UIKit
 // 统一缩到最长边 maxDimension、jpeg ~0.7，超过 maxUploadBytes 再降质。
 
 public enum GeminiImagePreprocessor {
-    public static let maxDimension: CGFloat = 1280
+    /// 用 Double 而不是 CGFloat：macOS host `swift test` 只 import Foundation 时
+    /// 没有 UIKit/CoreGraphics，CGFloat 会直接编译失败（同类于 v1.2.0 的编译期挂 CI）。
+    public static let maxDimension: Double = 1280
     public static let maxUploadBytes = 1_200_000
-    public static let initialJPEGQuality: CGFloat = 0.72
+    public static let initialJPEGQuality: Double = 0.72
 
     public static func prepareForUpload(_ data: Data) -> Data {
         #if canImport(UIKit)
         guard let image = UIImage(data: data) else { return data }
         let resized = resizeIfNeeded(image)
-        var quality = initialJPEGQuality
+        var quality = CGFloat(initialJPEGQuality)
         var output = resized.jpegData(compressionQuality: quality) ?? data
         while output.count > maxUploadBytes, quality > 0.35 {
             quality -= 0.12
@@ -37,8 +39,9 @@ public enum GeminiImagePreprocessor {
     private static func resizeIfNeeded(_ image: UIImage) -> UIImage {
         let size = image.size
         let longest = max(size.width, size.height)
-        guard longest > maxDimension, longest > 0 else { return image }
-        let scale = maxDimension / longest
+        let limit = CGFloat(maxDimension)
+        guard longest > limit, longest > 0 else { return image }
+        let scale = limit / longest
         let newSize = CGSize(width: size.width * scale, height: size.height * scale)
         let renderer = UIGraphicsImageRenderer(size: newSize)
         return renderer.image { _ in
