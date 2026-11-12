@@ -390,71 +390,76 @@ public struct RecordAndAISheetView: View {
         VStack(spacing: 0) {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 12) {
-                    // 5-column Primary Category Grid (gold manual entry)
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5), spacing: 12) {
-                        ForEach(Array(activeCategories.enumerated()), id: \.element.id) { idx, group in
-                            let isSelected = idx == selectedGroupIndex
-                            Button {
-                                selectedGroupIndex = idx
-                                selectedSubIndex = group.subcategories.isEmpty ? nil : 0
-                            } label: {
-                                VStack(spacing: 5) {
-                                    MimiStickerIconView(
-                                        iconName: group.displayBadgeToken,
-                                        categoryName: group.name,
-                                        transactionType: selectedTab,
-                                        useFirstCharIcon: group.useFirstCharIcon,
-                                        size: 40,
-                                        isSelected: isSelected
-                                    )
-                                    Text(group.name)
-                                        .font(.system(size: 11, weight: isSelected ? .bold : .regular))
-                                        .foregroundColor(isSelected ? MimiTheme.textPrimary : MimiTheme.textSecondary)
-                                        .lineLimit(1)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .padding(.top, 6)
-
-                    // Expandable Subcategory Box (IMG_2245)
-                    if let group = currentGroup, !group.subcategories.isEmpty {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("\(group.name) · 二级分类")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(MimiTheme.textMuted)
-
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5), spacing: 10) {
-                                ForEach(Array(group.subcategories.enumerated()), id: \.element.id) { sIdx, sub in
-                                    let isSubSelected = selectedSubIndex == sIdx
-                                    Button {
-                                        selectedSubIndex = sIdx
-                                    } label: {
-                                        VStack(spacing: 4) {
-                                            MimiStickerIconView(
-                                                iconName: sub.iconName,
-                                                categoryName: sub.name,
-                                                transactionType: selectedTab,
-                                                useFirstCharIcon: sub.useFirstCharIcon,
-                                                size: 32,
-                                                isSelected: isSubSelected
-                                            )
-                                            Text(sub.name)
-                                                .font(.system(size: 10, weight: isSubSelected ? .bold : .regular))
-                                                .foregroundColor(isSubSelected ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
-                                                .lineLimit(1)
-                                        }
+                    if selectedTab == .transfer {
+                        transferAccountPicker
+                            .padding(.top, 10)
+                    } else {
+                        // 5-column Primary Category Grid (gold manual entry)
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5), spacing: 12) {
+                            ForEach(Array(activeCategories.enumerated()), id: \.element.id) { idx, group in
+                                let isSelected = idx == selectedGroupIndex
+                                Button {
+                                    selectedGroupIndex = idx
+                                    selectedSubIndex = group.subcategories.isEmpty ? nil : 0
+                                } label: {
+                                    VStack(spacing: 5) {
+                                        MimiStickerIconView(
+                                            iconName: group.displayBadgeToken,
+                                            categoryName: group.name,
+                                            transactionType: selectedTab,
+                                            useFirstCharIcon: group.useFirstCharIcon,
+                                            size: 40,
+                                            isSelected: isSelected
+                                        )
+                                        Text(group.name)
+                                            .font(.system(size: 11, weight: isSelected ? .bold : .regular))
+                                            .foregroundColor(isSelected ? MimiTheme.textPrimary : MimiTheme.textSecondary)
+                                            .lineLimit(1)
                                     }
-                                    .buttonStyle(.plain)
                                 }
+                                .buttonStyle(.plain)
                             }
                         }
-                        .padding(12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(Color(hex: 0xF5F6FA))
-                        )
+                        .padding(.top, 6)
+
+                        // Expandable Subcategory Box (IMG_2245)
+                        if let group = currentGroup, !group.subcategories.isEmpty {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("\(group.name) · 二级分类")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(MimiTheme.textMuted)
+
+                                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5), spacing: 10) {
+                                    ForEach(Array(group.subcategories.enumerated()), id: \.element.id) { sIdx, sub in
+                                        let isSubSelected = selectedSubIndex == sIdx
+                                        Button {
+                                            selectedSubIndex = sIdx
+                                        } label: {
+                                            VStack(spacing: 4) {
+                                                MimiStickerIconView(
+                                                    iconName: sub.iconName,
+                                                    categoryName: sub.name,
+                                                    transactionType: selectedTab,
+                                                    useFirstCharIcon: sub.useFirstCharIcon,
+                                                    size: 32,
+                                                    isSelected: isSubSelected
+                                                )
+                                                Text(sub.name)
+                                                    .font(.system(size: 10, weight: isSubSelected ? .bold : .regular))
+                                                    .foregroundColor(isSubSelected ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
+                                                    .lineLimit(1)
+                                            }
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                            }
+                            .padding(12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .fill(Color(hex: 0xF5F6FA))
+                            )
+                        }
                     }
                 }
                 .padding(.horizontal, 16)
@@ -463,29 +468,19 @@ public struct RecordAndAISheetView: View {
 
             Divider()
 
-            // Metadata Pills Row (不选账户 / TNGewallet | 11/08 16:59 | 优惠 | 选标签 | 多币种)
+            // Metadata pills — transfer only needs date (accounts picked above)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    Menu {
-                        Button("不选账户") { selectedAccountName = "不选账户" }
-                        ForEach(store.accounts) { acc in
-                            Button("\(acc.name) (\(MimiTheme.formatRM(acc.balance)))") {
-                                selectedAccountName = acc.name
-                            }
-                        }
-                    } label: {
-                        pillLabel(icon: "creditcard", text: selectedAccountName)
-                    }
-
-                    if selectedTab == .transfer {
+                    if selectedTab != .transfer {
                         Menu {
+                            Button("不选账户") { selectedAccountName = "不选账户" }
                             ForEach(store.accounts) { acc in
-                                Button("转入: \(acc.name)") {
-                                    targetAccountName = acc.name
+                                Button("\(acc.name) (\(MimiTheme.formatRM(acc.balance)))") {
+                                    selectedAccountName = acc.name
                                 }
                             }
                         } label: {
-                            pillLabel(icon: "arrow.right.circle", text: "转入 \(targetAccountName)")
+                            pillLabel(icon: "creditcard", text: selectedAccountName == "不选账户" ? "无账户" : selectedAccountName)
                         }
                     }
 
@@ -493,66 +488,68 @@ public struct RecordAndAISheetView: View {
                         showDatePickerSheet = true
                     } label: {
                         let f = DateFormatter()
-                        let _ = { f.dateFormat = "MM/dd HH:mm" }()
+                        let _ = { f.dateFormat = "M月d日" }()
                         pillLabel(icon: "calendar", text: f.string(from: selectedDate))
                     }
                     .buttonStyle(.plain)
 
-                    Button {
-                        showDiscountInput.toggle()
-                    } label: {
-                        pillLabel(icon: "tag", text: discountAmountText.isEmpty ? "优惠" : "优惠 RM\(discountAmountText)")
-                    }
-                    .buttonStyle(.plain)
+                    if selectedTab != .transfer {
+                        Button {
+                            showDiscountInput.toggle()
+                        } label: {
+                            pillLabel(icon: "tag", text: discountAmountText.isEmpty ? "优惠" : "优惠 RM\(discountAmountText)")
+                        }
+                        .buttonStyle(.plain)
 
-                    Button {
-                        markPendingReimbursement.toggle()
-                    } label: {
-                        pillLabel(
-                            icon: markPendingReimbursement ? "checkmark.circle.fill" : "clock",
-                            text: "待报销"
-                        )
-                    }
-                    .buttonStyle(.plain)
+                        Button {
+                            markPendingReimbursement.toggle()
+                        } label: {
+                            pillLabel(
+                                icon: markPendingReimbursement ? "checkmark.circle.fill" : "clock",
+                                text: "待报销"
+                            )
+                        }
+                        .buttonStyle(.plain)
 
-                    Button {
-                        includeInStats.toggle()
-                    } label: {
-                        pillLabel(
-                            icon: includeInStats ? "checkmark.circle.fill" : "slash.circle",
-                            text: includeInStats ? "计入收支" : "不计入收支"
-                        )
-                    }
-                    .buttonStyle(.plain)
+                        Button {
+                            includeInStats.toggle()
+                        } label: {
+                            pillLabel(
+                                icon: includeInStats ? "checkmark.circle.fill" : "slash.circle",
+                                text: includeInStats ? "计入收支" : "不计入收支"
+                            )
+                        }
+                        .buttonStyle(.plain)
 
-                    Button {
-                        includeInBudget.toggle()
-                    } label: {
-                        pillLabel(
-                            icon: includeInBudget ? "checkmark.circle.fill" : "slash.circle",
-                            text: includeInBudget ? "计入预算" : "不计入预算"
-                        )
-                    }
-                    .buttonStyle(.plain)
+                        Button {
+                            includeInBudget.toggle()
+                        } label: {
+                            pillLabel(
+                                icon: includeInBudget ? "checkmark.circle.fill" : "slash.circle",
+                                text: includeInBudget ? "计入预算" : "不计入预算"
+                            )
+                        }
+                        .buttonStyle(.plain)
 
-                    Menu {
-                        ForEach(store.tags, id: \.self) { tag in
-                            Button {
-                                if selectedTags.contains(tag) {
-                                    selectedTags.removeAll(where: { $0 == tag })
-                                } else {
-                                    selectedTags.append(tag)
-                                }
-                            } label: {
-                                if selectedTags.contains(tag) {
-                                    Label(tag, systemImage: "checkmark")
-                                } else {
-                                    Text(tag)
+                        Menu {
+                            ForEach(store.tags, id: \.self) { tag in
+                                Button {
+                                    if selectedTags.contains(tag) {
+                                        selectedTags.removeAll(where: { $0 == tag })
+                                    } else {
+                                        selectedTags.append(tag)
+                                    }
+                                } label: {
+                                    if selectedTags.contains(tag) {
+                                        Label(tag, systemImage: "checkmark")
+                                    } else {
+                                        Text(tag)
+                                    }
                                 }
                             }
+                        } label: {
+                            pillLabel(icon: "number", text: selectedTags.isEmpty ? "标签" : selectedTags.joined(separator: ","))
                         }
-                    } label: {
-                        pillLabel(icon: "number", text: selectedTags.isEmpty ? "标签" : selectedTags.joined(separator: ","))
                     }
 
                     Menu {
@@ -560,7 +557,7 @@ public struct RecordAndAISheetView: View {
                             Button(code.rawValue) { selectedCurrency = code }
                         }
                     } label: {
-                        pillLabel(icon: "globe", text: "多币种 (\(selectedCurrency.rawValue))")
+                        pillLabel(icon: "globe", text: selectedCurrency.rawValue)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -570,9 +567,11 @@ public struct RecordAndAISheetView: View {
             // Amount + Note Row (RM0.00 MYR ⌄ + 点此输入备注...)
             VStack(spacing: 8) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text(composedCategoryPath)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(MimiTheme.textSecondary)
+                    if selectedTab != .transfer {
+                        Text(composedCategoryPath)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(MimiTheme.textSecondary)
+                    }
 
                     Spacer()
 
@@ -580,7 +579,7 @@ public struct RecordAndAISheetView: View {
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .foregroundColor(selectedTab == .income ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
 
-                    Text("\(selectedCurrency.rawValue) ⌄")
+                    Text(selectedCurrency.rawValue)
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(MimiTheme.textMuted)
                 }
@@ -661,6 +660,64 @@ public struct RecordAndAISheetView: View {
             // Custom Calculator Keypad (IMG_2245)
             calculatorKeypad
         }
+    }
+
+    /// Gold transfer: 扣款账户 ⇄ 入款账户
+    private var transferAccountPicker: some View {
+        HStack(spacing: 10) {
+            Menu {
+                ForEach(store.accounts) { acc in
+                    Button(acc.name) { selectedAccountName = acc.name }
+                }
+            } label: {
+                transferAccountBox(
+                    title: selectedAccountName.isEmpty || selectedAccountName == "不选账户" ? "扣款账户" : selectedAccountName,
+                    subtitle: selectedAccountName.isEmpty || selectedAccountName == "不选账户" ? "选择转出" : "扣款账户"
+                )
+            }
+
+            Button {
+                let from = selectedAccountName
+                selectedAccountName = targetAccountName
+                targetAccountName = from
+            } label: {
+                Image(systemName: "arrow.left.arrow.right")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(MimiTheme.expenseBlue)
+                    .frame(width: 36, height: 36)
+                    .background(Circle().fill(Color(hex: 0xE8F0FE)))
+            }
+            .buttonStyle(.plain)
+
+            Menu {
+                ForEach(store.accounts) { acc in
+                    Button(acc.name) { targetAccountName = acc.name }
+                }
+            } label: {
+                transferAccountBox(
+                    title: targetAccountName.isEmpty ? "入款账户" : targetAccountName,
+                    subtitle: targetAccountName.isEmpty ? "选择转入" : "入款账户"
+                )
+            }
+        }
+    }
+
+    private func transferAccountBox(title: String, subtitle: String) -> some View {
+        VStack(spacing: 8) {
+            Image(systemName: "creditcard")
+                .font(.system(size: 22))
+                .foregroundColor(MimiTheme.textSecondary)
+            Text(title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(MimiTheme.textPrimary)
+                .lineLimit(1)
+            Text(subtitle)
+                .font(.system(size: 11))
+                .foregroundColor(MimiTheme.textMuted)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 22)
+        .background(RoundedRectangle(cornerRadius: 16).fill(Color(hex: 0xF5F6FA)))
     }
 
     private func pillLabel(icon: String, text: String) -> some View {

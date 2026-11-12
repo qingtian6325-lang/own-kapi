@@ -148,7 +148,7 @@ public struct SettingsAndShortcutsGuideView: View {
     private var csvImportExportCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("📁 账单导入与导出")
+                Text("账单导入与导出")
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
@@ -310,7 +310,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         showImportModal = false
                         statusBannerMessage = "已成功导入 \(count) 笔账单记录"
                     } label: {
-                        Text("🚀 确认导入")
+                        Text("确认导入")
                             .font(.system(size: 15, weight: .bold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -616,7 +616,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     .padding(.vertical, 8)
             }
 
-            Text("⚡ 自动记账 · 截屏识别记账")
+            Text("自动记账 · 截屏识别记账")
                 .font(.system(size: 15, weight: .bold))
                 .foregroundColor(MimiTheme.textPrimary)
                 .opacity(autoBookkeepingTab == "自动记账" ? 1 : 0.45)
@@ -984,7 +984,7 @@ public struct SettingsAndShortcutsGuideView: View {
     private var ledgerManagementSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("📒 全部账本 (\(store.ledgers.count))")
+                Text("全部账本 (\(store.ledgers.count))")
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
@@ -1003,8 +1003,10 @@ public struct SettingsAndShortcutsGuideView: View {
             ForEach(store.ledgers) { ledger in
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        Text("📒")
-                            .font(.system(size: 20))
+                        Image(systemName: "book.closed.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(MimiTheme.vipGold)
+                            .frame(width: 28)
                         VStack(alignment: .leading, spacing: 2) {
                             HStack {
                                 Text(ledger.name)
@@ -1270,7 +1272,7 @@ public struct SettingsAndShortcutsGuideView: View {
     private var scheduledBookkeepingSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("⏰ 定时记账与周期固定收支")
+                Text("定时记账与周期固定收支")
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
@@ -1349,7 +1351,7 @@ public struct SettingsAndShortcutsGuideView: View {
                             store.executeScheduledTransactionNow(id: item.id)
                             statusBannerMessage = "已立即执行并记入账本: \(item.title) \(MimiTheme.formatRM(item.amount))"
                         } label: {
-                            Text("⚡ 立即入账一次")
+                            Text("立即入账一次")
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(MimiTheme.expenseBlue)
                                 .padding(.horizontal, 10)
@@ -1476,7 +1478,7 @@ public struct SettingsAndShortcutsGuideView: View {
 
     private var widgetsShowcaseSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("🧩 iOS 桌面与锁屏小组件")
+            Text("iOS 桌面与锁屏小组件")
                 .font(.system(size: 16, weight: .bold))
                 .foregroundColor(MimiTheme.textPrimary)
 
@@ -1560,7 +1562,7 @@ public struct SettingsAndShortcutsGuideView: View {
 
     private var generalSettingsSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("⚙️ 通用与偏好设置")
+            Text("通用与偏好设置")
                 .font(.system(size: 16, weight: .bold))
                 .foregroundColor(MimiTheme.textPrimary)
 
