@@ -60,7 +60,6 @@ public struct SideDrawerMenuView: View {
                         heatmapCard
                         moreFeaturesCard
                         quickBookkeepingCard
-                        footerListCard
                     }
                     .padding(MimiTheme.drawerContentPadding)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -73,51 +72,58 @@ public struct SideDrawerMenuView: View {
         .ignoresSafeArea()
     }
 
-    // MARK: - Profile (gold D0)
+    // MARK: - Profile + 设置图标（去掉底部设置/问卷行）
 
     private var profileRow: some View {
-        Button {
-            onSelectDestination(.settings)
-        } label: {
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(Color(hex: 0xFFE8CC))
-                        .frame(width: MimiTheme.drawerAvatarSize, height: MimiTheme.drawerAvatarSize)
-                    Text("🐱")
-                        .font(.system(size: 26))
-                }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Text(store.userNickname)
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(MimiTheme.textPrimary)
-                        Text("Pro")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Capsule().fill(MimiTheme.proBadgeBlue))
-                    }
-                    HStack(spacing: 4) {
-                        Image(systemName: "crown.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(MimiTheme.vipGold)
-                        Text("VIP")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(MimiTheme.vipGold)
-                    }
-                }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(MimiTheme.textMuted)
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color(hex: 0xFFE8CC))
+                    .frame(width: MimiTheme.drawerAvatarSize, height: MimiTheme.drawerAvatarSize)
+                Text(String(store.userNickname.prefix(1)).uppercased())
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .foregroundColor(Color(hex: 0xC47A2C))
             }
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(store.userNickname)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(MimiTheme.textPrimary)
+                    Text("Pro")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Capsule().fill(MimiTheme.proBadgeBlue))
+                }
+                HStack(spacing: 4) {
+                    Image(systemName: "crown.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(MimiTheme.vipGold)
+                    Text("VIP")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(MimiTheme.vipGold)
+                }
+            }
+
+            Spacer()
+
+            Button {
+                onSelectDestination(.settings)
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(MimiTheme.textPrimary)
+                    .frame(width: 40, height: 40)
+                    .background(
+                        Circle()
+                            .fill(Color(hex: 0xF0F2F6))
+                    )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("设置")
         }
-        .buttonStyle(.plain)
         .padding(.top, 12)
     }
 
@@ -221,30 +227,12 @@ public struct SideDrawerMenuView: View {
                 .foregroundColor(MimiTheme.textSecondary)
 
             LazyVGrid(columns: threeColumnGrid, spacing: 16) {
-                drawerGridButton(systemName: "square.and.arrow.up", title: "导入导出", dest: .importExport)
                 drawerGridButton(systemName: "doc.text", title: "自动记账", dest: .autoBookkeeping)
                 drawerGridButton(systemName: "clock.arrow.circlepath", title: "定时记账", dest: .scheduledBookkeeping)
+                drawerGridButton(systemName: "square.and.arrow.up", title: "导入导出", dest: .importExport)
             }
         }
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius, style: .continuous)
-                .fill(Color.white)
-        )
-    }
-
-    // MARK: - Footer list
-
-    private var footerListCard: some View {
-        VStack(spacing: 0) {
-            drawerListRow(systemName: "gearshape", title: "设置") {
-                onSelectDestination(.settings)
-            }
-            Divider().padding(.leading, 44)
-            drawerListRow(systemName: "newspaper", title: "填问卷参与共建") {
-                onClose()
-            }
-        }
         .background(
             RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius, style: .continuous)
                 .fill(Color.white)
@@ -301,25 +289,4 @@ public struct SideDrawerMenuView: View {
         .buttonStyle(.plain)
     }
 
-    private func drawerListRow(systemName: String, title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: systemName)
-                    .font(.system(size: 18))
-                    .foregroundColor(MimiTheme.textPrimary)
-                    .frame(width: 28)
-                Text(title)
-                    .font(.system(size: 15))
-                    .foregroundColor(MimiTheme.textPrimary)
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(MimiTheme.textMuted)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
 }
