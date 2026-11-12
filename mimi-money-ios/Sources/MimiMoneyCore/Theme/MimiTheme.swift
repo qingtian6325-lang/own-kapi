@@ -30,6 +30,38 @@ public enum MimiTheme {
     public static var textMuted: Color { Color(hex: textMutedHex) }
     public static var pillGray: Color { Color(hex: pillGrayHex) }
 
+    // MARK: - Home layout tokens (gold screenshot A)
+    public static let homeHorizontalPadding: CGFloat = 16
+    public static let homeCardSpacing: CGFloat = 14
+    public static let cardCornerRadius: CGFloat = 18
+    public static let askBarHeight: CGFloat = 50
+    public static let askBarCornerRadius: CGFloat = 25
+    public static let transactionRowIconSize: CGFloat = 38
+    public static let progressBarHeight: CGFloat = 18
+    public static let dailyRingSize: CGFloat = 72
+
+    public static var homeCardShadow: Color { Color.black.opacity(0.06) }
+    public static let homeCardShadowRadius: CGFloat = 10
+    public static let homeCardShadowY: CGFloat = 3
+
+    // MARK: - Drawer layout tokens (gold screenshot D0)
+    public static let drawerWidthFraction: CGFloat = 0.82
+    public static let drawerContentPadding: CGFloat = 18
+    public static let drawerSectionSpacing: CGFloat = 18
+    public static let drawerGridIconSize: CGFloat = 48
+    public static let drawerGridIconCorner: CGFloat = 14
+    public static let drawerAvatarSize: CGFloat = 48
+    public static let drawerHeatmapCellHeight: CGFloat = 22
+    public static let proBadgeBlueHex: UInt32 = 0x2D5AF0
+    public static let vipGoldHex: UInt32 = 0xE6A23C
+    public static var proBadgeBlue: Color { Color(hex: proBadgeBlueHex) }
+    public static var vipGold: Color { Color(hex: vipGoldHex) }
+
+    // MARK: - Calendar layout tokens (gold C0)
+    public static let calendarHorizontalPadding: CGFloat = 16
+    public static let calendarDayCellHeight: CGFloat = 52
+    public static let calendarCardCorner: CGFloat = 18
+
     public static func formatRM(_ value: Double) -> String {
         formatAmount(value, currency: .myr, signed: false)
     }

@@ -19,6 +19,12 @@ public struct HomeRecordView: View {
     @State private var isNetWorthExpanded: Bool = true
     @State private var showPageSwitcherMenu: Bool = false
     @State private var showLedgerSwitcherSheet: Bool = false
+    @State private var showDeleteToast: Bool = false
+    @State private var revealedDeleteID: UUID? = nil
+    @State private var pendingDeleteID: UUID? = nil
+    @State private var showDeleteConfirm: Bool = false
+    @State private var deleteToastToken: UUID = UUID()
+    @State private var rowSwipeConsumedTap: Bool = false
 
     public init(
         store: MimiStore,
@@ -75,47 +81,77 @@ public struct HomeRecordView: View {
     }
 
     public var body: some View {
-        ZStack(alignment: .bottom) {
-            MimiTheme.background
-                .ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                topNavigationBar
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                    .padding(.bottom, 10)
-
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 14) {
-                        monthlyBudgetCard
-                        netWorthSummaryCard
-                        transactionFeedSection
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 110)
+        ZStack {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: MimiTheme.homeCardSpacing) {
+                    monthlyBudgetCard
+                    netWorthSummaryCard
+                    transactionFeedSection
                 }
+                .padding(.horizontal, MimiTheme.homeHorizontalPadding)
+                .padding(.bottom, 24)
+            }
+            .safeAreaInset(edge: .top, spacing: 0) {
+                topNavigationBar
+                    .padding(.horizontal, MimiTheme.homeHorizontalPadding)
+                    .padding(.top, 6)
+                    .padding(.bottom, 10)
+                    .frame(maxWidth: .infinity)
+                    .background(MimiTheme.background)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                floatingBottomBar
+                    .padding(.horizontal, MimiTheme.homeHorizontalPadding)
+                    .padding(.top, 8)
+                    .padding(.bottom, 8)
+                    .frame(maxWidth: .infinity)
+                    .background(MimiTheme.background.opacity(0.001))
             }
 
-            floatingBottomBar
-                .padding(.horizontal, 16)
-                .padding(.bottom, 12)
+            if showDeleteToast {
+                Text("删除成功")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 12)
+                    .background(Capsule().fill(Color.black.opacity(0.72)))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .transition(.opacity)
+                    .zIndex(20)
+                    .allowsHitTesting(false)
+            }
         }
+        .background(MimiTheme.background.ignoresSafeArea())
         .sheet(isPresented: $showLedgerSwitcherSheet) {
             ledgerPickerSheet
                 .presentationDetents([.height(260)])
         }
+        .alert("确认删除这笔账单？", isPresented: $showDeleteConfirm) {
+            Button("取消", role: .cancel) {
+                pendingDeleteID = nil
+            }
+            Button("删除", role: .destructive) {
+                if let id = pendingDeleteID {
+                    deleteTransactionShowingToast(id)
+                }
+                pendingDeleteID = nil
+            }
+        } message: {
+            Text("删除后无法恢复")
+        }
     }
 
-    // MARK: - Top Navigation Bar (IMG_2240)
+    // MARK: - Top Navigation Bar (gold A)
 
     private var topNavigationBar: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             Button(action: onOpenDrawer) {
                 Image(systemName: "line.3.horizontal")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(MimiTheme.textPrimary)
-                    .frame(width: 34, height: 34)
+                    .frame(width: 32, height: 36)
             }
+            .buttonStyle(.plain)
 
             Menu {
                 Button {
@@ -138,354 +174,412 @@ public struct HomeRecordView: View {
                         .foregroundColor(MimiTheme.textSecondary)
                 }
             }
-
-            Button(action: onOpenSearchOrCalendar) {
-                HStack(spacing: 3) {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(MimiTheme.expenseBlue)
-                    Text("2026年11月")
-                        .font(.system(size: 12, weight: .bold))
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundColor(MimiTheme.textMuted)
-                }
-                .foregroundColor(MimiTheme.textPrimary)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 5)
-                .background(Capsule().fill(Color.white))
-            }
             .buttonStyle(.plain)
 
-            Spacer()
+            Spacer(minLength: 8)
 
             Button(action: onOpenSearchOrCalendar) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(MimiTheme.textPrimary)
-                    .frame(width: 34, height: 34)
+                    .frame(width: 36, height: 36)
                     .background(Circle().fill(Color.white))
             }
+            .buttonStyle(.plain)
 
             Button {
                 showLedgerSwitcherSheet = true
             } label: {
-                HStack(spacing: 5) {
+                HStack(spacing: 4) {
                     Text(store.currentLedgerName)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(MimiTheme.textPrimary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .frame(maxWidth: 64, alignment: .leading)
                     Image(systemName: "chevron.down")
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(MimiTheme.textSecondary)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 7)
+                .padding(.leading, 12)
+                .padding(.trailing, 10)
+                .padding(.vertical, 8)
                 .background(Capsule().fill(Color.white))
             }
+            .buttonStyle(.plain)
         }
     }
 
-    // MARK: - Monthly Budget Card (IMG_2240 & IMG_2241)
+    // MARK: - Monthly Budget Card (gold A)
 
     private var monthlyBudgetCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 14) {
+                Button(action: onOpenSearchOrCalendar) {
+                    HStack(spacing: 4) {
+                        Text("\(currentYear)年\(currentMonth)月")
+                            .font(.system(size: 15, weight: .semibold))
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 11, weight: .bold))
+                    }
+                    .foregroundColor(MimiTheme.textPrimary)
+                }
+                .buttonStyle(.plain)
+
+                Button(action: onSwitchToStats) {
+                    HStack(spacing: 2) {
+                        Text("统计")
+                            .font(.system(size: 15, weight: .semibold))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .bold))
+                    }
+                    .foregroundColor(MimiTheme.expenseBlue)
+                }
+                .buttonStyle(.plain)
+
+                Spacer(minLength: 8)
+            }
+
+            HStack(alignment: .center, spacing: 10) {
+                VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 6) {
+                        RoundedRectangle(cornerRadius: 1.5)
+                            .fill(MimiTheme.expenseBlue)
+                            .frame(width: 3, height: 12)
                         Text("月预算剩余")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(MimiTheme.textSecondary)
+                    }
+
+                    HStack(alignment: .center, spacing: 6) {
+                        Button(action: onOpenBudgetManager) {
+                            Text(isAmountsHidden ? "RM****" : MimiTheme.formatRM(monthlyRemaining))
+                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .foregroundColor(MimiTheme.textPrimary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                        }
+                        .buttonStyle(.plain)
+
                         Button {
                             isAmountsHidden.toggle()
                         } label: {
                             Image(systemName: isAmountsHidden ? "eye.slash" : "eye")
-                                .font(.system(size: 12))
+                                .font(.system(size: 14, weight: .regular))
                                 .foregroundColor(MimiTheme.textMuted)
                         }
+                        .buttonStyle(.plain)
                     }
 
-                    Button(action: onOpenBudgetManager) {
-                        HStack(alignment: .firstTextBaseline, spacing: 4) {
-                            Text(isAmountsHidden ? "RM****" : MimiTheme.formatRM(monthlyRemaining))
-                                .font(.system(size: 27, weight: .bold, design: .rounded))
-                                .foregroundColor(MimiTheme.textPrimary)
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(MimiTheme.textMuted)
-                        }
-                    }
-                    .buttonStyle(.plain)
+                    budgetProgressBar
 
-                    // Horizontal progress bar with percentage (39%)
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            Capsule()
-                                .fill(Color(hex: 0xEEF0F6))
-                                .frame(height: 18)
-
-                            Capsule()
-                                .fill(MimiTheme.expenseBlue)
-                                .frame(width: max(36, geo.size.width * CGFloat(spentRatio)), height: 18)
-
-                            Text("\(spentPercentInt)%")
-                                .font(.system(size: 10, weight: .bold, design: .rounded))
-                                .foregroundColor(.white)
-                                .padding(.leading, 8)
-                        }
-                    }
-                    .frame(height: 18)
-                    .padding(.top, 2)
-
-                    HStack(spacing: 14) {
-                        HStack(spacing: 4) {
-                            Circle()
-                                .fill(MimiTheme.expenseBlue)
-                                .frame(width: 6, height: 6)
-                            Text("总支出 \(isAmountsHidden ? "****" : MimiTheme.formatRM(monthlySpent))")
-                                .font(.system(size: 11))
-                                .foregroundColor(MimiTheme.textSecondary)
-                        }
-
-                        HStack(spacing: 4) {
-                            Circle()
-                                .fill(MimiTheme.incomeOrange)
-                                .frame(width: 6, height: 6)
-                            Text("总收入 \(isAmountsHidden ? "****" : MimiTheme.formatRM(store.monthlyIncomeTotal(year: currentYear, month: currentMonth)))")
-                                .font(.system(size: 11))
-                                .foregroundColor(MimiTheme.textSecondary)
-                        }
-                    }
-                    .padding(.top, 2)
-                }
-
-                Spacer(minLength: 16)
-
-                // Right circular ring chart: 今日可用 92.26
-                Button(action: onOpenBudgetManager) {
-                    ZStack {
-                        Circle()
-                            .stroke(Color(hex: 0xEEF0F6), lineWidth: 9)
-                            .frame(width: 92, height: 92)
-
-                        Circle()
-                            .trim(from: 0, to: 0.72)
-                            .stroke(
-                                AngularGradient(
-                                    colors: [MimiTheme.expenseBlue, Color(hex: 0x5B86F7), MimiTheme.incomeOrange],
-                                    center: .center
-                                ),
-                                style: StrokeStyle(lineWidth: 9, lineCap: .round)
-                            )
-                            .rotationEffect(.degrees(-90))
-                            .frame(width: 92, height: 92)
-
-                        VStack(spacing: 2) {
-                            Text("今日可用")
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundColor(MimiTheme.textSecondary)
-                            Text(isAmountsHidden ? "****" : String(format: "%.2f", dailyAvailable))
-                                .font(.system(size: 15, weight: .bold, design: .rounded))
-                                .foregroundColor(MimiTheme.textPrimary)
-                        }
+                    HStack(spacing: 8) {
+                        Text(isAmountsHidden ? "已用****" : "已用\(MimiTheme.formatRM(monthlySpent))")
+                            .font(.system(size: 12))
+                            .foregroundColor(MimiTheme.textSecondary)
+                            .lineLimit(1)
+                        Spacer(minLength: 8)
+                        Text(isAmountsHidden ? "RM****" : MimiTheme.formatRM(store.monthlyBudgetTotal))
+                            .font(.system(size: 12))
+                            .foregroundColor(MimiTheme.textSecondary)
+                            .lineLimit(1)
                     }
                 }
-                .buttonStyle(.plain)
+
+                dailyAvailableRing
             }
 
-            Divider()
-                .background(MimiTheme.divider)
+            categoryBudgetSection
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius, style: .continuous))
+        .shadow(
+            color: MimiTheme.homeCardShadow,
+            radius: MimiTheme.homeCardShadowRadius,
+            x: 0,
+            y: MimiTheme.homeCardShadowY
+        )
+        .overlay(alignment: .topTrailing) {
+            incomeExpensePill
+                .padding(.trailing, 12)
+                .offset(y: -12)
+        }
+        .padding(.top, 14)
+    }
 
-            // Expandable Category Budget Bar (分类预算 共6项)
-            VStack(spacing: 10) {
-                Button {
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
-                        isCategoryBudgetExpanded.toggle()
-                    }
-                } label: {
-                    HStack {
-                        Text("分类预算")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(MimiTheme.textPrimary)
-                        Text("共\(store.categoryBudgets.count)项")
-                            .font(.system(size: 12))
-                            .foregroundColor(MimiTheme.textMuted)
-                        Spacer()
-                        Image(systemName: isCategoryBudgetExpanded ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(MimiTheme.textMuted)
+    /// Sits on the card's top-right corner, matching gold A. Opens the same calendar/search surface as the month chip.
+    private var incomeExpensePill: some View {
+        Button(action: onOpenSearchOrCalendar) {
+            HStack(spacing: 3) {
+                Image(systemName: "arrow.left.arrow.right")
+                    .font(.system(size: 11, weight: .semibold))
+                Text("收支")
+                    .font(.system(size: 13, weight: .medium))
+            }
+            .foregroundColor(MimiTheme.textSecondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Capsule().fill(Color.white))
+            .overlay(Capsule().stroke(Color(hex: 0xE5E7EB), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var budgetProgressBar: some View {
+        GeometryReader { geo in
+            let width = geo.size.width
+            let trackHeight: CGFloat = 5
+            let fillWidth = min(width, max(trackHeight, width * CGFloat(spentRatio)))
+            let badgeWidth: CGFloat = 36
+            let badgeX = min(max(0, fillWidth - badgeWidth / 2), max(0, width - badgeWidth))
+            ZStack(alignment: .topLeading) {
+                VStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(Color(hex: 0xE7EAF2))
+                            .frame(height: trackHeight)
+                        Capsule()
+                            .fill(MimiTheme.expenseBlue)
+                            .frame(width: fillWidth, height: trackHeight)
                     }
                 }
-                .buttonStyle(.plain)
+                Text("\(spentPercentInt)%")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundColor(MimiTheme.expenseBlue)
+                    .frame(width: badgeWidth, height: 16)
+                    .background(Capsule().fill(Color(hex: 0xE8EEFF)))
+                    .offset(x: badgeX, y: 0)
+            }
+        }
+        .frame(height: MimiTheme.progressBarHeight)
+    }
 
-                if isCategoryBudgetExpanded {
-                    VStack(spacing: 10) {
-                        ForEach(store.categoryBudgets) { item in
-                            let spent = store.categorySpent(for: item.categoryName, year: currentYear, month: currentMonth)
-                            let rem = item.monthlyLimit - spent
-                            let ratio = item.monthlyLimit > 0 ? min(1.0, spent / item.monthlyLimit) : 0
-                            HStack(spacing: 10) {
-                                MimiStickerIconView(
-                                    iconName: item.iconName,
-                                    categoryName: item.categoryName,
-                                    transactionType: .expense,
-                                    useFirstCharIcon: item.useFirstCharIcon,
-                                    size: 30
-                                )
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack {
-                                        Text(item.categoryName)
-                                            .font(.system(size: 13, weight: .medium))
-                                            .foregroundColor(MimiTheme.textPrimary)
-                                        Spacer()
-                                        Text(rem >= 0 ? "剩余 \(MimiTheme.formatRM(rem))" : "超支 \(MimiTheme.formatRM(abs(rem)))")
-                                            .font(.system(size: 12, weight: .semibold, design: .rounded))
-                                            .foregroundColor(rem >= 0 ? MimiTheme.textSecondary : MimiTheme.dangerRed)
-                                    }
-                                    GeometryReader { barGeo in
-                                        ZStack(alignment: .leading) {
-                                            Capsule()
-                                                .fill(Color(hex: 0xF0F2F7))
-                                                .frame(height: 6)
-                                            Capsule()
-                                                .fill(rem >= 0 ? MimiTheme.expenseBlue : MimiTheme.dangerRed)
-                                                .frame(width: barGeo.size.width * CGFloat(ratio), height: 6)
-                                        }
-                                    }
-                                    .frame(height: 6)
+    private var dailyAvailableRing: some View {
+        Button(action: onOpenBudgetManager) {
+            ZStack {
+                Circle()
+                    .stroke(Color(hex: 0xEEF0F6), lineWidth: 8)
+                    .frame(width: MimiTheme.dailyRingSize, height: MimiTheme.dailyRingSize)
+
+                Circle()
+                    .trim(from: 0, to: 0.92)
+                    .stroke(
+                        AngularGradient(
+                            colors: [
+                                Color(hex: 0x4C6FFF),
+                                Color(hex: 0xF0A04B),
+                                Color(hex: 0x3DDC97),
+                                Color(hex: 0xE85AD8),
+                                Color(hex: 0x7A6CFF),
+                                Color(hex: 0x4C6FFF)
+                            ],
+                            center: .center
+                        ),
+                        style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                    )
+                    .rotationEffect(.degrees(-90))
+                    .frame(width: MimiTheme.dailyRingSize, height: MimiTheme.dailyRingSize)
+
+                VStack(spacing: 1) {
+                    Text("今日可用")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundColor(MimiTheme.textSecondary)
+                    Text(isAmountsHidden ? "****" : String(format: "%.2f", dailyAvailable))
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .foregroundColor(MimiTheme.textPrimary)
+                        .minimumScaleFactor(0.6)
+                        .lineLimit(1)
+                }
+                .padding(.horizontal, 8)
+            }
+        }
+        .buttonStyle(.plain)
+        .fixedSize()
+    }
+
+    private var categoryBudgetSection: some View {
+        VStack(spacing: 10) {
+            Button {
+                withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                    isCategoryBudgetExpanded.toggle()
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    ZStack {
+                        Circle()
+                            .stroke(Color(hex: 0xD9E2FF), lineWidth: 3)
+                            .frame(width: 16, height: 16)
+                        Circle()
+                            .trim(from: 0.08, to: 0.42)
+                            .stroke(Color(hex: 0x7B93F7), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                            .frame(width: 16, height: 16)
+                            .rotationEffect(.degrees(-20))
+                    }
+                    .frame(width: 22, height: 22)
+                    HStack(spacing: 6) {
+                        Text("分类预算")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(MimiTheme.textPrimary)
+                        Text("共\(store.categoryBudgets.count)项")
+                            .font(.system(size: 13))
+                            .foregroundColor(MimiTheme.textMuted)
+                    }
+                    Spacer(minLength: 8)
+                    HStack(spacing: 2) {
+                        Text(isCategoryBudgetExpanded ? "收起" : "展开")
+                            .font(.system(size: 13, weight: .medium))
+                        Image(systemName: isCategoryBudgetExpanded ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 11, weight: .semibold))
+                    }
+                    .foregroundColor(MimiTheme.expenseBlue)
+                }
+            }
+            .buttonStyle(.plain)
+
+            if isCategoryBudgetExpanded {
+                VStack(spacing: 10) {
+                    ForEach(store.categoryBudgets) { item in
+                        let spent = store.categorySpent(for: item.categoryName, year: currentYear, month: currentMonth)
+                        let rem = item.monthlyLimit - spent
+                        let ratio = item.monthlyLimit > 0 ? min(1.0, spent / item.monthlyLimit) : 0
+                        let remLabel: String = {
+                            if isAmountsHidden {
+                                return rem >= 0 ? "剩余 ****" : "超支 ****"
+                            }
+                            return rem >= 0
+                                ? "剩余 \(MimiTheme.formatRM(rem))"
+                                : "超支 \(MimiTheme.formatRM(abs(rem)))"
+                        }()
+                        HStack(spacing: 10) {
+                            MimiStickerIconView(
+                                iconName: item.iconName,
+                                categoryName: item.categoryName,
+                                transactionType: .expense,
+                                useFirstCharIcon: item.useFirstCharIcon,
+                                size: 30
+                            )
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    Text(item.categoryName)
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundColor(MimiTheme.textPrimary)
+                                    Spacer()
+                                    Text(remLabel)
+                                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                        .foregroundColor(rem >= 0 ? MimiTheme.textSecondary : MimiTheme.dangerRed)
                                 }
+                                GeometryReader { barGeo in
+                                    ZStack(alignment: .leading) {
+                                        Capsule()
+                                            .fill(Color(hex: 0xF0F2F7))
+                                            .frame(height: 6)
+                                        Capsule()
+                                            .fill(rem >= 0 ? MimiTheme.expenseBlue : MimiTheme.dangerRed)
+                                            .frame(width: barGeo.size.width * CGFloat(ratio), height: 6)
+                                    }
+                                }
+                                .frame(height: 6)
                             }
                         }
                     }
-                    .padding(.top, 4)
+                }
+                .padding(.top, 4)
+            }
+        }
+    }
+
+    // MARK: - Net Worth Card (gold A)
+
+    private var netWorthSummaryCard: some View {
+        VStack(spacing: 2) {
+            HStack(alignment: .center, spacing: 8) {
+                Button(action: onOpenAssetsManager) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("净资产")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(MimiTheme.textSecondary)
+                        Text(isAmountsHidden ? "RM****" : MimiTheme.formatRM(store.netWorth))
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .foregroundColor(MimiTheme.textPrimary)
+                    }
+                }
+                .buttonStyle(.plain)
+
+                Spacer(minLength: 8)
+
+                if isNetWorthExpanded {
+                    Button {
+                        toggleNetWorthExpanded()
+                    } label: {
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text("30天趋势")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(MimiTheme.expenseBlue)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(Capsule().fill(Color.white.opacity(0.92)))
+                            HomeNetWorthSparkline()
+                                .frame(width: 124, height: 32)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .transition(.opacity.combined(with: .move(edge: .trailing)))
                 }
             }
 
-            Divider()
-                .background(MimiTheme.divider)
-
-            Button(action: onOpenSearchOrCalendar) {
-                HStack(spacing: 8) {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(MimiTheme.expenseBlue)
-                    Text("全部记录 · 日历收支热力图 (IMG_2250)")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(MimiTheme.textPrimary)
-                    Spacer()
-                    HStack(spacing: 3) {
-                        RoundedRectangle(cornerRadius: 2).fill(Color(hex: 0xFFD8B5)).frame(width: 8, height: 8)
-                        RoundedRectangle(cornerRadius: 2).fill(Color(hex: 0xC3D7FD)).frame(width: 8, height: 8)
-                        Text("进入")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(MimiTheme.textSecondary)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(MimiTheme.textMuted)
-                    }
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F7FB)))
+            Button {
+                toggleNetWorthExpanded()
+            } label: {
+                Image(systemName: isNetWorthExpanded ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(MimiTheme.textMuted.opacity(0.85))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 2)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }
-        .padding(16)
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+        .padding(.bottom, 6)
         .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color.white)
+            RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius, style: .continuous)
+                .fill(MimiTheme.netWorthCard)
         )
     }
 
-    // MARK: - Net Worth Card (IMG_2240 & IMG_2241)
-
-    private var netWorthSummaryCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Button(action: onOpenAssetsManager) {
-                    HStack(spacing: 6) {
-                        Text("净资产")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(MimiTheme.textSecondary)
-                        Text(isAmountsHidden ? "RM****" : MimiTheme.formatRM(store.netWorth))
-                            .font(.system(size: 18, weight: .bold, design: .rounded))
-                            .foregroundColor(MimiTheme.textPrimary)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(MimiTheme.textMuted)
-                    }
-                }
-                .buttonStyle(.plain)
-
-                Spacer()
-
-                Button {
-                    withAnimation(.easeInOut(duration: 0.22)) {
-                        isNetWorthExpanded.toggle()
-                    }
-                } label: {
-                    HStack(spacing: 4) {
-                        Text("30天趋势")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(MimiTheme.expenseBlue)
-                        Image(systemName: isNetWorthExpanded ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(MimiTheme.expenseBlue)
-                    }
-                }
-                .buttonStyle(.plain)
-            }
-
-            if isNetWorthExpanded {
-                HStack(alignment: .bottom) {
-                    HStack(spacing: 14) {
-                        Text("总资产 \(isAmountsHidden ? "****" : MimiTheme.formatRM(store.totalAssets))")
-                            .font(.system(size: 12))
-                            .foregroundColor(MimiTheme.textSecondary)
-                        Text("总负债 \(isAmountsHidden ? "****" : MimiTheme.formatRM(store.totalLiabilities))")
-                            .font(.system(size: 12))
-                            .foregroundColor(MimiTheme.textSecondary)
-                    }
-
-                    Spacer()
-
-                    // Mini 30-day sparkline
-                    HStack(alignment: .bottom, spacing: 4) {
-                        ForEach([0.38, 0.45, 0.42, 0.56, 0.62, 0.58, 0.78, 0.92], id: \.self) { level in
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(MimiTheme.expenseBlue.opacity(0.65))
-                                .frame(width: 5, height: CGFloat(level * 26))
-                        }
-                    }
-                }
-            }
+    private func toggleNetWorthExpanded() {
+        withAnimation(.easeInOut(duration: 0.22)) {
+            isNetWorthExpanded.toggle()
         }
-        .padding(15)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color(hex: 0xEAF1FF))
-        )
     }
 
-    // MARK: - Daily Grouped Transaction Feed (IMG_2240)
+    // MARK: - Daily Grouped Transaction Feed (gold C/D)
 
     private var transactionFeedSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("记录明细")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(MimiTheme.textPrimary)
-                Spacer()
+            HStack(spacing: 8) {
                 Button(action: onOpenSearchOrCalendar) {
-                    HStack(spacing: 3) {
-                        Text("全部记录")
-                            .font(.system(size: 12, weight: .medium))
+                    HStack(spacing: 2) {
+                        Text("记录明细")
+                            .font(.system(size: 16, weight: .bold))
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.system(size: 12, weight: .bold))
+                            .padding(.top, 1)
                     }
-                    .foregroundColor(MimiTheme.textSecondary)
+                    .foregroundColor(MimiTheme.textPrimary)
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel("记录明细")
+
+                Spacer(minLength: 8)
+
+                FeedBillMarkButton(action: onOpenSearchOrCalendar)
             }
-            .padding(.top, 4)
+            .padding(.top, 2)
 
             let groups = store.groupedTransactionsByDay()
             if groups.isEmpty {
@@ -498,7 +592,7 @@ public struct HomeRecordView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 32)
-                .background(RoundedRectangle(cornerRadius: 18).fill(Color.white))
+                .background(RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius).fill(MimiTheme.cardBackground))
             } else {
                 ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
                     dayTransactionGroupCard(date: group.date, items: group.items)
@@ -507,96 +601,253 @@ public struct HomeRecordView: View {
         }
     }
 
+    /// 往右滑：删除图标出现在行左侧；点图标 → 确认弹窗 → 确认才删。
     private func dayTransactionGroupCard(date: Date, items: [TransactionItem]) -> some View {
+        let openID = items.first { $0.id == revealedDeleteID }?.id
+        let gutter: CGFloat = openID == nil ? 0 : FeedDeleteChrome.gap + FeedDeleteChrome.side
+        let cardRadius = MimiTheme.cardCornerRadius
+
+        return VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                if gutter > 0 {
+                    Color.clear.frame(width: gutter)
+                }
+                dayFeedHeader(date: date, items: items)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .clipShape(feedCardEndClip(radius: cardRadius, top: true))
+            }
+
+            ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                let isLast = index == items.count - 1
+                HStack(alignment: .center, spacing: gutter > 0 ? FeedDeleteChrome.gap : 0) {
+                    if gutter > 0 {
+                        ZStack {
+                            if item.id == openID {
+                                deleteTrashButton(id: item.id)
+                                    .transition(.scale.combined(with: .opacity))
+                            }
+                        }
+                        .frame(width: FeedDeleteChrome.side, height: FeedDeleteChrome.side)
+                    }
+
+                    feedRowButton(item, showsDivider: !isLast)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .clipShape(feedCardEndClip(radius: cardRadius, bottom: isLast))
+                }
+            }
+        }
+        .background(alignment: .trailing) {
+            HStack(spacing: 0) {
+                if gutter > 0 {
+                    Color.clear.frame(width: gutter)
+                }
+                RoundedRectangle(cornerRadius: cardRadius, style: .continuous)
+                    .fill(MimiTheme.cardBackground)
+            }
+        }
+        .animation(.spring(response: 0.28, dampingFraction: 0.86), value: revealedDeleteID)
+    }
+
+    private func feedCardEndClip(radius: CGFloat, top: Bool = false, bottom: Bool = false) -> UnevenRoundedRectangle {
+        UnevenRoundedRectangle(
+            topLeadingRadius: top ? radius : 0,
+            bottomLeadingRadius: bottom ? radius : 0,
+            bottomTrailingRadius: bottom ? radius : 0,
+            topTrailingRadius: top ? radius : 0,
+            style: .continuous
+        )
+    }
+
+    private func dayFeedHeader(date: Date, items: [TransactionItem]) -> some View {
         let dayExpense = items.filter { $0.type == .expense }.reduce(0.0) { $0 + $1.amount }
         let dayIncome = items.filter { $0.type == .income }.reduce(0.0) { $0 + $1.amount }
 
-        return VStack(spacing: 0) {
-            HStack {
-                Text(formatDayHeader(date))
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(MimiTheme.textSecondary)
-                Spacer()
-                HStack(spacing: 10) {
-                    if dayExpense > 0 {
-                        Text("支 \(MimiTheme.formatRM(dayExpense))")
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
-                            .foregroundColor(MimiTheme.textSecondary)
+        return HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(formatDayHeader(date))
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(MimiTheme.textPrimary)
+            Spacer(minLength: 8)
+            Text("支 \(MimiTheme.formatRM(dayExpense)) | 收 \(MimiTheme.formatRM(dayIncome))")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(MimiTheme.textSecondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(Color(hex: 0xF8F9FC))
+    }
+
+    private func feedRowButton(_ item: TransactionItem, showsDivider: Bool) -> some View {
+        let revealed = revealedDeleteID == item.id
+        return Button {
+            if rowSwipeConsumedTap {
+                rowSwipeConsumedTap = false
+                return
+            }
+            if revealedDeleteID != nil {
+                dismissRevealedDelete()
+                return
+            }
+            onSelectTransaction(item)
+        } label: {
+            HStack(alignment: .center, spacing: 12) {
+                if !revealed {
+                    MimiStickerIconView(
+                        iconName: item.iconName,
+                        categoryName: item.categoryPath,
+                        transactionType: item.type,
+                        size: MimiTheme.transactionRowIconSize
+                    )
+                }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(transactionTitle(item))
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(MimiTheme.textPrimary)
+                            .lineLimit(1)
+                        Spacer(minLength: 8)
+                        Text(signedAmountText(item))
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .foregroundColor(item.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange)
+                            .lineLimit(1)
+                            .layoutPriority(1)
                     }
-                    if dayIncome > 0 {
-                        Text("收 \(MimiTheme.formatRM(dayIncome))")
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
-                            .foregroundColor(MimiTheme.incomeOrange)
+
+                    Text(transactionMetaLine(item))
+                        .font(.system(size: 12))
+                        .foregroundColor(MimiTheme.textMuted)
+                        .lineLimit(1)
+
+                    if !item.accountName.isEmpty {
+                        Text(item.accountName)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(MimiTheme.textSecondary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Capsule().fill(MimiTheme.pillGray))
                     }
                 }
             }
             .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(Color(hex: 0xFAFBFD))
-
-            ForEach(items) { item in
-                Button {
-                    onSelectTransaction(item)
-                } label: {
-                    HStack(spacing: 12) {
-                        MimiStickerIconView(
-                            iconName: item.iconName,
-                            categoryName: item.categoryPath,
-                            transactionType: item.type,
-                            size: 38
-                        )
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(item.categoryPath)
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundColor(MimiTheme.textPrimary)
-
-                            HStack(spacing: 6) {
-                                Text(item.accountName)
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundColor(MimiTheme.textSecondary)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(Capsule().fill(Color(hex: 0xF2F4F8)))
-
-                                if !item.note.isEmpty {
-                                    Text(item.note)
-                                        .font(.system(size: 12))
-                                        .foregroundColor(MimiTheme.textMuted)
-                                        .lineLimit(1)
-                                }
-                            }
-                        }
-
-                        Spacer()
-
-                        Text(
-                            item.type == .expense
-                                ? "-\(MimiTheme.formatRM(item.amount))"
-                                : "+\(MimiTheme.formatRM(item.amount))"
-                        )
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
-                        .foregroundColor(
-                            item.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange
-                        )
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-
-                if item.id != items.last?.id {
-                    Divider()
-                        .padding(.leading, 64)
-                }
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(rowSwipeGesture(for: item.id))
+        .overlay(alignment: .bottom) {
+            if showsDivider {
+                Rectangle()
+                    .fill(MimiTheme.divider)
+                    .frame(height: 0.5)
+                    .padding(.leading, revealed ? 14 : 14 + MimiTheme.transactionRowIconSize + 12)
             }
         }
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+
+    private func deleteTrashButton(id: UUID) -> some View {
+        Button {
+            pendingDeleteID = id
+            showDeleteConfirm = true
+        } label: {
+            Image(systemName: "trash.fill")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: FeedDeleteChrome.side, height: FeedDeleteChrome.side)
+                .background(Circle().fill(MimiTheme.dangerRed))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("删除")
+    }
+
+    private func rowSwipeGesture(for id: UUID) -> some Gesture {
+        DragGesture(minimumDistance: 22, coordinateSpace: .local)
+            .onChanged { value in
+                let dx = value.translation.width
+                let dy = value.translation.height
+                if (dx * dx + dy * dy) > 324 {
+                    rowSwipeConsumedTap = true
+                }
+            }
+            .onEnded { value in
+                let dx = value.translation.width
+                let dy = value.translation.height
+                if (dx * dx + dy * dy) > 324 {
+                    rowSwipeConsumedTap = true
+                    Task { @MainActor in
+                        try? await Task.sleep(nanoseconds: 80_000_000)
+                        rowSwipeConsumedTap = false
+                    }
+                }
+                guard abs(dx) > abs(dy) else { return }
+                // 往右滑 → 露出左侧删除图标；往左滑 / 轻滑回去 → 收起。不直接删除。
+                if dx >= 48 {
+                    animateFeedChange { revealedDeleteID = id }
+                } else if dx <= -36 {
+                    dismissRevealedDelete()
+                }
+            }
+    }
+
+    private func deleteTransactionShowingToast(_ id: UUID) {
+        store.deleteTransaction(id: id)
+        let token = UUID()
+        deleteToastToken = token
+        animateFeedChange {
+            if revealedDeleteID == id {
+                revealedDeleteID = nil
+            }
+        }
+        withAnimation(.easeOut(duration: 0.2)) {
+            showDeleteToast = true
+        }
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            guard deleteToastToken == token else { return }
+            withAnimation(.easeIn(duration: 0.2)) {
+                showDeleteToast = false
+            }
+        }
+    }
+
+    private func dismissRevealedDelete() {
+        guard revealedDeleteID != nil else { return }
+        animateFeedChange { revealedDeleteID = nil }
+    }
+
+    private func animateFeedChange(_ updates: () -> Void) {
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.86), updates)
+    }
+
+    private func transactionTitle(_ item: TransactionItem) -> String {
+        let parts = item.categoryPath.split(separator: "-").map {
+            $0.trimmingCharacters(in: .whitespacesAndNewlines)
+        }.filter { !$0.isEmpty }
+        if let leaf = parts.last {
+            return String(leaf)
+        }
+        return item.categoryPath
+    }
+
+    private func signedAmountText(_ item: TransactionItem) -> String {
+        let formatted = MimiTheme.formatRM(item.amount)
+        return item.type == .expense ? "-\(formatted)" : "+\(formatted)"
+    }
+
+    private static let feedClockFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.dateFormat = "HH:mm"
+        return formatter
+    }()
+
+    private func transactionMetaLine(_ item: TransactionItem) -> String {
+        let clock = Self.feedClockFormatter.string(from: item.date)
+        let note = item.note.trimmingCharacters(in: .whitespacesAndNewlines)
+        if note.isEmpty { return clock }
+        return "\(clock) | \(note)"
     }
 
     private func formatDayHeader(_ date: Date) -> String {
@@ -609,32 +860,26 @@ public struct HomeRecordView: View {
         return "\(m)月\(d)日 (\(wName))"
     }
 
-    // MARK: - Floating Bottom Bar (🐱 任何事情都能问我 [＋/✕] + 展开面板)
+    // MARK: - Floating Bottom Bar (mascot + 任何事情都能问我 [＋/✕] + 展开面板)
 
     private var floatingBottomBar: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 0) {
             if isAskPanelExpanded {
-                AIAttachmentPanelView(
-                    onPickFromAlbum: {
+                Button {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
                         isAskPanelExpanded = false
-                        onPickFromAlbum()
-                    },
-                    onTakePhoto: {
-                        isAskPanelExpanded = false
-                        onTakePhoto()
-                    },
-                    onOpenImportExport: {
-                        isAskPanelExpanded = false
-                        onOpenImportExport()
                     }
-                )
-                .padding(12)
-                .background(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(Color.white)
-                        .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 4)
-                )
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
+                } label: {
+                    Image(systemName: "chevron.compact.up")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(Color(hex: 0xC5C8D0))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 18)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(.bottom, 6)
+                .transition(.opacity)
             }
 
             HStack(spacing: 8) {
@@ -642,12 +887,11 @@ public struct HomeRecordView: View {
                     onOpenRecordSheet(true)
                 } label: {
                     HStack(spacing: 8) {
-                        Text("🐱")
-                            .font(.system(size: 20))
+                        MimiAskMascotView(size: 32)
                         Text("任何事情都能问我")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: 15, weight: .medium))
                             .foregroundColor(MimiTheme.textSecondary)
-                        Spacer()
+                        Spacer(minLength: 0)
                     }
                     .contentShape(Rectangle())
                 }
@@ -659,25 +903,55 @@ public struct HomeRecordView: View {
                     }
                 } label: {
                     Image(systemName: isAskPanelExpanded ? "xmark" : "plus")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 34, height: 34)
+                        .font(.system(size: isAskPanelExpanded ? 15 : 16, weight: .bold))
+                        .foregroundColor(isAskPanelExpanded ? MimiTheme.textSecondary : .white)
+                        .frame(width: 32, height: 32)
                         .background(
                             Circle()
-                                .fill(MimiTheme.expenseBlue)
-                                .shadow(color: MimiTheme.expenseBlue.opacity(0.35), radius: 8, x: 0, y: 3)
+                                .fill(isAskPanelExpanded ? Color.clear : MimiTheme.expenseBlue)
+                                .shadow(
+                                    color: isAskPanelExpanded ? Color.clear : MimiTheme.expenseBlue.opacity(0.35),
+                                    radius: 8,
+                                    x: 0,
+                                    y: 3
+                                )
                         )
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.leading, 16)
+            .padding(.leading, 8)
             .padding(.trailing, 8)
-            .frame(height: 50)
+            .frame(height: MimiTheme.askBarHeight)
             .background(
-                Capsule()
+                RoundedRectangle(cornerRadius: MimiTheme.askBarCornerRadius, style: .continuous)
                     .fill(Color.white)
                     .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 4)
             )
+
+            if isAskPanelExpanded {
+                AIAttachmentPanelView(
+                    onPickFromAlbum: {
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                            isAskPanelExpanded = false
+                        }
+                        onPickFromAlbum()
+                    },
+                    onTakePhoto: {
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                            isAskPanelExpanded = false
+                        }
+                        onTakePhoto()
+                    },
+                    onOpenImportExport: {
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                            isAskPanelExpanded = false
+                        }
+                        onOpenImportExport()
+                    }
+                )
+                .padding(.top, 10)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
         }
     }
 
@@ -714,5 +988,86 @@ public struct HomeRecordView: View {
             Spacer()
         }
         .padding(.horizontal, 20)
+    }
+}
+
+/// 44pt circle plus the gap that keeps it outside the day card.
+private enum FeedDeleteChrome {
+    static let side: CGFloat = 44
+    static let gap: CGFloat = 12
+}
+
+/// White chip with a blue bill mark, matching the gold feed header control.
+private struct FeedBillMarkButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.white)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color.black.opacity(0.08), lineWidth: 1)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .stroke(MimiTheme.expenseBlue, lineWidth: 1.3)
+                        .frame(width: 16, height: 11)
+                    Circle()
+                        .stroke(MimiTheme.expenseBlue, lineWidth: 1)
+                        .frame(width: 8, height: 8)
+                    Image(systemName: "yensign")
+                        .font(.system(size: 6, weight: .bold))
+                        .foregroundColor(MimiTheme.expenseBlue)
+                }
+            }
+            .frame(width: 32, height: 32)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("全部记录")
+    }
+}
+
+/// Line sparkline shaped like gold A's 30-day net-worth trace.
+private struct HomeNetWorthSparkline: View {
+    private let samples: [CGFloat] = [
+        0.46, 0.47, 0.48, 0.47, 0.49, 0.48, 0.50, 0.49,
+        0.52, 0.70, 0.96, 0.74, 0.66, 0.72, 0.60, 0.58
+    ]
+
+    var body: some View {
+        GeometryReader { geo in
+            let points = samplePoints(in: geo.size)
+            ZStack {
+                Path { path in
+                    guard let first = points.first else { return }
+                    path.move(to: first)
+                    for point in points.dropFirst() {
+                        path.addLine(to: point)
+                    }
+                }
+                .stroke(
+                    MimiTheme.expenseBlue,
+                    style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
+                )
+
+                if let last = points.last {
+                    Circle()
+                        .fill(Color.white)
+                        .overlay(Circle().stroke(MimiTheme.expenseBlue, lineWidth: 2))
+                        .frame(width: 8, height: 8)
+                        .position(last)
+                }
+            }
+        }
+    }
+
+    private func samplePoints(in size: CGSize) -> [CGPoint] {
+        let count = max(samples.count - 1, 1)
+        let inset: CGFloat = 5
+        return samples.enumerated().map { index, value in
+            let x = inset + (size.width - inset * 2) * CGFloat(index) / CGFloat(count)
+            let y = size.height - (value * (size.height - 10)) - 5
+            return CGPoint(x: x, y: y)
+        }
     }
 }

@@ -8,6 +8,9 @@ public struct MimiStatsView: View {
 
     @State private var selectedPeriod: String = "月" // 周 | 月 | 年 | 自定义
     @State private var selectedChartType: TransactionType = .expense
+    @State private var trendMode: String = "支出" // 支出 | 收入 | 结余
+    @State private var rankingMode: String = "支出" // 支出 | 收入
+    @State private var isRankingExpanded: Bool = true
     @State private var selectedLedgerFilterId: String? = nil // nil = current ledger
     @State private var selectedFilterType: String = "全部" // 全部 | 仅支出 | 仅收入
 
@@ -16,6 +19,9 @@ public struct MimiStatsView: View {
     @State private var statsWeekOffset: Int = 0
     @State private var customStartDate: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
     @State private var customEndDate: Date = Date()
+
+    @State private var drillCategoryName: String? = nil
+    @State private var billForDetail: TransactionItem? = nil
 
     public init(
         store: MimiStore,
@@ -73,7 +79,7 @@ public struct MimiStatsView: View {
                 return String(format: "往后第 %d 周", statsWeekOffset)
             }
         case "月":
-            return String(format: "%d年 %d月", statsYear, statsMonth)
+            return String(format: "%d年%d月", statsYear, statsMonth)
         case "年":
             return String(format: "%d年 全年", statsYear)
         case "自定义":
@@ -133,24 +139,26 @@ public struct MimiStatsView: View {
         totalIncome - totalExpense
     }
 
-    private var categoryBreakdown: [(name: String, icon: String, amount: Double, percent: Double, color: Color)] {
-        let expenses = periodTransactions.filter { $0.type == .expense }
-        let total = max(1.0, expenses.reduce(0.0) { $0 + $1.amount })
-        var grouped: [String: (icon: String, sum: Double)] = [:]
-        for tx in expenses {
+    private var categoryBreakdown: [(name: String, icon: String, amount: Double, percent: Double, count: Int, color: Color)] {
+        let source = periodTransactions.filter { $0.type == selectedChartType }
+        let total = max(1.0, source.reduce(0.0) { $0 + $1.amount })
+        var grouped: [String: (icon: String, sum: Double, count: Int)] = [:]
+        for tx in source {
             let primary = tx.categoryPath.components(separatedBy: "-").first ?? tx.categoryPath
-            let prev = grouped[primary] ?? (icon: tx.iconName, sum: 0)
-            grouped[primary] = (icon: prev.icon, sum: prev.sum + tx.amount)
+            let prev = grouped[primary] ?? (icon: tx.iconName, sum: 0, count: 0)
+            grouped[primary] = (icon: prev.icon.isEmpty ? tx.iconName : prev.icon, sum: prev.sum + tx.amount, count: prev.count + 1)
         }
         let palette: [Color] = [
             MimiTheme.expenseBlue,
             Color(hex: 0x5B86F7),
+            Color(hex: 0x90B8F8),
+            Color(hex: 0xC3D7FD),
             MimiTheme.incomeOrange,
             MimiTheme.balanceGreen,
             Color(hex: 0x9B6EF3)
         ]
         return grouped
-            .map { (key, val) in (name: key, icon: val.icon, amount: val.sum, percent: val.sum / total) }
+            .map { (key, val) in (name: key, icon: val.icon, amount: val.sum, percent: val.sum / total, count: val.count) }
             .sorted { $0.amount > $1.amount }
             .enumerated()
             .map { idx, item in
@@ -159,26 +167,67 @@ public struct MimiStatsView: View {
                     icon: item.icon,
                     amount: item.amount,
                     percent: item.percent,
+                    count: item.count,
                     color: palette[idx % palette.count]
                 )
             }
     }
 
-    public var body: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 14) {
-                topBar
-                periodSegmentedControl
-                capybaraBalanceCard
-                donutBreakdownCard
-                dailyTrendBarCard
-                top10SingleExpenseCard
-                tabularBillSummaryCard
-            }
-            .padding(16)
-            .padding(.bottom, 40)
+    private var chartCenterTotal: Double {
+        selectedChartType == .expense ? totalExpense : totalIncome
+    }
+
+    private var chartCenterLabel: String {
+        switch selectedPeriod {
+        case "周": return selectedChartType == .expense ? "本周支出" : "本周收入"
+        case "年": return selectedChartType == .expense ? "本年支出" : "本年收入"
+        default: return selectedChartType == .expense ? "本月支出" : "本月收入"
         }
-        .background(MimiTheme.background.ignoresSafeArea())
+    }
+
+    public var body: some View {
+        NavigationStack {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 14) {
+                    topBar
+                    periodSegmentedControl
+                    capybaraBalanceCard
+                    donutBreakdownCard
+                    dailyTrendBarCard
+                    top10SingleExpenseCard
+                    tabularBillSummaryCard
+                }
+                .padding(16)
+                .padding(.bottom, 40)
+            }
+            .background(MimiTheme.background.ignoresSafeArea())
+            .navigationDestination(isPresented: Binding(
+                get: { drillCategoryName != nil },
+                set: { if !$0 { drillCategoryName = nil } }
+            )) {
+                if let name = drillCategoryName {
+                    CategoryBillsListView(
+                        store: store,
+                        categoryName: name,
+                        transactionType: selectedChartType,
+                        year: statsYear,
+                        month: statsMonth,
+                        onSelectTransaction: { tx in
+                            billForDetail = tx
+                        },
+                        onDismiss: {
+                            drillCategoryName = nil
+                        }
+                    )
+                    .navigationBarBackButtonHidden(true)
+                }
+            }
+            .sheet(item: $billForDetail) { tx in
+                BillDetailSheetView(store: store, transaction: tx) {
+                    billForDetail = nil
+                }
+            }
+        }
     }
 
     // MARK: - Top Navigation Bar (< 记录 | 统计 ⌄ | 全部账本 ⌄ | 筛选)
@@ -282,45 +331,29 @@ public struct MimiStatsView: View {
             .padding(4)
             .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xE9ECF4)))
 
-            // Forward/Backward Period Selector Bar
+            // Period navigator: < 2026年11月 >
             HStack {
-                Button {
-                    navigatePeriod(forward: false)
-                } label: {
-                    HStack(spacing: 2) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 11, weight: .bold))
-                        Text("往前")
-                            .font(.system(size: 11, weight: .medium))
-                    }
-                    .foregroundColor(MimiTheme.textSecondary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
-                    .background(Capsule().fill(Color.white))
+                Button { navigatePeriod(forward: false) } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(MimiTheme.textSecondary)
+                        .frame(width: 32, height: 32)
                 }
                 .buttonStyle(.plain)
 
                 Spacer()
 
                 Text(periodLabelText)
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundColor(MimiTheme.textPrimary)
 
                 Spacer()
 
-                Button {
-                    navigatePeriod(forward: true)
-                } label: {
-                    HStack(spacing: 2) {
-                        Text("往后")
-                            .font(.system(size: 11, weight: .medium))
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 11, weight: .bold))
-                    }
-                    .foregroundColor(MimiTheme.textSecondary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
-                    .background(Capsule().fill(Color.white))
+                Button { navigatePeriod(forward: true) } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(MimiTheme.textSecondary)
+                        .frame(width: 32, height: 32)
                 }
                 .buttonStyle(.plain)
             }
@@ -348,64 +381,49 @@ public struct MimiStatsView: View {
     // MARK: - Balance Overview Banner (总支出, 总收入, 净结余 一样大三等分展示)
 
     private var capybaraBalanceCard: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 8) {
-                // Column 1: 总支出
-                VStack(spacing: 4) {
-                    HStack(spacing: 4) {
-                        Circle().fill(MimiTheme.expenseBlue).frame(width: 6, height: 6)
-                        Text("总支出")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(MimiTheme.textSecondary)
-                    }
-                    Text(MimiTheme.formatRM(totalExpense))
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
-                        .foregroundColor(MimiTheme.expenseBlue)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xF2F5FC)))
-
-                // Column 2: 总收入
-                VStack(spacing: 4) {
-                    HStack(spacing: 4) {
-                        Circle().fill(MimiTheme.incomeOrange).frame(width: 6, height: 6)
-                        Text("总收入")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(MimiTheme.textSecondary)
-                    }
-                    Text(MimiTheme.formatRM(totalIncome))
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
-                        .foregroundColor(MimiTheme.incomeOrange)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xFFF7F0)))
-
-                // Column 3: 净结余
-                VStack(spacing: 4) {
-                    HStack(spacing: 4) {
-                        Circle().fill(netBalance >= 0 ? MimiTheme.balanceGreen : MimiTheme.dangerRed).frame(width: 6, height: 6)
-                        Text(netBalance >= 0 ? "净结余" : "超支")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(MimiTheme.textSecondary)
-                    }
-                    Text(MimiTheme.formatRM(netBalance))
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
-                        .foregroundColor(netBalance >= 0 ? MimiTheme.balanceGreen : MimiTheme.dangerRed)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(RoundedRectangle(cornerRadius: 14).fill(netBalance >= 0 ? Color(hex: 0xF0F9F4) : Color(hex: 0xFEECEC)))
+        HStack(spacing: 0) {
+            VStack(spacing: 6) {
+                Text("支出")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(MimiTheme.textSecondary)
+                Text(MimiTheme.formatRM(totalExpense))
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundColor(MimiTheme.expenseBlue)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
             }
+            .frame(maxWidth: .infinity)
+
+            Divider().frame(height: 36)
+
+            VStack(spacing: 6) {
+                Text("收入")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(MimiTheme.textSecondary)
+                Text(MimiTheme.formatRM(totalIncome))
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundColor(MimiTheme.incomeOrange)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            }
+            .frame(maxWidth: .infinity)
+
+            Divider().frame(height: 36)
+
+            VStack(spacing: 6) {
+                Text("结余")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(MimiTheme.textSecondary)
+                Text(netBalance >= 0 ? MimiTheme.formatRM(netBalance) : "-\(MimiTheme.formatRM(abs(netBalance)))")
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundColor(MimiTheme.balanceGreen)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            }
+            .frame(maxWidth: .infinity)
         }
-        .padding(14)
+        .padding(.vertical, 16)
+        .padding(.horizontal, 8)
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
     }
 
@@ -414,73 +432,119 @@ public struct MimiStatsView: View {
     private var donutBreakdownCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("支出分类构成")
+                Text(selectedChartType == .expense ? "支出分类构成" : "收入分类构成")
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
-                Text("按一级分类")
-                    .font(.system(size: 11))
-                    .foregroundColor(MimiTheme.textMuted)
+                HStack(spacing: 0) {
+                    Button { selectedChartType = .expense } label: {
+                        Text("支出")
+                            .font(.system(size: 12, weight: selectedChartType == .expense ? .bold : .medium))
+                            .foregroundColor(selectedChartType == .expense ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 5)
+                            .background(Capsule().fill(selectedChartType == .expense ? Color.white : Color.clear))
+                    }
+                    .buttonStyle(.plain)
+                    Button { selectedChartType = .income } label: {
+                        Text("收入")
+                            .font(.system(size: 12, weight: selectedChartType == .income ? .bold : .medium))
+                            .foregroundColor(selectedChartType == .income ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 5)
+                            .background(Capsule().fill(selectedChartType == .income ? Color.white : Color.clear))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(3)
+                .background(Capsule().fill(Color(hex: 0xEEF0F6)))
             }
 
-            HStack(spacing: 20) {
-                let firstShare = categoryBreakdown.first?.percent ?? 0.0
-                let secondShare = categoryBreakdown.dropFirst().first?.percent ?? 0.0
+            HStack {
+                Spacer()
+                let slices = categoryBreakdown
                 ZStack {
                     Circle()
-                        .stroke(Color(hex: 0xEEF0F6), lineWidth: 16)
-                        .frame(width: 110, height: 110)
+                        .stroke(Color(hex: 0xEEF0F6), lineWidth: 22)
+                        .frame(width: 150, height: 150)
 
-                    if firstShare > 0 {
+                    ForEach(Array(donutTrimRanges(for: slices).enumerated()), id: \.offset) { idx, range in
                         Circle()
-                            .trim(from: 0, to: CGFloat(firstShare))
-                            .stroke(MimiTheme.expenseBlue, style: StrokeStyle(lineWidth: 16, lineCap: .round))
+                            .trim(from: range.from, to: range.to)
+                            .stroke(
+                                slices[idx].color,
+                                style: StrokeStyle(lineWidth: 22, lineCap: .butt)
+                            )
                             .rotationEffect(.degrees(-90))
-                            .frame(width: 110, height: 110)
+                            .frame(width: 150, height: 150)
                     }
 
-                    if secondShare > 0 {
-                        Circle()
-                            .trim(from: CGFloat(min(0.98, firstShare + 0.02)), to: CGFloat(min(1.0, firstShare + secondShare)))
-                            .stroke(Color(hex: 0x5B86F7), style: StrokeStyle(lineWidth: 16, lineCap: .round))
-                            .rotationEffect(.degrees(-90))
-                            .frame(width: 110, height: 110)
-                    }
-
-                    VStack(spacing: 2) {
-                        Text("总支出")
-                            .font(.system(size: 10))
+                    VStack(spacing: 4) {
+                        Text(chartCenterLabel)
+                            .font(.system(size: 11))
                             .foregroundColor(MimiTheme.textMuted)
-                        Text(MimiTheme.formatRM(totalExpense))
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                        Text(MimiTheme.formatRM(chartCenterTotal))
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
                             .foregroundColor(MimiTheme.textPrimary)
                     }
                 }
-                .padding(.leading, 8)
+                Spacer()
+            }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    if categoryBreakdown.isEmpty {
-                        Text("暂无支出分类数据")
-                            .font(.system(size: 13))
-                            .foregroundColor(MimiTheme.textMuted)
-                    } else {
-                        ForEach(Array(categoryBreakdown.enumerated()), id: \.offset) { _, row in
-                            HStack(spacing: 8) {
-                                Circle()
-                                    .fill(row.color)
-                                    .frame(width: 8, height: 8)
-                                Text(row.name)
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(MimiTheme.textPrimary)
-                                Text(String(format: "%.1f%%", row.percent * 100))
-                                    .font(.system(size: 11, design: .rounded))
-                                    .foregroundColor(MimiTheme.textMuted)
-                                Spacer()
-                                Text(MimiTheme.formatRM(row.amount))
-                                    .font(.system(size: 13, weight: .bold, design: .rounded))
-                                    .foregroundColor(MimiTheme.textPrimary)
+            if categoryBreakdown.isEmpty {
+                Text(selectedChartType == .expense ? "暂无支出分类数据" : "暂无收入分类数据")
+                    .font(.system(size: 13))
+                    .foregroundColor(MimiTheme.textMuted)
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(Array(categoryBreakdown.enumerated()), id: \.offset) { _, row in
+                        Button {
+                            drillCategoryName = row.name
+                        } label: {
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack(spacing: 10) {
+                                    MimiStickerIconView(
+                                        iconName: row.icon,
+                                        categoryName: row.name,
+                                        transactionType: selectedChartType,
+                                        size: 32
+                                    )
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        HStack(spacing: 6) {
+                                            Text(row.name)
+                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundColor(MimiTheme.textPrimary)
+                                            Text(String(format: "%.2f%%", row.percent * 100))
+                                                .font(.system(size: 12, design: .rounded))
+                                                .foregroundColor(MimiTheme.textMuted)
+                                        }
+                                        GeometryReader { geo in
+                                            ZStack(alignment: .leading) {
+                                                Capsule().fill(Color(hex: 0xEEF0F6)).frame(height: 6)
+                                                Capsule()
+                                                    .fill(row.color.opacity(0.85))
+                                                    .frame(width: max(4, geo.size.width * CGFloat(row.percent)), height: 6)
+                                            }
+                                        }
+                                        .frame(height: 6)
+                                    }
+                                    Spacer(minLength: 8)
+                                    VStack(alignment: .trailing, spacing: 2) {
+                                        Text(MimiTheme.formatRM(row.amount))
+                                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                                            .foregroundColor(MimiTheme.textPrimary)
+                                        Text("\(row.count)笔")
+                                            .font(.system(size: 11))
+                                            .foregroundColor(MimiTheme.textMuted)
+                                    }
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundColor(MimiTheme.textMuted)
+                                }
                             }
+                            .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -489,44 +553,90 @@ public struct MimiStatsView: View {
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
     }
 
+    private func donutTrimRanges(
+        for slices: [(name: String, icon: String, amount: Double, percent: Double, count: Int, color: Color)]
+    ) -> [(from: CGFloat, to: CGFloat)] {
+        var cursor: CGFloat = 0
+        return slices.map { slice in
+            let from = cursor
+            let to = min(1, cursor + CGFloat(slice.percent))
+            cursor = to
+            return (from: from, to: to)
+        }
+    }
+
     // MARK: - Bar Chart: 每日支出趋势 (IMG_2255)
 
     private var dailyTrendBarCard: some View {
         let cal = Calendar(identifier: .gregorian)
-        let expenses = periodTransactions.filter { $0.type == .expense }
         let labels = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
-        let weekdayMap = [2, 3, 4, 5, 6, 7, 1] // Gregorian weekday: 2=Mon ... 7=Sat, 1=Sun
+        let weekdayMap = [2, 3, 4, 5, 6, 7, 1]
         let bars: [(label: String, value: Double)] = zip(labels, weekdayMap).map { label, wd in
-            let sum = expenses
-                .filter { cal.component(.weekday, from: $0.date) == wd }
-                .reduce(0.0) { $0 + $1.amount }
-            return (label: label, value: sum)
+            let dayTx = periodTransactions.filter { cal.component(.weekday, from: $0.date) == wd }
+            let exp = dayTx.filter { $0.type == .expense }.reduce(0.0) { $0 + $1.amount }
+            let inc = dayTx.filter { $0.type == .income }.reduce(0.0) { $0 + $1.amount }
+            let value: Double
+            switch trendMode {
+            case "收入": value = inc
+            case "结余": value = inc - exp
+            default: value = exp
+            }
+            return (label: label, value: value)
         }
-        let maxVal = max(1.0, bars.map(\.value).max() ?? 1.0)
-        let dailyAvg = totalExpense / 7.0
+        let maxVal = max(1.0, bars.map { abs($0.value) }.max() ?? 1.0)
+        let avgBase: Double = {
+            switch trendMode {
+            case "收入": return totalIncome / 7.0
+            case "结余": return netBalance / 7.0
+            default: return totalExpense / 7.0
+            }
+        }()
+        let barColor: Color = {
+            switch trendMode {
+            case "收入": return MimiTheme.incomeOrange
+            case "结余": return MimiTheme.balanceGreen
+            default: return MimiTheme.expenseBlue
+            }
+        }()
 
         return VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("每日支出趋势")
+                Text(trendMode == "支出" ? "每日支出趋势" : (trendMode == "收入" ? "每日收入趋势" : "每日结余趋势"))
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
-                Text("日均 \(MimiTheme.formatRM(dailyAvg))")
-                    .font(.system(size: 11))
-                    .foregroundColor(MimiTheme.textMuted)
+                HStack(spacing: 0) {
+                    ForEach(["支出", "收入", "结余"], id: \.self) { mode in
+                        Button { trendMode = mode } label: {
+                            Text(mode)
+                                .font(.system(size: 11, weight: trendMode == mode ? .bold : .medium))
+                                .foregroundColor(trendMode == mode ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Capsule().fill(trendMode == mode ? Color.white : Color.clear))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(3)
+                .background(Capsule().fill(Color(hex: 0xEEF0F6)))
             }
+
+            Text("日均 \(MimiTheme.formatRM(avgBase))")
+                .font(.system(size: 11))
+                .foregroundColor(MimiTheme.textMuted)
 
             HStack(alignment: .bottom, spacing: 12) {
                 ForEach(bars, id: \.label) { bar in
                     VStack(spacing: 6) {
-                        if bar.value > 0 {
+                        if abs(bar.value) > 0.009 {
                             Text(String(format: "%.0f", bar.value))
                                 .font(.system(size: 9, weight: .semibold, design: .rounded))
-                                .foregroundColor(MimiTheme.expenseBlue)
+                                .foregroundColor(barColor)
                         }
                         RoundedRectangle(cornerRadius: 6)
-                            .fill(bar.value > 0 ? MimiTheme.expenseBlue : Color(hex: 0xEEF0F6))
-                            .frame(height: max(8, CGFloat(bar.value / maxVal) * 110))
+                            .fill(abs(bar.value) > 0.009 ? barColor : Color(hex: 0xEEF0F6))
+                            .frame(height: max(8, CGFloat(abs(bar.value) / maxVal) * 110))
                         Text(bar.label)
                             .font(.system(size: 10))
                             .foregroundColor(MimiTheme.textSecondary)
@@ -543,23 +653,42 @@ public struct MimiStatsView: View {
     // MARK: - Top 10 List: 单笔支出排行 (IMG_2256)
 
     private var top10SingleExpenseCard: some View {
-        let topExpenses = periodTransactions
-            .filter { $0.type == .expense }
+        let allRanked = periodTransactions
+            .filter { rankingMode == "收入" ? $0.type == .income : $0.type == .expense }
             .sorted { $0.amount > $1.amount }
-            .prefix(10)
+        let ranked = Array(allRanked.prefix(10))
+        let visible = isRankingExpanded ? ranked : Array(ranked.prefix(5))
 
         return VStack(alignment: .leading, spacing: 12) {
-            Text("单笔支出排行")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundColor(MimiTheme.textPrimary)
+            HStack {
+                Text(rankingMode == "收入" ? "单笔收入排行" : "单笔支出排行")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(MimiTheme.textPrimary)
+                Spacer()
+                HStack(spacing: 0) {
+                    ForEach(["支出", "收入"], id: \.self) { mode in
+                        Button { rankingMode = mode } label: {
+                            Text(mode)
+                                .font(.system(size: 11, weight: rankingMode == mode ? .bold : .medium))
+                                .foregroundColor(rankingMode == mode ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Capsule().fill(rankingMode == mode ? Color.white : Color.clear))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(3)
+                .background(Capsule().fill(Color(hex: 0xEEF0F6)))
+            }
 
-            if topExpenses.isEmpty {
-                Text("暂无单笔支出记录")
+            if ranked.isEmpty {
+                Text(rankingMode == "收入" ? "暂无单笔收入记录" : "暂无单笔支出记录")
                     .font(.system(size: 13))
                     .foregroundColor(MimiTheme.textMuted)
                     .padding(.vertical, 8)
             } else {
-                ForEach(Array(topExpenses.enumerated()), id: \.element.id) { idx, item in
+                ForEach(Array(visible.enumerated()), id: \.element.id) { idx, item in
                     HStack(spacing: 10) {
                         Text("\(idx + 1)")
                             .font(.system(size: 12, weight: .bold, design: .rounded))
@@ -569,7 +698,7 @@ public struct MimiStatsView: View {
                         MimiStickerIconView(
                             iconName: item.iconName,
                             categoryName: item.categoryPath,
-                            transactionType: .expense,
+                            transactionType: item.type,
                             size: 32
                         )
 
@@ -585,13 +714,43 @@ public struct MimiStatsView: View {
                             }
                         }
 
-                        Spacer()
+                        Spacer(minLength: 8)
 
-                        Text("-\(MimiTheme.formatRM(item.amount))")
+                        Text(rankingMode == "收入"
+                             ? MimiTheme.formatRM(item.amount)
+                             : MimiTheme.formatRM(item.amount))
                             .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .foregroundColor(MimiTheme.expenseBlue)
+                            .foregroundColor(rankingMode == "收入" ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(Color(hex: 0xC5C8D0))
                     }
-                    .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(idx < 3 ? Color(hex: 0xF0F4FF) : Color.clear)
+                    )
+                }
+
+                if ranked.count > 5 {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isRankingExpanded.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: isRankingExpanded ? "chevron.up" : "chevron.down")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text(isRankingExpanded ? "收起" : "展开全部")
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        .foregroundColor(MimiTheme.textMuted)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 4)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -602,8 +761,25 @@ public struct MimiStatsView: View {
     // MARK: - Tabular Summary: 账单汇总 (IMG_2257)
 
     private var tabularBillSummaryCard: some View {
-        let dayGroups = store.groupedTransactionsByDay().prefix(15)
         let cal = Calendar(identifier: .gregorian)
+        let dayRows: [(label: String, exp: Double, inc: Double, net: Double)] = {
+            var map: [Int: (exp: Double, inc: Double)] = [:]
+            for tx in periodTransactions {
+                let day = cal.component(.day, from: tx.date)
+                var cur = map[day] ?? (0, 0)
+                if tx.type == .expense { cur.exp += tx.amount }
+                if tx.type == .income { cur.inc += tx.amount }
+                map[day] = cur
+            }
+            return map.keys.sorted(by: >).map { day in
+                let v = map[day]!
+                return (label: "\(statsMonth).\(day)", exp: v.exp, inc: v.inc, net: v.inc - v.exp)
+            }
+        }()
+        let dayCount = max(1, dayRows.count)
+        let avgExp = totalExpense / Double(dayCount)
+        let avgInc = totalIncome / Double(dayCount)
+        let avgNet = netBalance / Double(dayCount)
 
         return VStack(alignment: .leading, spacing: 12) {
             Text("账单汇总")
@@ -612,46 +788,28 @@ public struct MimiStatsView: View {
 
             VStack(spacing: 0) {
                 HStack {
-                    Text("时间").frame(maxWidth: .infinity, alignment: .leading)
-                    Text("收入").frame(maxWidth: .infinity, alignment: .trailing)
-                    Text("支出").frame(maxWidth: .infinity, alignment: .trailing)
-                    Text("结余").frame(maxWidth: .infinity, alignment: .trailing)
+                    Text("日期").frame(maxWidth: .infinity, alignment: .leading)
+                    Text("支出").frame(maxWidth: .infinity).foregroundColor(MimiTheme.expenseBlue)
+                    Text("收入").frame(maxWidth: .infinity).foregroundColor(MimiTheme.incomeOrange)
+                    Text("结余").frame(maxWidth: .infinity).foregroundColor(MimiTheme.balanceGreen)
                 }
                 .font(.system(size: 11, weight: .bold))
-                .foregroundColor(MimiTheme.textSecondary)
                 .padding(10)
-                .background(Color(hex: 0xF5F6FA))
+                .background(Color(hex: 0xEEF1FA))
 
-                if dayGroups.isEmpty {
-                    HStack {
-                        Text("暂无账单").frame(maxWidth: .infinity, alignment: .leading)
-                        Text("RM0.00").frame(maxWidth: .infinity, alignment: .trailing)
-                        Text("RM0.00").frame(maxWidth: .infinity, alignment: .trailing)
-                        Text("RM0.00").frame(maxWidth: .infinity, alignment: .trailing)
-                    }
-                    .font(.system(size: 12, design: .rounded))
-                    .foregroundColor(MimiTheme.textMuted)
-                    .padding(10)
+                summaryTableRow(label: "总计", exp: totalExpense, inc: totalIncome, net: netBalance, emphasize: true)
+                summaryTableRow(label: "日均", exp: avgExp, inc: avgInc, net: avgNet, emphasize: true)
+
+                if dayRows.isEmpty {
+                    Text("暂无账单")
+                        .font(.system(size: 12))
+                        .foregroundColor(MimiTheme.textMuted)
+                        .frame(maxWidth: .infinity)
+                        .padding(12)
                 } else {
-                    ForEach(Array(dayGroups.enumerated()), id: \.offset) { idx, group in
-                        let inc = group.items.filter { $0.type == .income && $0.includeInStats }.reduce(0.0) { $0 + $1.amount }
-                        let exp = group.items.filter { $0.type == .expense && $0.includeInStats }.reduce(0.0) { $0 + $1.amount }
-                        let net = inc - exp
-                        let m = cal.component(.month, from: group.date)
-                        let d = cal.component(.day, from: group.date)
-
-                        HStack {
-                            Text("\(m)月\(d)日").frame(maxWidth: .infinity, alignment: .leading)
-                            Text(MimiTheme.formatRM(inc)).frame(maxWidth: .infinity, alignment: .trailing)
-                            Text(MimiTheme.formatRM(exp)).frame(maxWidth: .infinity, alignment: .trailing)
-                            Text(MimiTheme.formatRM(net)).frame(maxWidth: .infinity, alignment: .trailing)
-                        }
-                        .font(.system(size: 12, design: .rounded))
-                        .padding(10)
-
-                        if idx + 1 < dayGroups.count {
-                            Divider()
-                        }
+                    ForEach(Array(dayRows.enumerated()), id: \.offset) { idx, row in
+                        summaryTableRow(label: row.label, exp: row.exp, inc: row.inc, net: row.net, emphasize: false)
+                            .background(idx % 2 == 0 ? Color.white : Color(hex: 0xF8F9FC))
                     }
                 }
             }
@@ -660,5 +818,26 @@ public struct MimiStatsView: View {
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
+    }
+
+    private func summaryTableRow(label: String, exp: Double, inc: Double, net: Double, emphasize: Bool) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 12, weight: emphasize ? .bold : .regular, design: .rounded))
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Text(MimiTheme.formatRM(exp))
+                .font(.system(size: 12, weight: emphasize ? .semibold : .regular, design: .rounded))
+                .foregroundColor(MimiTheme.expenseBlue)
+                .frame(maxWidth: .infinity)
+            Text(MimiTheme.formatRM(inc))
+                .font(.system(size: 12, weight: emphasize ? .semibold : .regular, design: .rounded))
+                .foregroundColor(MimiTheme.incomeOrange)
+                .frame(maxWidth: .infinity)
+            Text(net >= 0 ? MimiTheme.formatRM(net) : "-\(MimiTheme.formatRM(abs(net)))")
+                .font(.system(size: 12, weight: emphasize ? .semibold : .regular, design: .rounded))
+                .foregroundColor(MimiTheme.balanceGreen)
+                .frame(maxWidth: .infinity)
+        }
+        .padding(10)
     }
 }

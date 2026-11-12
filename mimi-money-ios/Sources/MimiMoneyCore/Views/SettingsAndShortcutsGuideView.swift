@@ -99,11 +99,8 @@ public struct SettingsAndShortcutsGuideView: View {
                     case "导入导出":
                         csvImportExportCard
                         dataManagementCard
-                    default: // 自动记账
+                    default: // 自动记账（API 已迁到设置）
                         shortcutsCard
-                        aiEngineCard
-                        csvImportExportCard
-                        dataManagementCard
                     }
                 }
                 .padding(16)
@@ -148,7 +145,7 @@ public struct SettingsAndShortcutsGuideView: View {
     private var csvImportExportCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("📁 账单导入与导出")
+                Text("账单导入与导出")
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
@@ -310,7 +307,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         showImportModal = false
                         statusBannerMessage = "已成功导入 \(count) 笔账单记录"
                     } label: {
-                        Text("🚀 确认导入")
+                        Text("确认导入")
                             .font(.system(size: 15, weight: .bold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -540,7 +537,7 @@ public struct SettingsAndShortcutsGuideView: View {
     @State private var showShortcutTutorial: Bool = false
     @Environment(\.openURL) private var openURL
 
-    // MARK: - 自动记账指南 (Kapi 式四种触发方式 + 添加专属指令)
+    // MARK: - 自动记账指南（截屏识别 + 四种触发；去掉未接入的语音记账）
 
     private func guideStepRow(_ text: String) -> some View {
         Text(text)
@@ -588,16 +585,54 @@ public struct SettingsAndShortcutsGuideView: View {
         .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xF7F8FA)))
     }
 
+    /// Gold compact row for secondary trigger methods (②③)
+    private func compactTriggerRow(index: Int, title: String, steps: [String]) -> some View {
+        let expanded = expandedTriggerSection == index
+        return VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    expandedTriggerSection = expanded ? nil : index
+                }
+            } label: {
+                HStack {
+                    Text(title)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(MimiTheme.textPrimary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(MimiTheme.textMuted)
+                        .rotationEffect(.degrees(expanded ? 90 : 0))
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 14)
+            }
+            .buttonStyle(.plain)
+
+            if expanded {
+                VStack(alignment: .leading, spacing: 5) {
+                    ForEach(Array(steps.enumerated()), id: \.offset) { _, step in
+                        guideStepRow(step)
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.bottom, 12)
+            }
+        }
+        .background(RoundedRectangle(cornerRadius: 14).fill(Color.white))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color(hex: 0xECEEF3), lineWidth: 1)
+        )
+    }
+
     private var shortcutsCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("⚡ 自动记账 · 截屏识别记账")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(MimiTheme.textPrimary)
-                Spacer()
-            }
+            Text("自动记账 · 截屏识别记账")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundColor(MimiTheme.textPrimary)
 
-            Text("付款完成后触发一次「咪咪记账 · 识别账单」快捷指令：系统自动截屏 → AI 识别金额、商户与扣款账户 → 在当前付款 App 上方弹出卡片。点「修改 (View)」跳进 App 编辑该笔；点「确认 (Got it)」原地入账，不离开当前 App。下方四种触发方式任选一种绑定即可。")
+            Text("付款完成后触发一次「咪咪记账 · 识别账单」快捷指令：系统自动截屏 → AI 识别金额、商户与扣款账户 → 在当前付款 App 上方弹出卡片。点「修改」跳进 App 编辑；点「确认」原地入账。下方四种触发方式任选一种绑定即可。也可直接用「读取剪贴板截图」。")
                 .font(.system(size: 12))
                 .foregroundColor(MimiTheme.textSecondary)
 
@@ -613,10 +648,10 @@ public struct SettingsAndShortcutsGuideView: View {
                 ]
             )
 
-            triggerSection(
+            // Gold: ②③ often appear as compact chevron rows
+            compactTriggerRow(
                 index: 2,
                 title: "② 通过「轻敲手机背面」触发",
-                symbol: "iphone.radiowaves.left.and.right",
                 steps: [
                     "1. 先按下方「教程」把「识别账单」捷徑建好（只需一次）",
                     "2. 打开 iPhone「设置 → 辅助功能 → 触控」，拉到最底部点「轻点背面」",
@@ -625,10 +660,9 @@ public struct SettingsAndShortcutsGuideView: View {
                 ]
             )
 
-            triggerSection(
+            compactTriggerRow(
                 index: 3,
                 title: "③ 通过「操作按钮」触发",
-                symbol: "button.programmable",
                 steps: [
                     "1. 先按下方「教程」把「识别账单」捷徑建好（只需一次）",
                     "2. 打开 iPhone「设置 → 操作按钮」，选择「快捷指令」（需 iPhone 15 Pro 或更新机型）",
@@ -769,7 +803,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "camera.viewfinder")
                         .font(.system(size: 14))
-                    Text("📸 无需快捷指令 · 读取剪贴板截图（确认后入账）")
+                    Text("无需快捷指令 · 读取剪贴板截图（确认后入账）")
                         .font(.system(size: 13, weight: .bold))
                 }
                 .foregroundColor(MimiTheme.incomeOrange)
@@ -816,91 +850,90 @@ public struct SettingsAndShortcutsGuideView: View {
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
     }
 
-    // MARK: - AI Engine Settings Card（当前：Groq 识图 + 问账）
+    // MARK: - AI / API（设置页精简版）
 
     private var aiEngineCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("🤖 AI 识别引擎（Groq · 支持图片）")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundColor(MimiTheme.textPrimary)
-
-            Text("当前试用 Groq 视觉模型（默认 qwen/qwen3.8-27b）：截图识别与 AI 问账都走 Groq，支持图片输入。到 console.groq.com 免费申请 API Key 后填入即可。未填 Key、没网或额度用完时会明确提示失败，不会凑数记错账。Key 只保存在 iOS 钥匙串。")
-                .font(.system(size: 12))
+            Text("AI / API")
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(MimiTheme.textSecondary)
 
-            SecureField("Groq API Key（console.groq.com 免费申请）", text: $groqKeyInput)
-                .font(.system(size: 13))
-                .padding(10)
-                .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
-                .autocorrectionDisabled(true)
-                #if os(iOS)
-                .textInputAutocapitalization(.never)
-                #endif
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Groq API Key")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(MimiTheme.textSecondary)
 
-            HStack(spacing: 10) {
-                TextField("模型名", text: $groqModelInput)
-                    .font(.system(size: 13))
-                    .padding(10)
+                SecureField("粘贴 API Key", text: $groqKeyInput)
+                    .font(.system(size: 14))
+                    .padding(12)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
                     .autocorrectionDisabled(true)
                     #if os(iOS)
                     .textInputAutocapitalization(.never)
                     #endif
 
-                Button {
-                    AIEngineSettings.provider = .groq
-                    GroqSettings.saveAPIKey(groqKeyInput)
-                    GroqSettings.modelName = groqModelInput
-                    groqTestStatus = "已保存到钥匙串（引擎=Groq）"
-                } label: {
-                    Text("保存")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(Capsule().fill(MimiTheme.expenseBlue))
-                }
-                .buttonStyle(.plain)
-            }
+                HStack(spacing: 10) {
+                    TextField("模型", text: $groqModelInput)
+                        .font(.system(size: 14))
+                        .padding(12)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                        .autocorrectionDisabled(true)
+                        #if os(iOS)
+                        .textInputAutocapitalization(.never)
+                        #endif
 
-            HStack(spacing: 10) {
-                Button {
-                    AIEngineSettings.provider = .groq
-                    GroqSettings.saveAPIKey(groqKeyInput)
-                    GroqSettings.modelName = groqModelInput
-                    groqIsTesting = true
-                    groqTestStatus = "正在测试连接…"
-                    Task {
-                        let result = await GroqClient.testConnection()
-                        await MainActor.run {
-                            groqIsTesting = false
-                            groqTestStatus = result.message
-                        }
+                    Button {
+                        AIEngineSettings.provider = .groq
+                        GroqSettings.saveAPIKey(groqKeyInput)
+                        GroqSettings.modelName = groqModelInput
+                        groqTestStatus = "已保存"
+                    } label: {
+                        Text("保存")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(Capsule().fill(MimiTheme.expenseBlue))
                     }
-                } label: {
-                    Text(groqIsTesting ? "测试中…" : "测试连接")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(MimiTheme.expenseBlue)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                .disabled(groqIsTesting)
 
-                if let groqTestStatus {
-                    Text(groqTestStatus)
-                        .font(.system(size: 12))
-                        .foregroundColor(MimiTheme.textSecondary)
+                HStack(spacing: 10) {
+                    Button {
+                        AIEngineSettings.provider = .groq
+                        GroqSettings.saveAPIKey(groqKeyInput)
+                        GroqSettings.modelName = groqModelInput
+                        groqIsTesting = true
+                        groqTestStatus = "测试中…"
+                        Task {
+                            let result = await GroqClient.testConnection()
+                            await MainActor.run {
+                                groqIsTesting = false
+                                groqTestStatus = result.message
+                            }
+                        }
+                    } label: {
+                        Text(groqIsTesting ? "测试中…" : "测试连接")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(MimiTheme.expenseBlue)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(groqIsTesting)
+
+                    if let groqTestStatus {
+                        Text(groqTestStatus)
+                            .font(.system(size: 12))
+                            .foregroundColor(MimiTheme.textSecondary)
+                            .lineLimit(2)
+                    }
                 }
             }
-
-            Text("当前引擎：Groq · 最近一次调用：\(GroqSettings.lastCallStatusText ?? "暂无调用记录")")
-                .font(.system(size: 12))
-                .foregroundColor(MimiTheme.textMuted)
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 14).fill(Color.white))
         }
-        .padding(16)
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
         .onAppear {
             AIEngineSettings.provider = .groq
             if groqModelInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -959,7 +992,7 @@ public struct SettingsAndShortcutsGuideView: View {
     private var ledgerManagementSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("📒 全部账本 (\(store.ledgers.count))")
+                Text("全部账本 (\(store.ledgers.count))")
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
@@ -978,8 +1011,10 @@ public struct SettingsAndShortcutsGuideView: View {
             ForEach(store.ledgers) { ledger in
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        Text("📒")
-                            .font(.system(size: 20))
+                        Image(systemName: "book.closed.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(MimiTheme.vipGold)
+                            .frame(width: 28)
                         VStack(alignment: .leading, spacing: 2) {
                             HStack {
                                 Text(ledger.name)
@@ -1140,7 +1175,7 @@ public struct SettingsAndShortcutsGuideView: View {
 
     private var tagManagementSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("🏷️ 标签管理 (\(store.tags.count))")
+            Text("标签管理 (\(store.tags.count))")
                 .font(.system(size: 16, weight: .bold))
                 .foregroundColor(MimiTheme.textPrimary)
 
@@ -1245,7 +1280,7 @@ public struct SettingsAndShortcutsGuideView: View {
     private var scheduledBookkeepingSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("⏰ 定时记账与周期固定收支")
+                Text("定时记账与周期固定收支")
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
@@ -1285,10 +1320,12 @@ public struct SettingsAndShortcutsGuideView: View {
             ForEach(store.scheduledTransactions) { item in
                 VStack(spacing: 10) {
                     HStack(spacing: 10) {
-                        Text(item.iconName)
-                            .font(.system(size: 24))
-                            .frame(width: 36, height: 36)
-                            .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                        MimiStickerIconView(
+                            iconName: item.iconName,
+                            categoryName: item.categoryPath,
+                            transactionType: item.type,
+                            size: 36
+                        )
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.title)
@@ -1324,7 +1361,7 @@ public struct SettingsAndShortcutsGuideView: View {
                             store.executeScheduledTransactionNow(id: item.id)
                             statusBannerMessage = "已立即执行并记入账本: \(item.title) \(MimiTheme.formatRM(item.amount))"
                         } label: {
-                            Text("⚡ 立即入账一次")
+                            Text("立即入账一次")
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(MimiTheme.expenseBlue)
                                 .padding(.horizontal, 10)
@@ -1451,7 +1488,7 @@ public struct SettingsAndShortcutsGuideView: View {
 
     private var widgetsShowcaseSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("🧩 iOS 桌面与锁屏小组件")
+            Text("iOS 桌面与锁屏小组件")
                 .font(.system(size: 16, weight: .bold))
                 .foregroundColor(MimiTheme.textPrimary)
 
@@ -1471,7 +1508,7 @@ public struct SettingsAndShortcutsGuideView: View {
                             .stroke(Color(hex: 0xEEF0F6), lineWidth: 8)
                             .frame(width: 80, height: 80)
                         Circle()
-                            .trim(from: 0, to: 0.65)
+                            .trim(from: 0, to: 0.72)
                             .stroke(MimiTheme.expenseBlue, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                             .rotationEffect(.degrees(-90))
                             .frame(width: 80, height: 80)
@@ -1479,17 +1516,17 @@ public struct SettingsAndShortcutsGuideView: View {
                             Text("今日可用")
                                 .font(.system(size: 9))
                                 .foregroundColor(MimiTheme.textSecondary)
-                            Text("RM92.26")
+                            Text(MimiTheme.formatRM(store.monthlyBudgetRemaining(year: 2026, month: 11) / 21.0))
                                 .font(.system(size: 13, weight: .bold, design: .rounded))
                                 .foregroundColor(MimiTheme.textPrimary)
                         }
                     }
                     Spacer()
                     VStack(alignment: .trailing, spacing: 4) {
-                        Text("🦫 动态结余滚入")
+                        Text("动态结余滚入")
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(MimiTheme.expenseBlue)
-                        Text("今日已花费 RM0.00")
+                        Text("今日已花费 \(MimiTheme.formatRM(0))")
                             .font(.system(size: 10))
                             .foregroundColor(MimiTheme.textMuted)
                         Text("实时同步当前账本")
@@ -1498,7 +1535,11 @@ public struct SettingsAndShortcutsGuideView: View {
                     }
                 }
                 .padding(14)
-                .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white)
+                        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
+                )
             }
 
             // 2. Medium Widget Preview (7日趋势与本周收支)
@@ -1526,189 +1567,87 @@ public struct SettingsAndShortcutsGuideView: View {
                     }
                 }
                 .padding(14)
-                .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white)
+                        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
+                )
             }
         }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 20).fill(Color(hex: 0xF7F8FA)))
     }
 
-    // MARK: - 5. 通用设置 (General Settings Section)
+    // MARK: - 设置（资料 / API / 其他）
 
     private var generalSettingsSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("⚙️ 通用与偏好设置")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundColor(MimiTheme.textPrimary)
-
-            // Nickname
+        VStack(alignment: .leading, spacing: 18) {
+            // 资料
             VStack(alignment: .leading, spacing: 8) {
-                Text("用户昵称")
-                    .font(.system(size: 13, weight: .medium))
+                Text("资料")
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(MimiTheme.textSecondary)
+
                 HStack {
-                    TextField("输入您的昵称", text: $editingNickname)
+                    Text("昵称")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(MimiTheme.textPrimary)
+                    TextField("jinghao", text: $editingNickname)
                         .font(.system(size: 14))
+                        .multilineTextAlignment(.trailing)
                     Button("保存") {
                         store.setNickname(editingNickname)
-                        statusBannerMessage = "已更新昵称为: \(store.userNickname)"
+                        statusBannerMessage = "已更新昵称"
                     }
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.white)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .background(Capsule().fill(MimiTheme.expenseBlue))
                 }
-                .padding(10)
-                .background(RoundedRectangle(cornerRadius: 12).fill(Color.white))
+                .padding(14)
+                .background(RoundedRectangle(cornerRadius: 14).fill(Color.white))
             }
             .onAppear {
+                if store.userNickname == "景豪" || store.userNickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    store.setNickname("jinghao")
+                }
                 editingNickname = store.userNickname
             }
 
-            // Haptics Toggle
-            Toggle(isOn: $store.hapticsEnabled) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("触觉震动反馈")
+            // AI / API
+            aiEngineCard
+
+            // 其他
+            VStack(alignment: .leading, spacing: 8) {
+                Text("其他")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(MimiTheme.textSecondary)
+
+                Toggle(isOn: $store.hapticsEnabled) {
+                    Text("触觉反馈")
                         .font(.system(size: 14, weight: .medium))
-                    Text("在点击按键与确认记账时提供清脆震动反馈")
-                        .font(.system(size: 11))
-                        .foregroundColor(MimiTheme.textMuted)
                 }
-            }
-            .padding(14)
-            .background(RoundedRectangle(cornerRadius: 14).fill(Color.white))
+                .padding(14)
+                .background(RoundedRectangle(cornerRadius: 14).fill(Color.white))
 
-            // Account Initial Balances Quick Settings Card
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("💳 账户起始金额与开局资产")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(MimiTheme.textPrimary)
-                    Spacer()
-                    Text("净资产: \(MimiTheme.formatRM(store.netWorth))")
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .foregroundColor(MimiTheme.expenseBlue)
-                }
-
-                Text("在此设定各资金账户（现金、银行卡、电子钱包）现实生活中的初始开局金额。日常记账时将在此基准上实时增减。")
-                    .font(.system(size: 11))
-                    .foregroundColor(MimiTheme.textMuted)
-
-                ForEach(store.accounts) { account in
-                    AccountInitialBalanceRow(account: account, store: store)
-                    if account.id != store.accounts.last?.id {
-                        Divider()
+                Button {
+                    showResetCleanAlert = true
+                } label: {
+                    HStack {
+                        Text("清空全部数据")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(MimiTheme.dangerRed)
+                        Spacer()
+                        Image(systemName: "trash")
+                            .foregroundColor(MimiTheme.dangerRed)
                     }
+                    .padding(14)
+                    .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xFFEBEE)))
                 }
+                .buttonStyle(.plain)
             }
-            .padding(14)
-            .background(RoundedRectangle(cornerRadius: 14).fill(Color.white))
-
-            // Storage mode info
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("数据存储模式")
-                        .font(.system(size: 14, weight: .medium))
-                    Text("本地安全独立沙盒存储，无需联网即可完整离线使用")
-                        .font(.system(size: 11))
-                        .foregroundColor(MimiTheme.textMuted)
-                }
-                Spacer()
-                Text("离线安全")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(MimiTheme.balanceGreen)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Capsule().fill(Color(hex: 0xE8F5E9)))
-            }
-            .padding(14)
-            .background(RoundedRectangle(cornerRadius: 14).fill(Color.white))
-
-            dataManagementCard
         }
     }
 }
 
-public struct AccountInitialBalanceRow: View {
-    public let account: AccountItem
-    @ObservedObject public var store: MimiStore
-    @State private var balanceInput: String = ""
-    @State private var editMode: Int = 0 // 0: 设定起始资金 (记账前), 1: 设定当前余额 (卡里现在)
-    @State private var isEditing: Bool = false
-
-    public init(account: AccountItem, store: MimiStore) {
-        self.account = account
-        self.store = store
-    }
-
-    public var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                Text(account.name)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(MimiTheme.textPrimary)
-                    .frame(width: 90, alignment: .leading)
-
-                Spacer()
-
-                if isEditing {
-                    Picker("模式", selection: $editMode) {
-                        Text("起始资金").tag(0)
-                        Text("当前余额").tag(1)
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 140)
-
-                    TextField("0.00", text: $balanceInput)
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .frame(width: 65)
-                        .padding(5)
-                        .background(RoundedRectangle(cornerRadius: 6).stroke(MimiTheme.expenseBlue, lineWidth: 1))
-
-                    Button("保存") {
-                        if let val = Double(balanceInput) {
-                            if editMode == 0 {
-                                store.setAccountInitialBalance(accountId: account.id, initialBalance: val)
-                            } else {
-                                store.updateAccountBalance(accountId: account.id, newBalance: val)
-                            }
-                        }
-                        isEditing = false
-                    }
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
-                    .background(Capsule().fill(MimiTheme.expenseBlue))
-                } else {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(MimiTheme.formatRM(account.balance))
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .foregroundColor(account.balance < -0.0001 ? Color(hex: 0xE53935) : MimiTheme.textPrimary)
-
-                        Text("起始: \(MimiTheme.formatRM(account.initialBalance))")
-                            .font(.system(size: 10))
-                            .foregroundColor(MimiTheme.textMuted)
-                    }
-
-                    Button {
-                        balanceInput = String(format: "%.2f", account.initialBalance)
-                        editMode = 0
-                        isEditing = true
-                    } label: {
-                        Text("设置")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(MimiTheme.expenseBlue)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Capsule().fill(Color(hex: 0xEAF1FF)))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-        .padding(.vertical, 3)
-        .onAppear {
-            balanceInput = String(format: "%.2f", account.initialBalance)
-        }
-    }
-}

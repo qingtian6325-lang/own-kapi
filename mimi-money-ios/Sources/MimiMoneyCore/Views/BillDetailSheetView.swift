@@ -9,6 +9,8 @@ public struct BillDetailSheetView: View {
     @State private var discountString: String
     @State private var refundString: String
 
+    @State private var showAmountKeypad: Bool = false
+    @State private var amountExpression: String = ""
     @State private var showingActionSheet = false
     @State private var showingImagePicker = false
     #if canImport(UIKit)
@@ -39,18 +41,25 @@ public struct BillDetailSheetView: View {
                 VStack(spacing: 14) {
                     // Main Amount & Category Card (IMG_2242)
                     VStack(spacing: 0) {
-                        detailRow(label: "实付金额") {
-                            HStack(spacing: 4) {
-                                Text(editableBill.type == .expense ? "-RM" : "+RM")
-                                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                                    .foregroundColor(editableBill.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange)
-                                TextField("0.00", text: $amountString)
-                                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                                    .foregroundColor(editableBill.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange)
-                                    .multilineTextAlignment(.trailing)
-                                    .frame(width: 110)
+                        Button {
+                            amountExpression = amountString
+                            showAmountKeypad = true
+                        } label: {
+                            detailRow(label: "实付金额") {
+                                HStack(spacing: 4) {
+                                    Text(editableBill.type == .expense ? "-RM" : "+RM")
+                                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                                        .foregroundColor(editableBill.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange)
+                                    Text(amountString.isEmpty ? "0.00" : amountString)
+                                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                                        .foregroundColor(editableBill.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange)
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundColor(MimiTheme.textMuted)
+                                }
                             }
                         }
+                        .buttonStyle(.plain)
 
                         Divider().padding(.leading, 16)
 
@@ -155,14 +164,9 @@ public struct BillDetailSheetView: View {
                                             .foregroundColor(MimiTheme.textMuted)
                                             .frame(width: 58, height: 58)
                                             .overlay(
-                                                VStack(spacing: 3) {
-                                                    Image(systemName: "camera.badge.ellipsis")
-                                                        .font(.system(size: 18))
-                                                        .foregroundColor(MimiTheme.expenseBlue)
-                                                    Text("加小票")
-                                                        .font(.system(size: 9, weight: .medium))
-                                                        .foregroundColor(MimiTheme.textSecondary)
-                                                }
+                                                Image(systemName: "plus")
+                                                    .font(.system(size: 20, weight: .medium))
+                                                    .foregroundColor(MimiTheme.textMuted)
                                             )
                                     }
                                     .buttonStyle(.plain)
@@ -204,9 +208,17 @@ public struct BillDetailSheetView: View {
                         Divider().padding(.leading, 16)
 
                         detailRow(label: "所属账本") {
-                            Text(editableBill.ledgerName)
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(MimiTheme.textPrimary)
+                            HStack(spacing: 6) {
+                                Image(systemName: "book.closed.fill")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(MimiTheme.vipGold)
+                                Text(editableBill.ledgerName)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(MimiTheme.textPrimary)
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(MimiTheme.textMuted)
+                            }
                         }
                     }
                     .background(RoundedRectangle(cornerRadius: 18).fill(Color.white))
@@ -269,7 +281,7 @@ public struct BillDetailSheetView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(action: onDismiss) {
-                        Image(systemName: "xmark")
+                        Image(systemName: "chevron.down")
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(MimiTheme.textSecondary)
                     }
@@ -298,6 +310,11 @@ public struct BillDetailSheetView: View {
                 #endif
                 Button("取消", role: .cancel) {}
             }
+            .sheet(isPresented: $showAmountKeypad) {
+                amountKeypadSheet
+                    .presentationDetents([.height(420)])
+                    .presentationDragIndicator(.visible)
+            }
             #if canImport(UIKit)
             .sheet(isPresented: $showingImagePicker) {
                 UIKitImagePicker(sourceType: pickerSourceType) { pickedImage in
@@ -321,6 +338,82 @@ public struct BillDetailSheetView: View {
                 }
             }
             #endif
+        }
+    }
+
+    // MARK: - 实付金额数字键盘（与记账页同风格）
+
+    private var amountKeypadSheet: some View {
+        let accent = editableBill.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange
+        let rows: [[String]] = [
+            ["7", "8", "9", "⌫"],
+            ["4", "5", "6", "-"],
+            ["1", "2", "3", "+"],
+            ["清空", "0", ".", "完成"]
+        ]
+
+        return VStack(spacing: 16) {
+            Capsule()
+                .fill(Color(hex: 0xD8DCE6))
+                .frame(width: 36, height: 4)
+                .padding(.top, 10)
+
+            Text("实付金额")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(MimiTheme.textSecondary)
+
+            Text(amountExpression.isEmpty ? "RM0.00" : "RM\(amountExpression)")
+                .font(.system(size: 32, weight: .bold, design: .rounded))
+                .foregroundColor(accent)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .padding(.horizontal, 20)
+
+            VStack(spacing: 6) {
+                ForEach(rows, id: \.self) { row in
+                    HStack(spacing: 6) {
+                        ForEach(row, id: \.self) { key in
+                            Button {
+                                handleAmountKey(key)
+                            } label: {
+                                Text(key)
+                                    .font(.system(size: key == "完成" || key == "清空" ? 15 : 20, weight: .semibold, design: .rounded))
+                                    .foregroundColor(key == "完成" ? .white : MimiTheme.textPrimary)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 48)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .fill(key == "完成" ? accent : Color.white)
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+            .padding(10)
+            .background(Color(hex: 0xF2F4F8))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .padding(.horizontal, 12)
+            .padding(.bottom, 12)
+        }
+        .background(Color.white.ignoresSafeArea())
+    }
+
+    private func handleAmountKey(_ key: String) {
+        switch key {
+        case "⌫":
+            if !amountExpression.isEmpty {
+                amountExpression.removeLast()
+            }
+        case "清空":
+            amountExpression = ""
+        case "完成":
+            let value = max(0.0, KeypadCalculator.evaluate(amountExpression))
+            amountString = String(format: "%.2f", value)
+            editableBill.amount = value
+            showAmountKeypad = false
+        default:
+            amountExpression.append(key)
         }
     }
 

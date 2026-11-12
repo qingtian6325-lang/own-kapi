@@ -15,9 +15,11 @@ public struct RecordAndAISheetView: View {
     @State private var selectedSubIndex: Int? = 5 // defaults to 零食甜品 or first sub
     @State private var expression: String = ""
     @State private var noteText: String = ""
-    @State private var selectedAccountName: String = "TNGewallet"
-    @State private var targetAccountName: String = "PBBank"
+    @State private var selectedAccountName: String = "不选账户"
+    @State private var targetAccountName: String = ""
     @State private var includeInStats: Bool = true
+    @State private var includeInBudget: Bool = true
+    @State private var markPendingReimbursement: Bool = false
     @State private var discountAmountText: String = ""
     @State private var showDiscountInput: Bool = false
     @State private var selectedCurrency: CurrencyCode = .myr
@@ -285,43 +287,41 @@ public struct RecordAndAISheetView: View {
     }
 
     private var sheetTopHeader: some View {
-        HStack {
-            Button(action: onDismiss) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(MimiTheme.textSecondary)
-                    .frame(width: 32, height: 32)
-                    .background(Circle().fill(Color(hex: 0xF2F4F8)))
-            }
-
-            Button {
-                withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
-                    isAIMode.toggle()
-                }
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "arrow.left.arrow.right")
-                        .font(.system(size: 11, weight: .bold))
-                    Text(isAIMode ? "手动记账" : "AI助手")
-                        .font(.system(size: 12, weight: .semibold))
-                }
-                .foregroundColor(MimiTheme.expenseBlue)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Capsule().fill(Color(hex: 0xE8F0FE)))
-            }
-            .buttonStyle(.plain)
-
-            Spacer()
-
+        HStack(spacing: 10) {
             if isAIMode {
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(MimiTheme.textSecondary)
+                        .frame(width: 32, height: 32)
+                        .background(Circle().fill(Color(hex: 0xF2F4F8)))
+                }
+                Button {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                        isAIMode = false
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.left.arrow.right")
+                            .font(.system(size: 11, weight: .bold))
+                        Text("手动记账")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .foregroundColor(MimiTheme.expenseBlue)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                }
+                .buttonStyle(.plain)
+                Spacer()
                 Text("任何事都能问我")
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
                 Color.clear.frame(width: 44, height: 32)
             } else {
-                HStack(spacing: 18) {
+                // Gold: 支出 | 收入 | 转账 ····· AI 助手 · ✕
+                HStack(spacing: 16) {
                     ForEach(
                         [
                             (TransactionType.expense, "支出"),
@@ -338,7 +338,11 @@ public struct RecordAndAISheetView: View {
                             VStack(spacing: 4) {
                                 Text(titleText)
                                     .font(.system(size: 15, weight: selectedTab == tab ? .bold : .medium))
-                                    .foregroundColor(selectedTab == tab ? MimiTheme.textPrimary : MimiTheme.textMuted)
+                                    .foregroundColor(
+                                        selectedTab == tab
+                                            ? (tab == .income ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
+                                            : MimiTheme.textMuted
+                                    )
                                 Capsule()
                                     .fill(
                                         selectedTab == tab
@@ -354,11 +358,28 @@ public struct RecordAndAISheetView: View {
 
                 Spacer()
 
-                Button(action: onOpenCategorySettings) {
-                    Text("设置")
+                Button {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                        isAIMode = true
+                    }
+                } label: {
+                    Text("AI 助手")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(MimiTheme.textSecondary)
+                        .foregroundColor(MimiTheme.expenseBlue)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Capsule().fill(Color(hex: 0xE8F0FE)))
                 }
+                .buttonStyle(.plain)
+
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(MimiTheme.textSecondary)
+                        .frame(width: 30, height: 30)
+                        .background(Circle().fill(Color(hex: 0xF2F4F8)))
+                }
+                .buttonStyle(.plain)
             }
         }
     }
@@ -369,71 +390,76 @@ public struct RecordAndAISheetView: View {
         VStack(spacing: 0) {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 12) {
-                    // 6-column Primary Category Grid
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 6), spacing: 12) {
-                        ForEach(Array(activeCategories.enumerated()), id: \.element.id) { idx, group in
-                            let isSelected = idx == selectedGroupIndex
-                            Button {
-                                selectedGroupIndex = idx
-                                selectedSubIndex = group.subcategories.isEmpty ? nil : 0
-                            } label: {
-                                VStack(spacing: 5) {
-                                    MimiStickerIconView(
-                                        iconName: group.displayBadgeToken,
-                                        categoryName: group.name,
-                                        transactionType: selectedTab,
-                                        useFirstCharIcon: group.useFirstCharIcon,
-                                        size: 40,
-                                        isSelected: isSelected
-                                    )
-                                    Text(group.name)
-                                        .font(.system(size: 11, weight: isSelected ? .bold : .regular))
-                                        .foregroundColor(isSelected ? MimiTheme.textPrimary : MimiTheme.textSecondary)
-                                        .lineLimit(1)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .padding(.top, 6)
-
-                    // Expandable Subcategory Box (IMG_2245)
-                    if let group = currentGroup, !group.subcategories.isEmpty {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("\(group.name) · 二级分类")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(MimiTheme.textMuted)
-
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5), spacing: 10) {
-                                ForEach(Array(group.subcategories.enumerated()), id: \.element.id) { sIdx, sub in
-                                    let isSubSelected = selectedSubIndex == sIdx
-                                    Button {
-                                        selectedSubIndex = sIdx
-                                    } label: {
-                                        VStack(spacing: 4) {
-                                            MimiStickerIconView(
-                                                iconName: sub.iconName,
-                                                categoryName: sub.name,
-                                                transactionType: selectedTab,
-                                                useFirstCharIcon: sub.useFirstCharIcon,
-                                                size: 32,
-                                                isSelected: isSubSelected
-                                            )
-                                            Text(sub.name)
-                                                .font(.system(size: 10, weight: isSubSelected ? .bold : .regular))
-                                                .foregroundColor(isSubSelected ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
-                                                .lineLimit(1)
-                                        }
+                    if selectedTab == .transfer {
+                        transferAccountPicker
+                            .padding(.top, 10)
+                    } else {
+                        // 5-column Primary Category Grid (gold manual entry)
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5), spacing: 12) {
+                            ForEach(Array(activeCategories.enumerated()), id: \.element.id) { idx, group in
+                                let isSelected = idx == selectedGroupIndex
+                                Button {
+                                    selectedGroupIndex = idx
+                                    selectedSubIndex = group.subcategories.isEmpty ? nil : 0
+                                } label: {
+                                    VStack(spacing: 5) {
+                                        MimiStickerIconView(
+                                            iconName: group.displayBadgeToken,
+                                            categoryName: group.name,
+                                            transactionType: selectedTab,
+                                            useFirstCharIcon: group.useFirstCharIcon,
+                                            size: 40,
+                                            isSelected: isSelected
+                                        )
+                                        Text(group.name)
+                                            .font(.system(size: 11, weight: isSelected ? .bold : .regular))
+                                            .foregroundColor(isSelected ? MimiTheme.textPrimary : MimiTheme.textSecondary)
+                                            .lineLimit(1)
                                     }
-                                    .buttonStyle(.plain)
                                 }
+                                .buttonStyle(.plain)
                             }
                         }
-                        .padding(12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(Color(hex: 0xF5F6FA))
-                        )
+                        .padding(.top, 6)
+
+                        // Expandable Subcategory Box (IMG_2245)
+                        if let group = currentGroup, !group.subcategories.isEmpty {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("\(group.name) · 二级分类")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(MimiTheme.textMuted)
+
+                                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5), spacing: 10) {
+                                    ForEach(Array(group.subcategories.enumerated()), id: \.element.id) { sIdx, sub in
+                                        let isSubSelected = selectedSubIndex == sIdx
+                                        Button {
+                                            selectedSubIndex = sIdx
+                                        } label: {
+                                            VStack(spacing: 4) {
+                                                MimiStickerIconView(
+                                                    iconName: sub.iconName,
+                                                    categoryName: sub.name,
+                                                    transactionType: selectedTab,
+                                                    useFirstCharIcon: sub.useFirstCharIcon,
+                                                    size: 32,
+                                                    isSelected: isSubSelected
+                                                )
+                                                Text(sub.name)
+                                                    .font(.system(size: 10, weight: isSubSelected ? .bold : .regular))
+                                                    .foregroundColor(isSubSelected ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
+                                                    .lineLimit(1)
+                                            }
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                            }
+                            .padding(12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .fill(Color(hex: 0xF5F6FA))
+                            )
+                        }
                     }
                 }
                 .padding(.horizontal, 16)
@@ -442,126 +468,156 @@ public struct RecordAndAISheetView: View {
 
             Divider()
 
-            // Metadata Pills Row (不选账户 / TNGewallet | 11/08 16:59 | 优惠 | 选标签 | 多币种)
+            // Gold pills: 日期 · 账本 · 无账户 · 优惠 / 待报销 · 计入收支 · 计入预算 · 标签
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    Menu {
-                        Button("不选账户") { selectedAccountName = "不选账户" }
-                        ForEach(store.accounts) { acc in
-                            Button("\(acc.name) (\(MimiTheme.formatRM(acc.balance)))") {
-                                selectedAccountName = acc.name
-                            }
-                        }
-                    } label: {
-                        pillLabel(icon: "creditcard", text: selectedAccountName)
-                    }
-
-                    if selectedTab == .transfer {
-                        Menu {
-                            ForEach(store.accounts) { acc in
-                                Button("转入: \(acc.name)") {
-                                    targetAccountName = acc.name
-                                }
-                            }
-                        } label: {
-                            pillLabel(icon: "arrow.right.circle", text: "转入 \(targetAccountName)")
-                        }
-                    }
-
                     Button {
                         showDatePickerSheet = true
                     } label: {
                         let f = DateFormatter()
-                        let _ = { f.dateFormat = "MM/dd HH:mm" }()
+                        let _ = { f.dateFormat = "M月d日" }()
                         pillLabel(icon: "calendar", text: f.string(from: selectedDate))
                     }
                     .buttonStyle(.plain)
 
-                    Button {
-                        showDiscountInput.toggle()
-                    } label: {
-                        pillLabel(icon: "tag", text: discountAmountText.isEmpty ? "优惠" : "优惠 RM\(discountAmountText)")
-                    }
-                    .buttonStyle(.plain)
-
-                    Button {
-                        includeInStats.toggle()
-                    } label: {
-                        pillLabel(
-                            icon: includeInStats ? "checkmark.circle.fill" : "slash.circle",
-                            text: includeInStats ? "计入收支" : "不计入收支"
-                        )
-                    }
-                    .buttonStyle(.plain)
-
-                    Menu {
-                        ForEach(store.tags, id: \.self) { tag in
-                            Button {
-                                if selectedTags.contains(tag) {
-                                    selectedTags.removeAll(where: { $0 == tag })
-                                } else {
-                                    selectedTags.append(tag)
-                                }
-                            } label: {
-                                if selectedTags.contains(tag) {
-                                    Label(tag, systemImage: "checkmark")
-                                } else {
-                                    Text(tag)
+                    if selectedTab != .transfer {
+                        Menu {
+                            ForEach(store.ledgers) { ledger in
+                                Button(ledger.name) {
+                                    store.currentLedgerName = ledger.name
                                 }
                             }
+                        } label: {
+                            let ledgerName = store.currentLedgerName
+                            let short = ledgerName.count > 6 ? String(ledgerName.prefix(4)) + "…" : ledgerName
+                            pillLabel(icon: "book.closed", text: short.isEmpty ? "Main…" : short)
                         }
-                    } label: {
-                        pillLabel(icon: "number", text: selectedTags.isEmpty ? "选标签" : selectedTags.joined(separator: ","))
-                    }
 
-                    Menu {
-                        ForEach(CurrencyCode.allCases, id: \.self) { code in
-                            Button(code.rawValue) { selectedCurrency = code }
+                        Menu {
+                            Button("不选账户") { selectedAccountName = "不选账户" }
+                            ForEach(store.accounts) { acc in
+                                Button("\(acc.name) (\(MimiTheme.formatRM(acc.balance)))") {
+                                    selectedAccountName = acc.name
+                                }
+                            }
+                        } label: {
+                            pillLabel(icon: "creditcard", text: selectedAccountName == "不选账户" ? "无账户" : selectedAccountName)
                         }
-                    } label: {
-                        pillLabel(icon: "globe", text: "多币种 (\(selectedCurrency.rawValue))")
+
+                        Button {
+                            showDiscountInput.toggle()
+                        } label: {
+                            pillLabel(icon: "tag", text: discountAmountText.isEmpty ? "优惠" : "优惠 RM\(discountAmountText)")
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            markPendingReimbursement.toggle()
+                        } label: {
+                            pillLabel(
+                                icon: markPendingReimbursement ? "checkmark.circle.fill" : "clock",
+                                text: "待报销"
+                            )
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            includeInStats.toggle()
+                        } label: {
+                            pillLabel(
+                                icon: includeInStats ? "checkmark.circle.fill" : "slash.circle",
+                                text: includeInStats ? "计入收支" : "不计入收支"
+                            )
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            includeInBudget.toggle()
+                        } label: {
+                            pillLabel(
+                                icon: includeInBudget ? "checkmark.circle.fill" : "slash.circle",
+                                text: includeInBudget ? "计入预算" : "不计入预算"
+                            )
+                        }
+                        .buttonStyle(.plain)
+
+                        Menu {
+                            ForEach(store.tags, id: \.self) { tag in
+                                Button {
+                                    if selectedTags.contains(tag) {
+                                        selectedTags.removeAll(where: { $0 == tag })
+                                    } else {
+                                        selectedTags.append(tag)
+                                    }
+                                } label: {
+                                    if selectedTags.contains(tag) {
+                                        Label(tag, systemImage: "checkmark")
+                                    } else {
+                                        Text(tag)
+                                    }
+                                }
+                            }
+                        } label: {
+                            pillLabel(icon: "number", text: selectedTags.isEmpty ? "标签" : selectedTags.joined(separator: ","))
+                        }
                     }
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
             }
 
-            // Amount + Note Row (RM0.00 MYR ⌄ + 点此输入备注...)
+            // Amount + Note Row (gold: RM0.00 + MYR ⌄, 点击填写备注信息 + 相册/拍照)
             VStack(spacing: 8) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(composedCategoryPath)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(MimiTheme.textSecondary)
-
-                    Spacer()
-
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(expression.isEmpty ? "RM0.00" : "RM\(expression)")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 30, weight: .bold, design: .rounded))
                         .foregroundColor(selectedTab == .income ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
 
-                    Text("\(selectedCurrency.rawValue) ⌄")
-                        .font(.system(size: 12, weight: .semibold))
+                    Menu {
+                        ForEach(CurrencyCode.allCases, id: \.self) { code in
+                            Button(code.rawValue) { selectedCurrency = code }
+                        }
+                    } label: {
+                        HStack(spacing: 2) {
+                            Text(selectedCurrency.rawValue)
+                                .font(.system(size: 12, weight: .semibold))
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 9, weight: .bold))
+                        }
                         .foregroundColor(MimiTheme.textMuted)
-                }
+                    }
 
-                HStack(spacing: 10) {
-                    TextField("点此输入备注...", text: $noteText)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 16)
+
+                HStack(spacing: 8) {
+                    TextField("点击填写备注信息", text: $noteText)
                         .font(.system(size: 14))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                        .foregroundColor(MimiTheme.textPrimary)
 
                     Button {
                         showImageSourceDialog = true
                     } label: {
-                        Image(systemName: "camera.fill")
+                        Image(systemName: "photo.on.rectangle")
                             .font(.system(size: 15))
-                            .foregroundColor(MimiTheme.expenseBlue)
-                            .frame(width: 36, height: 36)
-                            .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xE8F0FE)))
+                            .foregroundColor(Color(hex: 0x9AA0B0))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        showImageSourceDialog = true
+                    } label: {
+                        Image(systemName: "camera")
+                            .font(.system(size: 15))
+                            .foregroundColor(Color(hex: 0x9AA0B0))
                     }
                     .buttonStyle(.plain)
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(hex: 0xF5F6FA)))
+                .padding(.horizontal, 16)
 
                 if !attachedReceiptFilenames.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -620,6 +676,64 @@ public struct RecordAndAISheetView: View {
             // Custom Calculator Keypad (IMG_2245)
             calculatorKeypad
         }
+    }
+
+    /// Gold transfer: 扣款账户 ⇄ 入款账户
+    private var transferAccountPicker: some View {
+        HStack(spacing: 10) {
+            Menu {
+                ForEach(store.accounts) { acc in
+                    Button(acc.name) { selectedAccountName = acc.name }
+                }
+            } label: {
+                transferAccountBox(
+                    title: selectedAccountName.isEmpty || selectedAccountName == "不选账户" ? "扣款账户" : selectedAccountName,
+                    subtitle: selectedAccountName.isEmpty || selectedAccountName == "不选账户" ? "选择转出" : "扣款账户"
+                )
+            }
+
+            Button {
+                let from = selectedAccountName
+                selectedAccountName = targetAccountName
+                targetAccountName = from
+            } label: {
+                Image(systemName: "arrow.left.arrow.right")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(MimiTheme.expenseBlue)
+                    .frame(width: 36, height: 36)
+                    .background(Circle().fill(Color(hex: 0xE8F0FE)))
+            }
+            .buttonStyle(.plain)
+
+            Menu {
+                ForEach(store.accounts) { acc in
+                    Button(acc.name) { targetAccountName = acc.name }
+                }
+            } label: {
+                transferAccountBox(
+                    title: targetAccountName.isEmpty ? "入款账户" : targetAccountName,
+                    subtitle: targetAccountName.isEmpty ? "选择转入" : "入款账户"
+                )
+            }
+        }
+    }
+
+    private func transferAccountBox(title: String, subtitle: String) -> some View {
+        VStack(spacing: 8) {
+            Image(systemName: "creditcard")
+                .font(.system(size: 22))
+                .foregroundColor(MimiTheme.textSecondary)
+            Text(title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(MimiTheme.textPrimary)
+                .lineLimit(1)
+            Text(subtitle)
+                .font(.system(size: 11))
+                .foregroundColor(MimiTheme.textMuted)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 22)
+        .background(RoundedRectangle(cornerRadius: 16).fill(Color(hex: 0xF5F6FA)))
     }
 
     private func pillLabel(icon: String, text: String) -> some View {
@@ -695,6 +809,10 @@ public struct RecordAndAISheetView: View {
             return
         }
         let discountVal = Double(discountAmountText) ?? 0.0
+        var tags = selectedTags
+        if markPendingReimbursement, !tags.contains("待报销") {
+            tags.append("待报销")
+        }
         let tx = TransactionItem(
             type: selectedTab,
             categoryPath: selectedTab == .transfer ? "转账" : composedCategoryPath,
@@ -705,7 +823,8 @@ public struct RecordAndAISheetView: View {
             note: noteText,
             discountAmount: discountVal,
             includeInStats: selectedTab == .transfer ? false : includeInStats,
-            tags: selectedTags,
+            includeInBudget: selectedTab == .transfer ? false : includeInBudget,
+            tags: tags,
             receiptImageLabels: attachedReceiptFilenames,
             date: selectedDate
         )
@@ -715,6 +834,8 @@ public struct RecordAndAISheetView: View {
         discountAmountText = ""
         selectedTags = []
         attachedReceiptFilenames = []
+        markPendingReimbursement = false
+        includeInBudget = true
         if dismissAfter {
             onDismiss()
         }
@@ -810,7 +931,7 @@ public struct RecordAndAISheetView: View {
                                 Circle().fill(Color(hex: 0xFFE8CC)).frame(width: 30, height: 30)
                                 Text("🐱").font(.system(size: 16))
                             }
-                            Text("你好，我是咪咪 🐱 任何事都能问我：直接说一句「午餐 38」就能记账，也可以问我「本月花了多少」「哪一笔最贵」。")
+                            Text("你好，我是咪咪。任何事都能问我：直接说「午餐 38」就能记账，也可以问「本月花了多少」「哪一笔最贵」。")
                                 .font(.system(size: 14))
                                 .foregroundColor(MimiTheme.textPrimary)
                                 .padding(12)
@@ -909,12 +1030,13 @@ public struct RecordAndAISheetView: View {
                     .padding(.vertical, 10)
                     .background(Capsule().fill(Color(hex: 0xF5F6FA)))
 
+                // Gold: send arrow always visible (blue); mic via long-press on field when empty
+                #if canImport(Speech) && canImport(AVFoundation)
                 if aiInputText.trimmingCharacters(in: .whitespaces).isEmpty {
-                    #if canImport(Speech) && canImport(AVFoundation)
                     Image(systemName: speechTranscriber.isRecording ? "mic.fill" : "mic")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(speechTranscriber.isRecording ? MimiTheme.dangerRed : MimiTheme.expenseBlue)
-                        .frame(width: 30, height: 30)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(speechTranscriber.isRecording ? MimiTheme.dangerRed : MimiTheme.textMuted)
+                        .frame(width: 28, height: 28)
                         .contentShape(Rectangle())
                         .onLongPressGesture(minimumDuration: 0.25, maximumDistance: 60, pressing: { isPressing in
                             if isPressing {
@@ -930,19 +1052,25 @@ public struct RecordAndAISheetView: View {
                                 }
                             }
                         }, perform: {})
-                    #endif
-                } else {
-                    Button {
-                        let prompt = aiInputText
-                        aiInputText = ""
-                        aiEngine.handleUserMessage(prompt, store: store)
-                    } label: {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: 30))
-                            .foregroundColor(MimiTheme.expenseBlue)
-                    }
-                    .buttonStyle(.plain)
                 }
+                #endif
+
+                Button {
+                    let prompt = aiInputText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !prompt.isEmpty else { return }
+                    aiInputText = ""
+                    aiEngine.handleUserMessage(prompt, store: store)
+                } label: {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 30))
+                        .foregroundColor(
+                            aiInputText.trimmingCharacters(in: .whitespaces).isEmpty
+                                ? MimiTheme.textMuted
+                                : MimiTheme.expenseBlue
+                        )
+                }
+                .buttonStyle(.plain)
+                .disabled(aiInputText.trimmingCharacters(in: .whitespaces).isEmpty)
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 14)

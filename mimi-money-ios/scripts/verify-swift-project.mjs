@@ -50,6 +50,16 @@ function verifyTask1() {
   assertContains(theme, '0x2D5AF0', 'MimiTheme.swift');
   assertContains(theme, '0xE8832E', 'MimiTheme.swift');
   assertContains(theme, '0xF5F6FA', 'MimiTheme.swift');
+  assertContains(theme, 'homeHorizontalPadding', 'MimiTheme.swift');
+  assertContains(theme, 'cardCornerRadius', 'MimiTheme.swift');
+  assertContains(theme, 'askBarHeight', 'MimiTheme.swift');
+  assertContains(theme, 'homeCardShadow', 'MimiTheme.swift');
+  assertContains(theme, 'drawerWidthFraction', 'MimiTheme.swift');
+  assertContains(theme, 'drawerGridIconSize', 'MimiTheme.swift');
+  assertContains(theme, 'proBadgeBlueHex', 'MimiTheme.swift');
+  assertContains(theme, 'vipGoldHex', 'MimiTheme.swift');
+  assertContains(theme, 'calendarDayCellHeight', 'MimiTheme.swift');
+  assertContains(theme, 'calendarHorizontalPadding', 'MimiTheme.swift');
 
   const models = assertFileExists('Sources/MimiMoneyCore/Models/MimiModels.swift');
   checkBalancedBraces(models, 'MimiModels.swift');
@@ -279,7 +289,8 @@ function verifyTask5() {
     '净资产',
     '30天趋势',
     '记录明细',
-    '任何事情都能问我'
+    '任何事情都能问我',
+    '删除成功'
   ]) {
     assertContains(home, label, 'HomeRecordView.swift');
   }
@@ -291,6 +302,8 @@ function verifyTask5() {
     '记录天数',
     '总记录',
     '连续天数',
+    '更多功能',
+    '快捷记账',
     '图表统计',
     '资产管理',
     '账本管理',
@@ -300,7 +313,12 @@ function verifyTask5() {
     '标签管理',
     '导入导出',
     '自动记账',
-    '定时记账'
+    '定时记账',
+    '设置',
+    'gearshape',
+    'Pro',
+    'VIP',
+    '今'
   ]) {
     assertContains(drawer, label, 'SideDrawerMenuView.swift');
   }
@@ -311,9 +329,14 @@ function verifyTask5() {
     'public struct AllRecordsCalendarView: View',
     '全部记录',
     '回今天',
+    '月支出',
+    '月收入',
+    '日均支出',
     '收支分析',
+    '支出分析',
     '收入多',
-    '支出多'
+    '支出多',
+    '任何事都能问我'
   ]) {
     assertContains(cal, label, 'AllRecordsCalendarView.swift');
   }
@@ -327,7 +350,7 @@ function verifyTask6() {
   for (const label of [
     'public struct RecordAndAISheetView: View',
     '手动记账',
-    'AI助手',
+    'AI 助手',
     '支出',
     '收入',
     '转账',
@@ -369,9 +392,12 @@ function verifyTask7() {
   for (const label of [
     'public struct MimiStatsView: View',
     '支出分类构成',
+    '本月支出',
     '每日支出趋势',
     '单笔支出排行',
     '账单汇总',
+    '总计',
+    '日均',
     '本周结余'
   ]) {
     assertContains(stats, label, 'MimiStatsView.swift');
@@ -384,7 +410,8 @@ function verifyTask7() {
     '净资产',
     '待报销',
     '账户详情',
-    '修改账户余额',
+    '记账',
+    '转账',
     '明细',
     '账单',
     '余额:'
@@ -398,8 +425,9 @@ function verifyTask7() {
     'public struct BudgetManagementView: View',
     '预算管理',
     '已分类预算',
-    '未分类预算',
-    '动态日预算'
+    '动态日预算',
+    '分类预算',
+    '修改分类预算'
   ]) {
     assertContains(budget, label, 'BudgetManagementView.swift');
   }
@@ -410,7 +438,7 @@ function verifyTask7() {
     'public struct CategoryManagementView: View',
     '分类方案管理',
     '添加1级支出分类',
-    '首字作为图标（包含emoji）'
+    '首字作为图标'
   ]) {
     assertContains(catMgr, label, 'CategoryManagementView.swift');
   }
@@ -420,8 +448,8 @@ function verifyTask7() {
   for (const label of [
     'public struct SettingsAndShortcutsGuideView: View',
     '自动记账',
-    '修改 (View)',
-    '确认 (Got it)'
+    '截屏识别记账',
+    '读取剪贴板截图'
   ]) {
     assertContains(settings, label, 'SettingsAndShortcutsGuideView.swift');
   }
