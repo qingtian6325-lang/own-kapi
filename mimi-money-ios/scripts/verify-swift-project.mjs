@@ -392,9 +392,12 @@ function verifyTask7() {
   for (const label of [
     'public struct MimiStatsView: View',
     '支出分类构成',
+    '本月支出',
     '每日支出趋势',
     '单笔支出排行',
     '账单汇总',
+    '总计',
+    '日均',
     '本周结余'
   ]) {
     assertContains(stats, label, 'MimiStatsView.swift');
