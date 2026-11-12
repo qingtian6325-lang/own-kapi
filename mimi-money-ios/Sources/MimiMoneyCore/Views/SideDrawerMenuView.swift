@@ -316,7 +316,6 @@ public struct SideDrawerMenuView: View {
                     icon()
                         .font(.system(size: 21, weight: .light))
                         .foregroundColor(Color(hex: 0x2C2F36))
-                        .symbolRenderingMode(.monochrome)
                 }
                 Text(title)
                     .font(.system(size: 12, weight: .medium))

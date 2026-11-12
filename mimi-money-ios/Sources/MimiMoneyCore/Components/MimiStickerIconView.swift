@@ -107,7 +107,7 @@ public struct MimiStickerIconView: View {
         }
     }
 
-    private static func ink(_ hex: UInt) -> Color { Color(hex: hex) }
+    private static func ink(_ hex: UInt32) -> Color { Color(hex: hex) }
 
     public static func stickerSpec(for key: String, fallbackName: String = "") -> StickerSpec {
         let normalized = String(key.unicodeScalars.filter { $0.value != 0xFE0F && $0.value != 0xFE0E }.map { Character($0) })
