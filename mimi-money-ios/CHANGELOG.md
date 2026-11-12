@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.2.6] - 2026-11-12
+
+### 🎯 Highlights
+- **金标 UI 对齐**：首页、抽屉、日历、统计、资产/账户、预算、分类、设置与自动记账等按参考截图精修（安全区顶栏、右滑确认删除、账单金额键盘、统计/资产进账单详情等）。
+- **分类贴纸与 App Icon**：分类图标改为 Canvas 多色贴纸；App Icon 更新为漫画可爱橘猫抱金币（币面 `$`）。
+- **发版**：`VERSION` /「识别账单」Intent 默认版本升至 1.2.6，Release 资产名为 `MimiMoney-iOS-v1.2.6.ipa`。
+
 ## [v1.2.5] - 2026-11-12
 
 ### 🎯 Highlights
