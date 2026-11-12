@@ -79,6 +79,11 @@ public struct BudgetManagementView: View {
         store.categoryBudgets.reduce(0.0) { $0 + $1.monthlyLimit }
     }
 
+    private var unbudgetedCategories: [CategoryGroup] {
+        let budgetedNames = Set(store.categoryBudgets.map(\.categoryName))
+        return store.expenseCategories.filter { !budgetedNames.contains($0.name) }
+    }
+
     public var body: some View {
         NavigationStack {
             ScrollView(.vertical, showsIndicators: false) {
