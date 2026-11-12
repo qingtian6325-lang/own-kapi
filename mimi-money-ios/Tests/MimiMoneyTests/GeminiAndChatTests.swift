@@ -218,14 +218,16 @@ XCTAssertEqual(kind(of: "你好"),.question)
 
 // MARK: - 聊天草稿确认才入账
 
-func testChatDraftConfirmAndCancelFlow() {
+func testChatDraftConfirmAndCancelFlow() async {
 let store = MimiStore(inMemory: true)
 let engine = MimiAIEngine()
 engine.clearHistory()
 let countBefore = store.transactions.count
 
 engine.handleUserMessage("午餐 38", store: store)
-guard let draftMessage = engine.messages.last(where: { $0.hasDraftBills}) else {
+let firstReady = await waitUntilDraftReady(engine: engine)
+XCTAssertTrue(firstReady, "记账句应生成草稿消息")
+guard let draftMessage = engine.messages.last(where: { $0.hasDraftBills }) else {
 XCTFail("记账句应生成草稿消息")
 return
 }
@@ -236,13 +238,27 @@ XCTAssertEqual(store.transactions.count, countBefore + 1)
 XCTAssertTrue(store.transactions.contains(where: { $0.amount == 38.0 && $0.categoryPath == "餐饮-餐厅" }))
 
 engine.handleUserMessage("打车 50", store: store)
-guard let secondDraft = engine.messages.last(where: { $0.hasDraftBills}) else {
+let secondReady = await waitUntilDraftReady(engine: engine)
+XCTAssertTrue(secondReady, "第二句应生成草稿消息")
+guard let secondDraft = engine.messages.last(where: { $0.hasDraftBills }) else {
 XCTFail("第二句应生成草稿消息")
 return
 }
 engine.cancelDrafts(messageId: secondDraft.id)
 XCTAssertEqual(store.transactions.count, countBefore + 1)
 engine.clearHistory()
+}
+
+/// `sendComposed` 在 Task 里填草稿；等思考结束且出现草稿再断言。
+private func waitUntilDraftReady(engine: MimiAIEngine, timeoutSeconds: TimeInterval = 2.0) async -> Bool {
+let deadline = Date().addingTimeInterval(timeoutSeconds)
+while Date() < deadline {
+if !engine.isAnswering, engine.messages.contains(where: { $0.hasDraftBills }) {
+return true
+}
+try? await Task.sleep(nanoseconds: 20_000_000)
+}
+return !engine.isAnswering && engine.messages.contains(where: { $0.hasDraftBills })
 }
 
 // MARK: - Context 汇总数学
