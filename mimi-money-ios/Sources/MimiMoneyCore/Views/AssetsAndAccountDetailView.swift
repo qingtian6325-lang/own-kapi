@@ -253,60 +253,59 @@ public struct AssetsAndAccountDetailView: View {
         return NavigationStack {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 14) {
-                    // Gold: 明细 | 账单 toggle under title
-                    HStack(spacing: 0) {
-                        ForEach(["明细", "账单"], id: \.self) { tab in
-                            Button {
-                                detailTabMode = tab
-                            } label: {
-                                Text(tab)
-                                    .font(.system(size: 14, weight: detailTabMode == tab ? .bold : .medium))
-                                    .foregroundColor(detailTabMode == tab ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 8)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(detailTabMode == tab ? Color.white : Color.clear)
-                                    )
+                    // Gold cream account header: icon · name · 自定义余额 · … / 余额 / 记账·转账
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack(spacing: 12) {
+                            MimiStickerIconView(
+                                iconName: liveAccount.iconName,
+                                categoryName: liveAccount.name,
+                                transactionType: .income,
+                                size: 44
+                            )
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(liveAccount.name)
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(MimiTheme.textPrimary)
+                                Text(liveAccount.subtitle.isEmpty ? "自定义余额" : liveAccount.subtitle)
+                                    .font(.system(size: 12))
+                                    .foregroundColor(MimiTheme.textSecondary)
                             }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .padding(4)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xE9ECF4)))
-
-                    HStack {
-                        Text(detailTabMode == "明细" ? "账户明细" : "账户账单")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(MimiTheme.textPrimary)
-                        Spacer()
-                        Text("2026年11月")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(MimiTheme.textSecondary)
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(MimiTheme.textMuted)
-                    }
-
-                    // Compact balance + edit (gold prioritizes feed list)
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            Text(liveAccount.name)
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(MimiTheme.textPrimary)
                             Spacer()
-                            Text("余额: \(MimiTheme.formatRM(liveAccount.balance))")
-                                .font(.system(size: 14, weight: .bold, design: .rounded))
-                                .foregroundColor(liveAccount.balance < -0.0001 ? Color(hex: 0xE53935) : MimiTheme.expenseBlue)
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color(hex: 0xB8BCC8))
                         }
-                        Button {
-                            showBalanceEditSheet.toggle()
-                        } label: {
-                            Text("修改账户余额")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(MimiTheme.expenseBlue)
+
+                        Path { path in
+                            path.move(to: CGPoint(x: 0, y: 0.5))
+                            path.addLine(to: CGPoint(x: 2000, y: 0.5))
                         }
-                        .buttonStyle(.plain)
+                        .stroke(style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                        .foregroundColor(Color(hex: 0xD9C9AE))
+                        .frame(height: 1)
+                        .clipped()
+
+                        HStack(alignment: .firstTextBaseline) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("余额")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(MimiTheme.textSecondary)
+                                HStack(spacing: 6) {
+                                    Text(MimiTheme.formatRM(liveAccount.balance))
+                                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                                        .foregroundColor(liveAccount.balance < -0.0001 ? Color(hex: 0xE53935) : MimiTheme.textPrimary)
+                                    Button {
+                                        showBalanceEditSheet.toggle()
+                                    } label: {
+                                        Image(systemName: "pencil")
+                                            .font(.system(size: 13, weight: .semibold))
+                                            .foregroundColor(Color(hex: 0xB8BCC8))
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            Spacer()
+                        }
 
                         if showBalanceEditSheet {
                             VStack(alignment: .leading, spacing: 8) {
@@ -344,55 +343,127 @@ public struct AssetsAndAccountDetailView: View {
                                 }
                             }
                         }
+
+                        HStack(spacing: 10) {
+                            accountActionPill(title: "记账", systemName: "plus") {
+                                showBalanceEditSheet = false
+                            }
+                            accountActionPill(title: "转账", systemName: "arrow.left.arrow.right") {
+                                showBalanceEditSheet = false
+                            }
+                        }
                     }
-                    .padding(14)
-                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .fill(MimiTheme.assetCream)
+                    )
+
+                    HStack {
+                        Text(detailTabMode == "明细" ? "账户明细" : "账户账单")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(MimiTheme.textPrimary)
+                        Spacer()
+                        HStack(spacing: 0) {
+                            ForEach(
+                                [("明细", "calendar"), ("账单", "doc.text")],
+                                id: \.0
+                            ) { tab, icon in
+                                Button {
+                                    detailTabMode = tab
+                                } label: {
+                                    Image(systemName: icon)
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundColor(detailTabMode == tab ? MimiTheme.expenseBlue : MimiTheme.textMuted)
+                                        .frame(width: 36, height: 28)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(detailTabMode == tab ? Color(hex: 0xE8F0FE) : Color.clear)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel(tab)
+                            }
+                        }
+                        .padding(3)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xEEF0F6)))
+                    }
 
                     if detailTabMode == "明细" {
+                        HStack {
+                            Text("2026年11月")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(MimiTheme.textSecondary)
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(MimiTheme.textMuted)
+                            Spacer()
+                        }
+
                         VStack(spacing: 0) {
-                            ForEach(auditLogs) { log in
+                            ForEach(Array(auditLogs.enumerated()), id: \.element.id) { idx, log in
                                 HStack(alignment: .top, spacing: 10) {
-                                    // 记 / 改 / 删 Badge (IMG_2261)
-                                    Text(log.action.rawValue)
-                                        .font(.system(size: 11, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .frame(width: 24, height: 24)
-                                        .background(
-                                            Circle().fill(badgeColor(for: log.action))
-                                        )
+                                    Text(formattedBillTime(log.loggedAt))
+                                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                                        .foregroundColor(MimiTheme.textMuted)
+                                        .frame(width: 36, alignment: .leading)
+
+                                    VStack(spacing: 0) {
+                                        Text(log.action.rawValue)
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundColor(.white)
+                                            .frame(width: 22, height: 22)
+                                            .background(Circle().fill(badgeColor(for: log.action)))
+                                        if idx < auditLogs.count - 1 {
+                                            Rectangle()
+                                                .fill(Color(hex: 0xE5E7EB))
+                                                .frame(width: 1)
+                                                .frame(maxHeight: .infinity)
+                                        }
+                                    }
+                                    .frame(width: 22)
 
                                     VStack(alignment: .leading, spacing: 3) {
-                                        Text(log.title)
-                                            .font(.system(size: 14, weight: .semibold))
+                                        Text(auditTypeLabel(log))
+                                            .font(.system(size: 13, weight: .semibold))
                                             .foregroundColor(MimiTheme.textPrimary)
-                                        Text(log.subtitle)
-                                            .font(.system(size: 11))
-                                            .foregroundColor(MimiTheme.textMuted)
+                                        if !log.note.isEmpty {
+                                            Text(log.note)
+                                                .font(.system(size: 12))
+                                                .foregroundColor(MimiTheme.textSecondary)
+                                                .lineLimit(2)
+                                        }
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "calendar")
+                                                .font(.system(size: 10))
+                                            Text("账单日期 \(formattedBillDate(log.billDate))")
+                                                .font(.system(size: 11))
+                                        }
+                                        .foregroundColor(MimiTheme.textMuted)
                                     }
 
-                                    Spacer()
+                                    Spacer(minLength: 6)
 
                                     VStack(alignment: .trailing, spacing: 3) {
-                                        Text(
-                                            log.deltaAmount >= 0
-                                                ? "+\(MimiTheme.formatRM(log.deltaAmount))"
-                                                : "-\(MimiTheme.formatRM(abs(log.deltaAmount)))"
-                                        )
-                                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                                        .strikethrough(log.action == .deleted, color: MimiTheme.textMuted)
-                                        .foregroundColor(
-                                            log.action == .deleted
-                                                ? MimiTheme.textMuted
-                                                : (log.deltaAmount >= 0 ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
-                                        )
-
                                         Text("余额: \(MimiTheme.formatRM(log.balanceAfter))")
                                             .font(.system(size: 11, design: .rounded))
                                             .foregroundColor(MimiTheme.textMuted)
+                                        Text(
+                                            log.deltaAmount >= 0
+                                                ? MimiTheme.formatRM(log.deltaAmount)
+                                                : "-\(MimiTheme.formatRM(abs(log.deltaAmount)))"
+                                        )
+                                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                                        .strikethrough(log.action == .deleted && log.deltaAmount < 0, color: MimiTheme.textMuted)
+                                        .foregroundColor(
+                                            log.action == .deleted && log.deltaAmount < 0
+                                                ? MimiTheme.textMuted
+                                                : (log.deltaAmount >= 0 ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
+                                        )
                                     }
                                 }
-                                .padding(14)
-                                Divider()
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
                             }
                         }
                         .background(RoundedRectangle(cornerRadius: 18).fill(Color.white))
@@ -409,10 +480,48 @@ public struct AssetsAndAccountDetailView: View {
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("关闭") { selectedAccount = nil }
+                    Button {
+                        selectedAccount = nil
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(MimiTheme.textPrimary)
+                    }
                 }
             }
         }
+    }
+
+    private func accountActionPill(title: String, systemName: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: systemName)
+                    .font(.system(size: 12, weight: .semibold))
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+            }
+            .foregroundColor(MimiTheme.textPrimary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(Capsule().fill(Color.white))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func auditTypeLabel(_ log: AccountAuditLog) -> String {
+        let kind: String
+        switch log.transactionType {
+        case .income: kind = "收入"
+        case .expense: kind = "支出"
+        case .transfer: kind = "转账"
+        }
+        return "\(kind) | \(log.categoryTitle)"
+    }
+
+    private func formattedBillDate(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy.MM.dd"
+        return f.string(from: date)
     }
 
     @ViewBuilder

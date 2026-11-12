@@ -589,6 +589,47 @@ public struct SettingsAndShortcutsGuideView: View {
         .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xF7F8FA)))
     }
 
+    /// Gold compact row for secondary trigger methods (②③)
+    private func compactTriggerRow(index: Int, title: String, steps: [String]) -> some View {
+        let expanded = expandedTriggerSection == index
+        return VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    expandedTriggerSection = expanded ? nil : index
+                }
+            } label: {
+                HStack {
+                    Text(title)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(MimiTheme.textPrimary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(MimiTheme.textMuted)
+                        .rotationEffect(.degrees(expanded ? 90 : 0))
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 14)
+            }
+            .buttonStyle(.plain)
+
+            if expanded {
+                VStack(alignment: .leading, spacing: 5) {
+                    ForEach(Array(steps.enumerated()), id: \.offset) { _, step in
+                        guideStepRow(step)
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.bottom, 12)
+            }
+        }
+        .background(RoundedRectangle(cornerRadius: 14).fill(Color.white))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color(hex: 0xECEEF3), lineWidth: 1)
+        )
+    }
+
     private var shortcutsCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 0) {
@@ -638,10 +679,10 @@ public struct SettingsAndShortcutsGuideView: View {
                 ]
             )
 
-            triggerSection(
+            // Gold: ②③ often appear as compact chevron rows
+            compactTriggerRow(
                 index: 2,
                 title: "② 通过「轻敲手机背面」触发",
-                symbol: "iphone.radiowaves.left.and.right",
                 steps: [
                     "1. 先按下方「教程」把「识别账单」捷徑建好（只需一次）",
                     "2. 打开 iPhone「设置 → 辅助功能 → 触控」，拉到最底部点「轻点背面」",
@@ -650,10 +691,9 @@ public struct SettingsAndShortcutsGuideView: View {
                 ]
             )
 
-            triggerSection(
+            compactTriggerRow(
                 index: 3,
                 title: "③ 通过「操作按钮」触发",
-                symbol: "button.programmable",
                 steps: [
                     "1. 先按下方「教程」把「识别账单」捷徑建好（只需一次）",
                     "2. 打开 iPhone「设置 → 操作按钮」，选择「快捷指令」（需 iPhone 15 Pro 或更新机型）",
