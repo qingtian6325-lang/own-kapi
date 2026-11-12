@@ -356,13 +356,23 @@ function verifyTask6() {
     '转账',
     '再记',
     '完成',
-    '任何事都能问我',
-    '有哪些分类',
-    '怎么记退款',
-    '怎么记报销',
-    '一句话记多笔'
+    // 金标 AI 记账界面
+    '来记笔账吧',
+    '任何事情都能问我',
+    '咪咪思考中',
+    '内容由AI生成',
+    'exampleQuestions'
   ]) {
     assertContains(recordSheet, label, 'RecordAndAISheetView.swift');
+  }
+
+  const aiEngine = assertFileExists('Sources/MimiMoneyCore/Services/MimiAIEngine.swift');
+  for (const label of [
+    '查询本月单笔消费超过200块的账单',
+    '查看我最近3天的消费记录',
+    '我最近一次购物买了什么'
+  ]) {
+    assertContains(aiEngine, label, 'MimiAIEngine.swift');
   }
 
   const billDetail = assertFileExists('Sources/MimiMoneyCore/Views/BillDetailSheetView.swift');
