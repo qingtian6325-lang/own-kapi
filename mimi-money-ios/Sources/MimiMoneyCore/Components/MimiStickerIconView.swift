@@ -70,15 +70,15 @@ public struct MimiStickerIconView: View {
         } else {
             let spec = Self.stickerSpec(for: iconName, fallbackName: categoryName)
             ZStack {
-                // 贴纸风：白底圆 + 浅灰细描边 + 轻微阴影，emoji 居中放大（参考 Kapi 分类图标选择器风格，原创实现）
+                // Gold A/C: white rim, fuller pastel disc, flatter shadow, 1pt 10% stroke.
                 Circle()
                     .fill(Color.white)
                     .frame(width: size, height: size)
-                    .shadow(color: Color.black.opacity(0.08), radius: size * 0.06, x: 0, y: size * 0.03)
+                    .shadow(color: Color.black.opacity(0.04), radius: size * 0.02, x: 0, y: size * 0.006)
 
                 Circle()
-                    .fill(spec.background.opacity(0.55))
-                    .frame(width: size * 0.82, height: size * 0.82)
+                    .fill(spec.background)
+                    .frame(width: size * 0.90, height: size * 0.90)
 
                 Text(spec.emoji)
                     .font(.system(size: size * 0.58))
@@ -101,10 +101,14 @@ public struct MimiStickerIconView: View {
     }
 
     public static func stickerSpec(for key: String, fallbackName: String = "") -> StickerSpec {
+        let normalized = String(key.unicodeScalars.filter { $0.value != 0xFE0F && $0.value != 0xFE0E }.map { Character($0) })
+        if let home = homeGoldSpec(normalizedKey: normalized, hint: fallbackName) {
+            return home
+        }
         switch key {
         // Expense - Food
         case "food_group", "food_restaurant":
-            return StickerSpec(emoji: "🍜", background: Color(hex: 0xFFF3E0))
+            return StickerSpec(emoji: "🍜", background: Color(hex: 0xFFE0B2))
         case "food_ingredients":
             return StickerSpec(emoji: "🥬", background: Color(hex: 0xE8F5E9))
         case "food_takeout":
@@ -142,7 +146,7 @@ public struct MimiStickerIconView: View {
         case "trans_train":
             return StickerSpec(emoji: "🚄", background: Color(hex: 0xE8EAF6))
         case "trans_fuel":
-            return StickerSpec(emoji: "⛽️", background: Color(hex: 0xFFEBEE))
+            return StickerSpec(emoji: "⛽", background: Color(hex: 0xD6F1FA))
         case "trans_parking":
             return StickerSpec(emoji: "🅿️", background: Color(hex: 0xE3F2FD))
         case "trans_car":
@@ -154,7 +158,7 @@ public struct MimiStickerIconView: View {
         case "house_group", "house_rent":
             return StickerSpec(emoji: "🏠", background: Color(hex: 0xFFF3E0))
         case "house_util":
-            return StickerSpec(emoji: "💡", background: Color(hex: 0xFFFDE7))
+            return StickerSpec(emoji: "💡", background: Color(hex: 0xFFF6D0))
         case "house_phone":
             return StickerSpec(emoji: "📱", background: Color(hex: 0xE3F2FD))
         case "house_prop":
@@ -165,8 +169,10 @@ public struct MimiStickerIconView: View {
             return StickerSpec(emoji: "🧹", background: Color(hex: 0xE8F5E9))
 
         // Expense - Entertainment
-        case "fun_group", "fun_offline":
+        case "fun_group":
             return StickerSpec(emoji: "🎡", background: Color(hex: 0xF3E5F5))
+        case "fun_offline":
+            return StickerSpec(emoji: "🎟️", background: Color(hex: 0xFFE3C2))
         case "fun_sport":
             return StickerSpec(emoji: "🏸", background: Color(hex: 0xE8F5E9))
         case "fun_digital":
@@ -224,7 +230,7 @@ public struct MimiStickerIconView: View {
         case "ins_group":
             return StickerSpec(emoji: "🛡️", background: Color(hex: 0xE8F5E9))
         case "inv_group":
-            return StickerSpec(emoji: "📈", background: Color(hex: 0xFFF8E1))
+            return StickerSpec(emoji: "📈", background: Color(hex: 0xFFF3C4))
         case "other_exp":
             return StickerSpec(emoji: "✨", background: Color(hex: 0xF3E5F5))
 
@@ -257,6 +263,34 @@ public struct MimiStickerIconView: View {
             }
             return StickerSpec(emoji: "🦫", background: Color(hex: 0xFFF3E0))
         }
+    }
+
+    /// Gold A/C feed stickers. Catalog `iconName`s are emoji, so semantic keys alone never matched.
+    private static func homeGoldSpec(normalizedKey key: String, hint: String) -> StickerSpec? {
+        if key == "💡"
+            || key == "house_util"
+            || hint.contains("控制中心")
+            || hint.contains("灯泡")
+            || hint.contains("电灯") {
+            return StickerSpec(emoji: "💡", background: Color(hex: 0xFFF6D0))
+        }
+        if key == "⛽" || key == "trans_fuel" || hint.contains("加油") {
+            return StickerSpec(emoji: "⛽", background: Color(hex: 0xD6F1FA))
+        }
+        if key == "🍜" || key == "food_restaurant" || key == "food_group" || hint.contains("餐厅") {
+            return StickerSpec(emoji: "🍜", background: Color(hex: 0xFFE0B2))
+        }
+        if key == "📈" || key == "inv_group" || hint == "投资理财" || hint == "投资收入" || hint.hasSuffix("投资理财") {
+            return StickerSpec(emoji: "📈", background: Color(hex: 0xFFF3C4))
+        }
+        if key == "🎟" || key == "fun_offline" || hint.contains("线下娱乐") {
+            return StickerSpec(emoji: "🎟️", background: Color(hex: 0xFFE3C2))
+        }
+        let isPersonToken = key.contains("🧑") || key.contains("⚕") || key == "inc_custom_transfer"
+        if hint.contains("别人转账") || key == "inc_custom_transfer" || (isPersonToken && hint.contains("转账")) {
+            return StickerSpec(emoji: "🧑", background: Color(hex: 0xFFE6CC))
+        }
+        return nil
     }
 
     public static let stickerGalleryItems: [(category: String, icons: [String])] = [
