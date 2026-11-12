@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.2.4] - 2026-11-12
+
+### 🎯 Highlights
+- **转账识别贯通对方账户**：Gemini 返回的 `targetAccount` 写入草稿并在落账时带上 `targetAccountId`，本人账户互转不再丢对方账户、余额计算正确。
+- **可疑金额拦截贯通 App 内路径**：首页相册/拍照识别出可疑金额时改为未确认入账并打开编辑；聊天识别会标红提示再确认；Gemini 路径对「电量区间整数 + 空/纯数字备注」补强拦截。
+- **细分类问账不再被本地抢答**：「餐饮花了多少」等点名分类的问题交给 Gemini；「这个月花了多少」仍可离线答整月汇总。分类表改为从 `DefaultCatalog` 动态生成。
+- **识别前统一压缩图片**：最长边 1280、JPEG ~0.72，降低超时与额度消耗；指南页剪贴板识别改为确认后才入账；自然语言记账默认沿用最近一笔账户；清除旧版 UserDefaults 明文 LLM Key。
+- **工程与发版备注**：`xtool.yml` 最低系统版本与 Package/CI 对齐为 iOS 17.0；「识别账单」Intent Version 默认更新为 1.2.4；结构校验脚本改跟纯 AI + LocalBookkeepingAnswerer 结构；新增转账对方账户、可疑金额、细分类勿抢答、图片预处理、明文 Key 清理等回归测试。
+
 ## [v1.2.3] - 2026-11-11
 
 ### 🎯 Highlights

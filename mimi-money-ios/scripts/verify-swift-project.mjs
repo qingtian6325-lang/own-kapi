@@ -181,14 +181,39 @@ function verifyTask3() {
     'public final class MimiAIEngine: ObservableObject',
     'public func parseNaturalLanguageBills(',
     'public func handleUserMessage(',
-    '咪咪记账',
-    '标准收入分类如下',
-    '另外你还自建了「家用」「车贷」两个支出分类和「别人转账」这个收入分类'
+    'LocalBookkeepingAnswerer.blocks',
+    'GeminiClient.answerQuestion',
+    'preferredAccount(from:'
   ]) {
     assertContains(ai, sym, 'MimiAIEngine.swift');
   }
 
-  console.log('Task 3 verified: ParsedDraftBill, SmartReceiptRecognizer (pure AI, no OCR) and MimiAIEngine tests valid');
+  const helpers = assertFileExists('Sources/MimiMoneyCore/Services/BookkeepingAIHelpers.swift');
+  checkBalancedBraces(helpers, 'BookkeepingAIHelpers.swift');
+  for (const sym of [
+    'public enum LocalBookkeepingAnswerer',
+    '咪咪记账',
+    '标准收入分类如下',
+    '另外你还自建了「家用」「车贷」两个支出分类和「别人转账」这个收入分类',
+    'public enum BillAmountSanity',
+    'isSuspicious(draft:'
+  ]) {
+    assertContains(helpers, sym, 'BookkeepingAIHelpers.swift');
+  }
+
+  const gemini = assertFileExists('Sources/MimiMoneyCore/Services/GeminiClient.swift');
+  checkBalancedBraces(gemini, 'GeminiClient.swift');
+  for (const sym of [
+    'public enum GeminiClient',
+    'targetAccountId: resolvedTargetId',
+    'GeminiImagePreprocessor.prepareForUpload'
+  ]) {
+    assertContains(gemini, sym, 'GeminiClient.swift');
+  }
+
+  assertContains(recognizer, 'GeminiImagePreprocessor', 'SmartReceiptRecognizer.swift');
+
+  console.log('Task 3 verified: ParsedDraftBill, SmartReceiptRecognizer (pure AI, no OCR), GeminiClient, LocalBookkeepingAnswerer and MimiAIEngine valid');
 }
 
 function verifyTask4() {

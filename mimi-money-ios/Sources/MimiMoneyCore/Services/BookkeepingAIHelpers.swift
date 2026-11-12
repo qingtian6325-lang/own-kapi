@@ -51,13 +51,17 @@ return true
 public enum BillAmountSanity {
 public static let maximumPlausibleAmount: Double = 100_000
 
-public static func isSuspicious(amount: Double, sourceText: String? = nil) -> Bool {
+public static func isSuspicious(
+amount: Double,
+sourceText: String? = nil,
+draftNote: String? = nil
+) -> Bool {
 guard amount > 0 else { return true}
 if amount > maximumPlausibleAmount { return true}
-guard let sourceText, amount == amount.rounded(), amount >= 1, amount <= 100 else {
-return false
-}
+let intCandidate = amount == amount.rounded() && amount >= 1 && amount <= 100
+guard intCandidate else { return false}
 let intText = String(Int(amount))
+if let sourceText {
 if sourceText.contains(intText + "%") {
 return true
 }
@@ -65,7 +69,87 @@ return true
 if sourceText.contains("$ " + intText) && !sourceText.contains("RM" + intText) {
 return true
 }
+}
+// 仅当调用方显式传入 draftNote（Gemini 草稿路径）时：
+// 电量区间整数 + 空/纯数字备注 → 高度可疑。未传 draftNote 时不启用，避免误伤旧口径。
+if let draftNote {
+let note = draftNote.trimmingCharacters(in: .whitespacesAndNewlines)
+if note.isEmpty { return true}
+if note.allSatisfy({ $0.isNumber || $0.isWhitespace }) { return true}
+}
 return false
+}
+
+public static func isSuspicious(draft: ParsedDraftBill) -> Bool {
+isSuspicious(amount: draft.amount, sourceText: draft.merchantOrNote, draftNote: draft.merchantOrNote)
+}
+}
+
+// MARK: - 本地可离线回答的问账（分类表 / VIP / 整月泛问汇总）
+//
+// 细分类问题（如「餐饮花了多少」）故意返回 nil，交给 Gemini 带账目上下文回答，
+// 避免本地整月汇总「抢答」把分类问句答成整月。
+
+public enum LocalBookkeepingAnswerer {
+@MainActor
+public static func blocks(for trimmed: String, in store: MimiStore) -> [AIChatResponseBlock]? {
+if trimmed.contains("分类") && (trimmed.contains("增加") || trimmed.contains("删除") || trimmed.contains("标准") || trimmed.contains("哪些")) {
+let expenseRows: [(String, String)] = DefaultCatalog.standardExpenseCategories().map { group in
+let subs = group.subCategories.map(\.name).joined(separator: "、")
+return (group.name, subs.isEmpty ? "（无二级）" : subs)
+}
+let incomeRows: [(String, String)] = DefaultCatalog.standardIncomeCategories().map { group in
+let subs = group.subCategories.map(\.name).joined(separator: "、")
+return (group.name, subs.isEmpty ? "（无二级）" : subs)
+}
+let customNote = "标准收入分类如下：\n另外你还自建了「家用」「车贷」两个支出分类和「别人转账」这个收入分类 😊\n你可以在左侧菜单 →「分类管理」中随时新增、编辑或长按排序分类。"
+return [
+.text("小金主，咪咪记账的标准支出分类如下："),
+.categoryTable(expenseRows: expenseRows, incomeRows: incomeRows, customNote: customNote)
+]
+}
+
+if trimmed.contains("退款") {
+return [.text("小金主，记退款有两种方式：\n1. 点击原支出账单进入「账单详情」→ 在「添加退款/返现」中填入退款金额，系统会自动抵扣原支出；\n2. 直接记一笔「收入 → 退款返还」分类账单。")]
+}
+if trimmed.contains("报销") {
+return [.text("小金主，你可以在记账时打上「报销」标签，并在「资产管理 → 待报销」卡片中统一查看待报销总额。收到报销款后记入「收入 → 退款返还-报销」即可。")]
+}
+if trimmed.contains("VIP") || trimmed.contains("会员") {
+return [.text("小金主，当前版本已为你永久解锁 Pro / VIP 全部高级权益（无限多账本、AI 智能助手、快捷指令自动截屏记账、分类预算与资产全维图表）🎉")]
+}
+if trimmed.contains("共享账本") || trimmed.contains("账本") {
+return [.text("你可以在首页左上角点击「☰」打开侧边菜单 → 选择「账本管理」创建新账本，或通过「导入导出」一键分享账本数据给家人伴侣。")]
+}
+
+if trimmed.contains("多少") || trimmed.contains("统计") || trimmed.contains("分析") || trimmed.contains("复盘") {
+// 问句里点名了具体分类 → 交给 Gemini，不返回整月汇总
+let categoryNames = (DefaultCatalog.standardExpenseCategories() + DefaultCatalog.standardIncomeCategories()).map(\.name)
+if categoryNames.contains(where: { trimmed.contains($0) }) {
+return nil
+}
+let now = Date()
+let cal = Calendar(identifier: .gregorian)
+let year = cal.component(.year, from: now)
+let month = cal.component(.month, from: now)
+let monthSpent = store.monthlyExpenseTotal(year: year, month: month)
+let monthIncome = store.monthlyIncomeTotal(year: year, month: month)
+let count = store.transactions.filter {
+$0.type == .expense && $0.includeInStats
+&& cal.component(.year, from: $0.date) == year
+&& cal.component(.month, from: $0.date) == month
+}.count
+return [
+.spendingSummary(
+title: "\(year)年\(month)月 收支复盘",
+amount: monthSpent,
+count: count,
+details: "本月共支出 RM\(String(format: "%.2f", monthSpent))（\(count)笔），总收入 RM\(String(format: "%.2f", monthIncome))，月预算剩余 RM\(String(format: "%.2f", max(0, store.currentLedger.monthlyBudget - monthSpent)))。"
+)
+]
+}
+
+return nil
 }
 }
 

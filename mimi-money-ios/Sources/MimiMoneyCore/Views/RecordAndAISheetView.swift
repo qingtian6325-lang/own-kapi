@@ -264,7 +264,11 @@ public struct RecordAndAISheetView: View {
             do {
                 let result = try await SmartReceiptRecognizer.recognize(imageData: imageData)
                 await MainActor.run {
-                    aiEngine.appendRecognizedDraft(result.draft, sourceLabel: sourceLabel)
+                    aiEngine.appendRecognizedDraft(
+                        result.draft,
+                        sourceLabel: sourceLabel,
+                        isSuspiciousAmount: result.isSuspiciousAmount
+                    )
                 }
             } catch {
                 await MainActor.run {

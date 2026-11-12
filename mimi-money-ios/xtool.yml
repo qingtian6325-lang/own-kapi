@@ -2,7 +2,7 @@ version: 1
 bundleID: com.jinghao.mimimoney
 product: MimiMoneyApp
 displayName: 咪咪记账
-minimumOSVersion: "16.0"
+minimumOSVersion: "17.0"
 urlSchemes:
   - mimimoney
 permissions:

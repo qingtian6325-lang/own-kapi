@@ -11,6 +11,9 @@ public struct ParsedDraftBill: Identifiable, Codable, Equatable, Sendable {
     public var categoryDisplayName: String
     public var accountId: String?
     public var accountDisplayName: String
+    /// 转账对方账户（仅 type == .transfer 时有意义）
+    public var targetAccountId: String?
+    public var targetAccountDisplayName: String?
     public var merchantOrNote: String
     public var occurredAt: Date
     public var rawImageData: Data?
@@ -24,6 +27,7 @@ public struct ParsedDraftBill: Identifiable, Codable, Equatable, Sendable {
         ).iconName
     }
     public var accountName: String { accountDisplayName }
+    public var targetAccountName: String? { targetAccountDisplayName }
     public var note: String { merchantOrNote }
     public var date: Date { occurredAt }
 
@@ -37,6 +41,8 @@ public struct ParsedDraftBill: Identifiable, Codable, Equatable, Sendable {
         categoryDisplayName: String,
         accountId: String? = nil,
         accountDisplayName: String,
+        targetAccountId: String? = nil,
+        targetAccountDisplayName: String? = nil,
         merchantOrNote: String,
         occurredAt: Date = Date(),
         rawImageData: Data? = nil
@@ -50,6 +56,8 @@ public struct ParsedDraftBill: Identifiable, Codable, Equatable, Sendable {
         self.categoryDisplayName = categoryDisplayName
         self.accountId = accountId
         self.accountDisplayName = accountDisplayName
+        self.targetAccountId = targetAccountId
+        self.targetAccountDisplayName = targetAccountDisplayName
         self.merchantOrNote = merchantOrNote
         self.occurredAt = occurredAt
         self.rawImageData = rawImageData

@@ -1,4 +1,52 @@
 import Foundation
+#if canImport(UIKit)
+import UIKit
+#endif
+
+// MARK: - 上传前图片压缩（识别路径统一入口）
+//
+// 快捷指令剪贴板 PNG / 相册原图直接 base64 进 Gemini 容易超时与烧额度。
+// 统一缩到最长边 maxDimension、jpeg ~0.7，超过 maxUploadBytes 再降质。
+
+public enum GeminiImagePreprocessor {
+    public static let maxDimension: CGFloat = 1280
+    public static let maxUploadBytes = 1_200_000
+    public static let initialJPEGQuality: CGFloat = 0.72
+
+    public static func prepareForUpload(_ data: Data) -> Data {
+        #if canImport(UIKit)
+        guard let image = UIImage(data: data) else { return data }
+        let resized = resizeIfNeeded(image)
+        var quality = initialJPEGQuality
+        var output = resized.jpegData(compressionQuality: quality) ?? data
+        while output.count > maxUploadBytes, quality > 0.35 {
+            quality -= 0.12
+            if let next = resized.jpegData(compressionQuality: quality) {
+                output = next
+            } else {
+                break
+            }
+        }
+        return output
+        #else
+        return data
+        #endif
+    }
+
+    #if canImport(UIKit)
+    private static func resizeIfNeeded(_ image: UIImage) -> UIImage {
+        let size = image.size
+        let longest = max(size.width, size.height)
+        guard longest > maxDimension, longest > 0 else { return image }
+        let scale = maxDimension / longest
+        let newSize = CGSize(width: size.width * scale, height: size.height * scale)
+        let renderer = UIGraphicsImageRenderer(size: newSize)
+        return renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: newSize))
+        }
+    }
+    #endif
+}
 
 // MARK: - 智能识别门面：纯 Gemini 单引擎（v1.2.1 起彻底移除本地 OCR）
 //
@@ -67,12 +115,17 @@ public enum SmartReceiptRecognizer {
     }
 
     public static func recognize(imageData: Data, now: Date = Date()) async throws -> Result {
+        let prepared = GeminiImagePreprocessor.prepareForUpload(imageData)
         do {
-            let draft = try await recognitionProvider(imageData, now)
+            var draft = try await recognitionProvider(prepared, now)
+            // 保留压缩后的图，便于确认入账时附上小票（调用方可再覆盖）
+            if draft.rawImageData == nil {
+                draft.rawImageData = prepared
+            }
             GeminiSettings.recordCallStatus(success: true, message: "截图识别成功（Gemini）")
             return Result(
                 draft: draft,
-                isSuspiciousAmount: BillAmountSanity.isSuspicious(amount: draft.amount)
+                isSuspiciousAmount: BillAmountSanity.isSuspicious(draft: draft)
             )
         } catch let error as GeminiError {
             let failure = ReceiptRecognitionFailure(geminiError: error)

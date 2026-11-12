@@ -98,6 +98,7 @@ public enum ShortcutActionCoordinator {
             iconName: draft.iconName,
             amount: draft.amount,
             accountName: draft.accountName,
+            targetAccountName: draft.targetAccountName,
             note: draft.note,
             receiptImageLabels: attachments,
             date: draft.date,
@@ -785,7 +786,7 @@ public struct ScanScreenshotIntent: AppIntent {
     @Parameter(title: "类型", default: 2)
     public var type: Int?
 
-    @Parameter(title: "版本", default: "1.2.3")
+    @Parameter(title: "版本", default: "1.2.4")
     public var version: String?
 
     public init() {}

@@ -429,6 +429,85 @@ XCTFail("不应抛其他错误：\(error)")
 XCTAssertEqual(counter.value, 1, "客户端错误不重试")
 }
 
+// MARK: - v1.2.4 AI 接入修复回归
+
+func testTransferDraftKeepsTargetAccount() {
+let dto = GeminiBillDTO(
+type: "transfer",
+amount: 100,
+counterparty: "",
+counterpartyKind: "merchant",
+account: "TNGewallet",
+targetAccount: "PBBank",
+primaryCategory: "转账",
+subCategory: nil,
+occurredAt: "2026-11-11 12:00",
+note: "账户转账"
+)
+let draft = dto.toDraftBill(now: Date())
+XCTAssertEqual(draft.type, .transfer)
+XCTAssertEqual(draft.accountDisplayName, "TNGewallet")
+XCTAssertEqual(draft.targetAccountId, "acc_pbb")
+XCTAssertEqual(draft.targetAccountDisplayName, "PBBank")
+
+let store = MimiStore(inMemory: true)
+let tx = ShortcutActionCoordinator.makeTransaction(from: draft, in: store, isConfirmed: true)
+XCTAssertEqual(tx.targetAccountId, "acc_pbb")
+XCTAssertEqual(tx.targetAccountName, "PBBank")
+}
+
+func testSuspiciousAmountUsesDraftNoteEvidence() {
+// Gemini 路径没有 OCR 原文时，用电量区间整数 + 空/纯数字备注拦截
+XCTAssertTrue(BillAmountSanity.isSuspicious(amount: 79, draftNote: ""))
+XCTAssertTrue(BillAmountSanity.isSuspicious(amount: 85, draftNote: "85"))
+XCTAssertTrue(BillAmountSanity.isSuspicious(amount: 79, sourceText: nil, draftNote: "   "))
+XCTAssertFalse(BillAmountSanity.isSuspicious(amount: 79, draftNote: "SHELL 消费"))
+XCTAssertFalse(BillAmountSanity.isSuspicious(amount: 38.99, draftNote: ""))
+}
+
+func testLocalAnswerDoesNotHijackCategorySpecificSpendingQuestion() {
+let store = MimiStore(inMemory: true)
+// 细分类问题应交给 Gemini，不返回整月汇总
+XCTAssertNil(LocalBookkeepingAnswerer.blocks(for: "餐饮花了多少", in: store))
+XCTAssertNil(LocalBookkeepingAnswerer.blocks(for: "交通这个月花了多少", in: store))
+// 整月泛问仍可本地答
+let monthBlocks = LocalBookkeepingAnswerer.blocks(for: "这个月花了多少", in: store)
+XCTAssertNotNil(monthBlocks)
+XCTAssertTrue(monthBlocks?.contains(where: {
+if case .spendingSummary = $0 { return true }
+return false
+}) == true)
+}
+
+func testImagePreprocessorShrinksOversizedJPEGWhenPossible() {
+// 构造一块假「大」数据：无 UIKit 时至少保证函数幂等且不崩
+let tiny = Data([0xFF, 0xD8, 0xFF, 0xD9])
+let prepared = GeminiImagePreprocessor.prepareForUpload(tiny)
+XCTAssertFalse(prepared.isEmpty)
+XCTAssertLessThanOrEqual(prepared.count, max(tiny.count, GeminiImagePreprocessor.maxUploadBytes))
+}
+
+func testNaturalLanguagePrefersLastUsedAccountWhenUnspecified() {
+let engine = MimiAIEngine()
+let bills = engine.parseNaturalLanguageBills(
+"午餐 38",
+preferredAccountId: "acc_pbb",
+preferredAccountName: "PBBank"
+)
+XCTAssertEqual(bills.count, 1)
+XCTAssertEqual(bills[0].accountId, "acc_pbb")
+XCTAssertEqual(bills[0].accountDisplayName, "PBBank")
+}
+
+func testLegacyLLMAPIKeyIsNotPersistedInUserDefaults() {
+UserDefaults.standard.set("sk-leak-test", forKey: "mimi_llm_api_key")
+let engine = MimiAIEngine()
+engine.clearLegacyPlaintextAPIKeyIfNeeded()
+XCTAssertNil(UserDefaults.standard.string(forKey: "mimi_llm_api_key"))
+engine.saveAPISettings(key: "should-not-persist", baseURL: "https://example.com", model: "x")
+XCTAssertNil(UserDefaults.standard.string(forKey: "mimi_llm_api_key"), "旧自定义 LLM Key 不得再写进 UserDefaults")
+}
+
 // MARK: - Helpers
 
 private func decodeDTO(fromGenerateContentResponse jsonText: String) throws -> GeminiBillDTO {

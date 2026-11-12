@@ -202,6 +202,16 @@ categoryDisplay = display.categoryPath
 
 let accountId = DefaultCatalog.resolveAccountId(from: account)
 let accountName = DefaultCatalog.resolveAccountName(from: accountId)
+let resolvedTargetId: String?
+let resolvedTargetName: String?
+if txType == .transfer, let target = targetAccount?.trimmingCharacters(in: .whitespacesAndNewlines), !target.isEmpty {
+let tid = DefaultCatalog.resolveAccountId(from: target)
+resolvedTargetId = tid
+resolvedTargetName = DefaultCatalog.resolveAccountName(from: tid)
+} else {
+resolvedTargetId = nil
+resolvedTargetName = nil
+}
 let note = BillNoteFormatter.makeNote(
 type: txType,
 counterparty: counterparty,
@@ -218,6 +228,8 @@ subCategoryId: subId,
 categoryDisplayName: categoryDisplay,
 accountId: accountId,
 accountDisplayName: accountName,
+targetAccountId: resolvedTargetId,
+targetAccountDisplayName: resolvedTargetName,
 merchantOrNote: note.isEmpty ? counterparty : note,
 occurredAt: GeminiBillDTO.parseOccurredAt(occurredAt) ?? now
 )
@@ -480,14 +492,16 @@ return (false, "模型 \(model) 存在，但实际生成失败：\(error.localiz
 
 public static func recognizeBill(imageData: Data, now: Date = Date()) async throws -> ParsedDraftBill {
 let model = GeminiSettings.modelName
-let mimeType = imageData.prefix(4) == Data([0x89, 0x50, 0x4E, 0x47]) ? "image/png" : "image/jpeg"
+// 调用方通常已预处理；这里再兜底一次，避免 Intent/旧入口漏压缩。
+let uploadData = GeminiImagePreprocessor.prepareForUpload(imageData)
+let mimeType = uploadData.prefix(4) == Data([0x89, 0x50, 0x4E, 0x47]) ? "image/png" : "image/jpeg"
 
 let body: [String: Any] = [
 "systemInstruction": ["parts": [["text": recognitionSystemPrompt(now: now)]]],
 "contents": [[
 "role": "user",
 "parts": [
-["inline_data": ["mime_type": mimeType, "data": imageData.base64EncodedString()]],
+["inline_data": ["mime_type": mimeType, "data": uploadData.base64EncodedString()]],
 ["text": "请识别这张付款/收款/转账截图，按系统规则输出 JSON。"]
 ]
 ]],

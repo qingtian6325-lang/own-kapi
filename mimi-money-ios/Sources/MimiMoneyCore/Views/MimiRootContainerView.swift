@@ -138,6 +138,7 @@ public struct MimiRootContainerView: View {
                             iconName: homeDraft.iconName,
                             amount: homeDraft.amount,
                             accountName: homeDraft.accountName,
+                            targetAccountName: homeDraft.targetAccountName,
                             note: homeDraft.note,
                             date: homeDraft.date
                         ),
@@ -328,13 +329,26 @@ public struct MimiRootContainerView: View {
     }
 
     /// 首页问账条面板选图/拍照后的识别：纯 AI（Gemini），成功才出草稿卡等待确认；
+    /// 可疑金额直接以未确认状态入账并打开编辑页（与 Intent 路径一致）；
     /// 失败弹窗如实说明原因，不生成草稿、不落账。
     private func recognizeHomeImage(_ imageData: Data) {
         Task {
             do {
                 let result = try await SmartReceiptRecognizer.recognize(imageData: imageData)
                 await MainActor.run {
-                    homeRecognizedDraft = result.draft
+                    if result.isSuspiciousAmount {
+                        let tx = ShortcutActionCoordinator.makeTransaction(
+                            from: result.draft,
+                            in: store,
+                            isConfirmed: false
+                        )
+                        store.addTransaction(tx)
+                        _ = ShortcutActionCoordinator.markForInAppModification(transactionId: tx.id, in: store)
+                        activeBillForEdit = tx
+                        homeRecognizedDraft = nil
+                    } else {
+                        homeRecognizedDraft = result.draft
+                    }
                 }
             } catch {
                 let text = (error as? ReceiptRecognitionFailure)?.dialogText
