@@ -321,40 +321,59 @@ public struct BudgetManagementView: View {
 
     // MARK: - Top Monthly Overview +Ring Chart (IMG_2263)
 
+    private var budgetUsedRatio: Double {
+        let total = max(store.monthlyBudgetTotal, 0.0001)
+        return min(1.0, max(0.0, monthlySpent / total))
+    }
+
     private var monthlySummaryTopCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("2026年11月 · 月预算剩余")
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("2026年11月")
                         .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(MimiTheme.textSecondary)
+
+                    Text("月预算剩余")
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundColor(MimiTheme.textSecondary)
 
                     Text(MimiTheme.formatRM(monthlyRemaining))
                         .font(.system(size: 26, weight: .bold, design: .rounded))
                         .foregroundColor(MimiTheme.textPrimary)
 
-                    Text("总预算 \(MimiTheme.formatRM(store.monthlyBudgetTotal)) · 已用 \(MimiTheme.formatRM(monthlySpent))")
-                        .font(.system(size: 12))
-                        .foregroundColor(MimiTheme.textSecondary)
-
-                    Button {
-                        totalBudgetInput = String(format: "%.2f", store.monthlyBudgetTotal)
-                        activeSheetType = .editTotal
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "slider.horizontal.3")
-                            Text("修改总预算")
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(Color(hex: 0xEEF0F6)).frame(height: MimiTheme.progressBarHeight)
+                            Capsule()
+                                .fill(MimiTheme.expenseBlue)
+                                .frame(width: max(8, geo.size.width * CGFloat(budgetUsedRatio)), height: MimiTheme.progressBarHeight)
+                            Text("\(Int((budgetUsedRatio * 100).rounded()))%")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.leading, 8)
                         }
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(MimiTheme.expenseBlue)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(Capsule().fill(Color(hex: 0xE8F0FE)))
                     }
-                    .buttonStyle(.plain)
+                    .frame(height: MimiTheme.progressBarHeight)
+
+                    HStack {
+                        Text("已用 \(MimiTheme.formatRM(monthlySpent))")
+                            .font(.system(size: 12))
+                            .foregroundColor(MimiTheme.textSecondary)
+                        Spacer()
+                        Button {
+                            totalBudgetInput = String(format: "%.2f", store.monthlyBudgetTotal)
+                            activeSheetType = .editTotal
+                        } label: {
+                            Text(MimiTheme.formatRM(store.monthlyBudgetTotal))
+                                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                .foregroundColor(MimiTheme.textPrimary)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
 
-                Spacer()
+                Spacer(minLength: 12)
 
                 Button {
                     showDynamicDailySheet = true
@@ -364,15 +383,15 @@ public struct BudgetManagementView: View {
                             .stroke(Color(hex: 0xEEF0F6), lineWidth: 9)
                             .frame(width: 86, height: 86)
                         Circle()
-                            .trim(from: 0, to: 0.72)
+                            .trim(from: 0, to: CGFloat(min(1, todayRemainingAvailable / max(dailyAvailable, 0.0001))))
                             .stroke(MimiTheme.expenseBlue, style: StrokeStyle(lineWidth: 9, lineCap: .round))
                             .rotationEffect(.degrees(-90))
                             .frame(width: 86, height: 86)
                         VStack(spacing: 2) {
-                            Text("动态日预算")
+                            Text("今日可用")
                                 .font(.system(size: 9, weight: .semibold))
                                 .foregroundColor(MimiTheme.expenseBlue)
-                            Text(String(format: "%.2f", dailyAvailable))
+                            Text(String(format: "%.2f", todayRemainingAvailable))
                                 .font(.system(size: 14, weight: .bold, design: .rounded))
                                 .foregroundColor(MimiTheme.textPrimary)
                         }
@@ -385,7 +404,7 @@ public struct BudgetManagementView: View {
                 showDynamicDailySheet = true
             } label: {
                 HStack {
-                    Text("📅 查看动态日预算日历（长按日期可调整当日预算）")
+                    Text("查看动态日预算日历")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(MimiTheme.expenseBlue)
                     Spacer()
@@ -407,7 +426,7 @@ public struct BudgetManagementView: View {
     private var categorizedBudgetListCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("已分类预算 (\(store.categoryBudgets.count))")
+                Text("已分类预算")
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
