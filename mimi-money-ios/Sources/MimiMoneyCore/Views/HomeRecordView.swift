@@ -583,32 +583,62 @@ public struct HomeRecordView: View {
         }
     }
 
+    /// Trash sits on the swiped row (outside the rounded card). A guide inside the
+    /// card does not survive `.frame(maxWidth:)`, which centered the circle on the day.
     private func dayTransactionGroupCard(date: Date, items: [TransactionItem]) -> some View {
         let openID = items.first { $0.id == revealedDeleteID }?.id
-        let rowAlignment: VerticalAlignment = openID == nil ? .center : .feedDeleteRow
+        let gutter: CGFloat = openID == nil ? 0 : FeedDeleteChrome.gap + FeedDeleteChrome.side
+        let cardRadius = MimiTheme.cardCornerRadius
 
-        return HStack(alignment: rowAlignment, spacing: openID == nil ? 0 : 12) {
-            VStack(spacing: 0) {
+        return VStack(spacing: 0) {
+            HStack(spacing: 0) {
                 dayFeedHeader(date: date, items: items)
-
-                ForEach(items) { item in
-                    alignedFeedRow(item, showsDivider: item.id != items.last?.id)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .clipShape(feedCardEndClip(radius: cardRadius, top: true))
+                if gutter > 0 {
+                    Color.clear.frame(width: gutter)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius, style: .continuous)
-                    .fill(MimiTheme.cardBackground)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius, style: .continuous))
 
-            if let openID {
-                deleteTrashButton(id: openID)
-                    .alignmentGuide(.feedDeleteRow) { $0[VerticalAlignment.center] }
-                    .transition(.scale.combined(with: .opacity))
+            ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                let isLast = index == items.count - 1
+                HStack(alignment: .center, spacing: gutter > 0 ? FeedDeleteChrome.gap : 0) {
+                    feedRowButton(item, showsDivider: !isLast)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .clipShape(feedCardEndClip(radius: cardRadius, bottom: isLast))
+
+                    if gutter > 0 {
+                        ZStack {
+                            if item.id == openID {
+                                deleteTrashButton(id: item.id)
+                                    .transition(.scale.combined(with: .opacity))
+                            }
+                        }
+                        .frame(width: FeedDeleteChrome.side, height: FeedDeleteChrome.side)
+                    }
+                }
+            }
+        }
+        .background(alignment: .leading) {
+            HStack(spacing: 0) {
+                RoundedRectangle(cornerRadius: cardRadius, style: .continuous)
+                    .fill(MimiTheme.cardBackground)
+                if gutter > 0 {
+                    Color.clear.frame(width: gutter)
+                }
             }
         }
         .animation(.spring(response: 0.28, dampingFraction: 0.86), value: revealedDeleteID)
+    }
+
+    private func feedCardEndClip(radius: CGFloat, top: Bool = false, bottom: Bool = false) -> UnevenRoundedRectangle {
+        UnevenRoundedRectangle(
+            topLeadingRadius: top ? radius : 0,
+            bottomLeadingRadius: bottom ? radius : 0,
+            bottomTrailingRadius: bottom ? radius : 0,
+            topTrailingRadius: top ? radius : 0,
+            style: .continuous
+        )
     }
 
     private func dayFeedHeader(date: Date, items: [TransactionItem]) -> some View {
@@ -629,16 +659,6 @@ public struct HomeRecordView: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .background(Color(hex: 0xF8F9FC))
-    }
-
-    @ViewBuilder
-    private func alignedFeedRow(_ item: TransactionItem, showsDivider: Bool) -> some View {
-        if revealedDeleteID == item.id {
-            feedRowButton(item, showsDivider: showsDivider)
-                .alignmentGuide(.feedDeleteRow) { $0[VerticalAlignment.center] }
-        } else {
-            feedRowButton(item, showsDivider: showsDivider)
-        }
     }
 
     private func feedRowButton(_ item: TransactionItem, showsDivider: Bool) -> some View {
@@ -724,7 +744,7 @@ public struct HomeRecordView: View {
             Image(systemName: "trash.fill")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(.white)
-                .frame(width: 44, height: 44)
+                .frame(width: FeedDeleteChrome.side, height: FeedDeleteChrome.side)
                 .background(Circle().fill(MimiTheme.dangerRed))
         }
         .buttonStyle(.plain)
@@ -939,14 +959,10 @@ public struct HomeRecordView: View {
     }
 }
 
-private struct FeedDeleteRowAlignment: AlignmentID {
-    static func defaultValue(in context: ViewDimensions) -> CGFloat {
-        context[VerticalAlignment.center]
-    }
-}
-
-extension VerticalAlignment {
-    fileprivate static let feedDeleteRow = VerticalAlignment(FeedDeleteRowAlignment.self)
+/// 44pt circle plus the gap that keeps it outside the day card.
+private enum FeedDeleteChrome {
+    static let side: CGFloat = 44
+    static let gap: CGFloat = 12
 }
 
 /// White chip with a blue bill mark, matching the gold feed header control.
