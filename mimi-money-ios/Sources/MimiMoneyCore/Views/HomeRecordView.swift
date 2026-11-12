@@ -19,6 +19,10 @@ public struct HomeRecordView: View {
     @State private var isNetWorthExpanded: Bool = true
     @State private var showPageSwitcherMenu: Bool = false
     @State private var showLedgerSwitcherSheet: Bool = false
+    @State private var showDeleteToast: Bool = false
+    @State private var revealedDeleteID: UUID? = nil
+    @State private var deleteToastToken: UUID = UUID()
+    @State private var rowSwipeConsumedTap: Bool = false
 
     public init(
         store: MimiStore,
@@ -99,6 +103,19 @@ public struct HomeRecordView: View {
             floatingBottomBar
                 .padding(.horizontal, MimiTheme.homeHorizontalPadding)
                 .padding(.bottom, 12)
+
+            if showDeleteToast {
+                Text("删除成功")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 12)
+                    .background(Capsule().fill(Color.black.opacity(0.72)))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .transition(.opacity)
+                    .zIndex(20)
+                    .allowsHitTesting(false)
+            }
         }
         .sheet(isPresented: $showLedgerSwitcherSheet) {
             ledgerPickerSheet
@@ -522,26 +539,29 @@ public struct HomeRecordView: View {
         }
     }
 
-    // MARK: - Daily Grouped Transaction Feed (IMG_2240)
+    // MARK: - Daily Grouped Transaction Feed (gold C/D)
 
     private var transactionFeedSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("记录明细")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(MimiTheme.textPrimary)
-                Spacer()
+            HStack(spacing: 8) {
                 Button(action: onOpenSearchOrCalendar) {
-                    HStack(spacing: 3) {
-                        Text("全部记录")
-                            .font(.system(size: 12, weight: .medium))
+                    HStack(spacing: 2) {
+                        Text("记录明细")
+                            .font(.system(size: 16, weight: .bold))
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.system(size: 12, weight: .bold))
+                            .padding(.top, 1)
                     }
-                    .foregroundColor(MimiTheme.textSecondary)
+                    .foregroundColor(MimiTheme.textPrimary)
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel("记录明细")
+
+                Spacer(minLength: 8)
+
+                FeedBillMarkButton(action: onOpenSearchOrCalendar)
             }
-            .padding(.top, 4)
+            .padding(.top, 2)
 
             let groups = store.groupedTransactionsByDay()
             if groups.isEmpty {
@@ -554,7 +574,7 @@ public struct HomeRecordView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 32)
-                .background(RoundedRectangle(cornerRadius: 18).fill(Color.white))
+                .background(RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius).fill(MimiTheme.cardBackground))
             } else {
                 ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
                     dayTransactionGroupCard(date: group.date, items: group.items)
@@ -564,95 +584,241 @@ public struct HomeRecordView: View {
     }
 
     private func dayTransactionGroupCard(date: Date, items: [TransactionItem]) -> some View {
+        let openID = items.first { $0.id == revealedDeleteID }?.id
+        let rowAlignment: VerticalAlignment = openID == nil ? .center : .feedDeleteRow
+
+        return HStack(alignment: rowAlignment, spacing: openID == nil ? 0 : 12) {
+            VStack(spacing: 0) {
+                dayFeedHeader(date: date, items: items)
+
+                ForEach(items) { item in
+                    alignedFeedRow(item, showsDivider: item.id != items.last?.id)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius, style: .continuous)
+                    .fill(MimiTheme.cardBackground)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius, style: .continuous))
+
+            if let openID {
+                deleteTrashButton(id: openID)
+                    .alignmentGuide(.feedDeleteRow) { $0[VerticalAlignment.center] }
+                    .transition(.scale.combined(with: .opacity))
+            }
+        }
+        .animation(.spring(response: 0.28, dampingFraction: 0.86), value: revealedDeleteID)
+    }
+
+    private func dayFeedHeader(date: Date, items: [TransactionItem]) -> some View {
         let dayExpense = items.filter { $0.type == .expense }.reduce(0.0) { $0 + $1.amount }
         let dayIncome = items.filter { $0.type == .income }.reduce(0.0) { $0 + $1.amount }
 
-        return VStack(spacing: 0) {
-            HStack {
-                Text(formatDayHeader(date))
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(MimiTheme.textSecondary)
-                Spacer()
-                HStack(spacing: 10) {
-                    if dayExpense > 0 {
-                        Text("支 \(MimiTheme.formatRM(dayExpense))")
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
-                            .foregroundColor(MimiTheme.textSecondary)
+        return HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(formatDayHeader(date))
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(MimiTheme.textPrimary)
+            Spacer(minLength: 8)
+            Text("支 \(MimiTheme.formatRM(dayExpense)) | 收 \(MimiTheme.formatRM(dayIncome))")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(MimiTheme.textSecondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(Color(hex: 0xF8F9FC))
+    }
+
+    @ViewBuilder
+    private func alignedFeedRow(_ item: TransactionItem, showsDivider: Bool) -> some View {
+        if revealedDeleteID == item.id {
+            feedRowButton(item, showsDivider: showsDivider)
+                .alignmentGuide(.feedDeleteRow) { $0[VerticalAlignment.center] }
+        } else {
+            feedRowButton(item, showsDivider: showsDivider)
+        }
+    }
+
+    private func feedRowButton(_ item: TransactionItem, showsDivider: Bool) -> some View {
+        let revealed = revealedDeleteID == item.id
+        return Button {
+            if rowSwipeConsumedTap {
+                rowSwipeConsumedTap = false
+                return
+            }
+            if revealedDeleteID != nil {
+                dismissRevealedDelete()
+                return
+            }
+            onSelectTransaction(item)
+        } label: {
+            HStack(alignment: .center, spacing: 12) {
+                if !revealed {
+                    MimiStickerIconView(
+                        iconName: item.iconName,
+                        categoryName: item.categoryPath,
+                        transactionType: item.type,
+                        size: MimiTheme.transactionRowIconSize
+                    )
+                }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(transactionTitle(item))
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(MimiTheme.textPrimary)
+                            .lineLimit(1)
+                        Spacer(minLength: 8)
+                        Text(signedAmountText(item))
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .foregroundColor(item.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange)
+                            .lineLimit(1)
+                            .layoutPriority(1)
                     }
-                    if dayIncome > 0 {
-                        Text("收 \(MimiTheme.formatRM(dayIncome))")
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
-                            .foregroundColor(MimiTheme.incomeOrange)
+
+                    Text(transactionMetaLine(item))
+                        .font(.system(size: 12))
+                        .foregroundColor(MimiTheme.textMuted)
+                        .lineLimit(1)
+
+                    if !item.accountName.isEmpty {
+                        Text(item.accountName)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(MimiTheme.textSecondary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Capsule().fill(MimiTheme.pillGray))
                     }
                 }
             }
             .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(Color(hex: 0xFAFBFD))
-
-            ForEach(items) { item in
-                Button {
-                    onSelectTransaction(item)
-                } label: {
-                    HStack(spacing: 12) {
-                        MimiStickerIconView(
-                            iconName: item.iconName,
-                            categoryName: item.categoryPath,
-                            transactionType: item.type,
-                            size: 38
-                        )
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(item.categoryPath)
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundColor(MimiTheme.textPrimary)
-
-                            HStack(spacing: 6) {
-                                Text(item.accountName)
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundColor(MimiTheme.textSecondary)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(Capsule().fill(Color(hex: 0xF2F4F8)))
-
-                                if !item.note.isEmpty {
-                                    Text(item.note)
-                                        .font(.system(size: 12))
-                                        .foregroundColor(MimiTheme.textMuted)
-                                        .lineLimit(1)
-                                }
-                            }
-                        }
-
-                        Spacer()
-
-                        Text(
-                            item.type == .expense
-                                ? "-\(MimiTheme.formatRM(item.amount))"
-                                : "+\(MimiTheme.formatRM(item.amount))"
-                        )
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
-                        .foregroundColor(
-                            item.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange
-                        )
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-
-                if item.id != items.last?.id {
-                    Divider()
-                        .padding(.leading, 64)
-                }
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button(role: .destructive) {
+                deleteTransactionShowingToast(item.id)
+            } label: {
+                Image(systemName: "trash.fill")
+            }
+            .tint(MimiTheme.dangerRed)
+        }
+        .simultaneousGesture(rowSwipeGesture(for: item.id))
+        .overlay(alignment: .bottom) {
+            if showsDivider {
+                Rectangle()
+                    .fill(MimiTheme.divider)
+                    .frame(height: 0.5)
+                    .padding(.leading, revealed ? 14 : 14 + MimiTheme.transactionRowIconSize + 12)
             }
         }
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+
+    private func deleteTrashButton(id: UUID) -> some View {
+        Button {
+            deleteTransactionShowingToast(id)
+        } label: {
+            Image(systemName: "trash.fill")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: 44, height: 44)
+                .background(Circle().fill(MimiTheme.dangerRed))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("删除")
+    }
+
+    private func rowSwipeGesture(for id: UUID) -> some Gesture {
+        DragGesture(minimumDistance: 22, coordinateSpace: .local)
+            .onChanged { value in
+                let dx = value.translation.width
+                let dy = value.translation.height
+                if (dx * dx + dy * dy) > 324 {
+                    rowSwipeConsumedTap = true
+                }
+            }
+            .onEnded { value in
+                let dx = value.translation.width
+                let dy = value.translation.height
+                if (dx * dx + dy * dy) > 324 {
+                    rowSwipeConsumedTap = true
+                    Task { @MainActor in
+                        try? await Task.sleep(nanoseconds: 80_000_000)
+                        rowSwipeConsumedTap = false
+                    }
+                }
+                guard abs(dx) > abs(dy) else { return }
+                if dx <= -110 {
+                    deleteTransactionShowingToast(id)
+                } else if dx <= -48 {
+                    animateFeedChange { revealedDeleteID = id }
+                } else if dx >= 36 {
+                    dismissRevealedDelete()
+                }
+            }
+    }
+
+    private func deleteTransactionShowingToast(_ id: UUID) {
+        store.deleteTransaction(id: id)
+        let token = UUID()
+        deleteToastToken = token
+        animateFeedChange {
+            if revealedDeleteID == id {
+                revealedDeleteID = nil
+            }
+        }
+        withAnimation(.easeOut(duration: 0.2)) {
+            showDeleteToast = true
+        }
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            guard deleteToastToken == token else { return }
+            withAnimation(.easeIn(duration: 0.2)) {
+                showDeleteToast = false
+            }
+        }
+    }
+
+    private func dismissRevealedDelete() {
+        guard revealedDeleteID != nil else { return }
+        animateFeedChange { revealedDeleteID = nil }
+    }
+
+    private func animateFeedChange(_ updates: () -> Void) {
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.86), updates)
+    }
+
+    private func transactionTitle(_ item: TransactionItem) -> String {
+        let parts = item.categoryPath.split(separator: "-").map {
+            $0.trimmingCharacters(in: .whitespacesAndNewlines)
+        }.filter { !$0.isEmpty }
+        if let leaf = parts.last {
+            return String(leaf)
+        }
+        return item.categoryPath
+    }
+
+    private func signedAmountText(_ item: TransactionItem) -> String {
+        let formatted = MimiTheme.formatRM(item.amount)
+        return item.type == .expense ? "-\(formatted)" : "+\(formatted)"
+    }
+
+    private static let feedClockFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.dateFormat = "HH:mm"
+        return formatter
+    }()
+
+    private func transactionMetaLine(_ item: TransactionItem) -> String {
+        let clock = Self.feedClockFormatter.string(from: item.date)
+        let note = item.note.trimmingCharacters(in: .whitespacesAndNewlines)
+        if note.isEmpty { return clock }
+        return "\(clock) | \(note)"
     }
 
     private func formatDayHeader(_ date: Date) -> String {
@@ -770,6 +936,46 @@ public struct HomeRecordView: View {
             Spacer()
         }
         .padding(.horizontal, 20)
+    }
+}
+
+private struct FeedDeleteRowAlignment: AlignmentID {
+    static func defaultValue(in context: ViewDimensions) -> CGFloat {
+        context[VerticalAlignment.center]
+    }
+}
+
+extension VerticalAlignment {
+    fileprivate static let feedDeleteRow = VerticalAlignment(FeedDeleteRowAlignment.self)
+}
+
+/// White chip with a blue bill mark, matching the gold feed header control.
+private struct FeedBillMarkButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.white)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color.black.opacity(0.08), lineWidth: 1)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .stroke(MimiTheme.expenseBlue, lineWidth: 1.3)
+                        .frame(width: 16, height: 11)
+                    Circle()
+                        .stroke(MimiTheme.expenseBlue, lineWidth: 1)
+                        .frame(width: 8, height: 8)
+                    Image(systemName: "yensign")
+                        .font(.system(size: 6, weight: .bold))
+                        .foregroundColor(MimiTheme.expenseBlue)
+                }
+            }
+            .frame(width: 32, height: 32)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("全部记录")
     }
 }
 

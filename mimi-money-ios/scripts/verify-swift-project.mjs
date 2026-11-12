@@ -283,7 +283,8 @@ function verifyTask5() {
     '净资产',
     '30天趋势',
     '记录明细',
-    '任何事情都能问我'
+    '任何事情都能问我',
+    '删除成功'
   ]) {
     assertContains(home, label, 'HomeRecordView.swift');
   }
