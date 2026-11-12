@@ -33,7 +33,7 @@ public final class MimiStore: ObservableObject {
     @Published public var isRecordSheetPresented: Bool = false
     @Published public var hideAmounts: Bool = false
     @Published public var reimbursableAmount: Double = 0.00
-    @Published public var userNickname: String = "景豪"
+    @Published public var userNickname: String = "jinghao"
     @Published public var hapticsEnabled: Bool = true
     @Published public var scheduledTransactions: [ScheduledTransactionItem] = []
 
