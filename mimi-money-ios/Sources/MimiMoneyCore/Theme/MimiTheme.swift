@@ -57,6 +57,11 @@ public enum MimiTheme {
     public static var proBadgeBlue: Color { Color(hex: proBadgeBlueHex) }
     public static var vipGold: Color { Color(hex: vipGoldHex) }
 
+    // MARK: - Calendar layout tokens (gold C0)
+    public static let calendarHorizontalPadding: CGFloat = 16
+    public static let calendarDayCellHeight: CGFloat = 52
+    public static let calendarCardCorner: CGFloat = 18
+
     public static func formatRM(_ value: Double) -> String {
         formatAmount(value, currency: .myr, signed: false)
     }

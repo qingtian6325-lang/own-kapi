@@ -8,7 +8,7 @@ public struct AllRecordsCalendarView: View {
     @State private var selectedYear: Int = 2026
     @State private var selectedMonth: Int = 11
     @State private var selectedDay: Int = 8
-    @State private var filterMode: String = "收支" // "收支" | "仅支出" | "仅收入"
+    @State private var filterMode: String = "收支" // "收支" | "支出" | "收入"
     @State private var searchQuery: String = ""
     @State private var showSearchField: Bool = false
     @State private var showAddTransactionSheet: Bool = false
@@ -25,7 +25,7 @@ public struct AllRecordsCalendarView: View {
 
     private var calendar: Calendar {
         var cal = Calendar(identifier: .gregorian)
-        cal.firstWeekday = 2 // Monday is 1st column, Sunday is 7th
+        cal.firstWeekday = 1 // Sunday-first to match gold C0
         return cal
     }
 
@@ -35,9 +35,22 @@ public struct AllRecordsCalendarView: View {
         comps.month = selectedMonth
         comps.day = 1
         guard let firstDate = calendar.date(from: comps) else { return 0 }
-        let weekday = calendar.component(.weekday, from: firstDate) // 1 = Sun, 2 = Mon ... 7 = Sat
-        // When Monday is col 0, Sun is col 6
-        return (weekday + 5) % 7
+        let weekday = calendar.component(.weekday, from: firstDate) // 1 = Sun ... 7 = Sat
+        return weekday - 1
+    }
+
+    /// Expense-mode daily average: month expense / days elapsed before「今」(C2: 1262.52/9).
+    private var dailyAverageExpense: Double {
+        let todayDay = monthDayCells.first(where: { $0.isToday })?.day
+        let divisor: Int
+        if let todayDay {
+            divisor = max(todayDay - 1, 1)
+        } else if let range = calendar.range(of: .day, in: .month, for: calendar.date(from: DateComponents(year: selectedYear, month: selectedMonth, day: 1)) ?? Date()) {
+            divisor = range.count
+        } else {
+            divisor = 30
+        }
+        return monthlyExpenseTotal / Double(divisor)
     }
 
     private var monthDayCells: [CalendarDaySummary] {
@@ -62,8 +75,8 @@ public struct AllRecordsCalendarView: View {
             guard comps.year == selectedYear && comps.month == selectedMonth && comps.day == selectedDay else {
                 return false
             }
-            if filterMode == "仅支出" && tx.type != .expense { return false }
-            if filterMode == "仅收入" && tx.type != .income { return false }
+            if filterMode == "支出" && tx.type != .expense { return false }
+            if filterMode == "收入" && tx.type != .income { return false }
             if !searchQuery.isEmpty {
                 let q = searchQuery.lowercased()
                 return tx.categoryPath.lowercased().contains(q)
@@ -107,7 +120,7 @@ public struct AllRecordsCalendarView: View {
                         calendarCard
                         selectedDayDetailSection
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, MimiTheme.calendarHorizontalPadding)
                     .padding(.top, 6)
                     .padding(.bottom, 90)
                 }
@@ -181,9 +194,9 @@ public struct AllRecordsCalendarView: View {
             Spacer()
 
             Menu {
-                Button("收支 (全部)") { filterMode = "收支" }
-                Button("仅看支出") { filterMode = "仅支出" }
-                Button("仅看收入") { filterMode = "仅收入" }
+                Button("收支") { filterMode = "收支" }
+                Button("支出") { filterMode = "支出" }
+                Button("收入") { filterMode = "收入" }
             } label: {
                 HStack(spacing: 4) {
                     Image(systemName: "creditcard")
@@ -218,12 +231,21 @@ public struct AllRecordsCalendarView: View {
                     .font(.system(size: 11))
                     .foregroundColor(Color.gray.opacity(0.3))
 
-                Text("月收入")
-                    .font(.system(size: 11))
-                    .foregroundColor(MimiTheme.textSecondary)
-                Text(MimiTheme.formatRM(monthlyIncomeTotal))
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
-                    .foregroundColor(MimiTheme.incomeOrange)
+                if filterMode == "支出" {
+                    Text("日均支出")
+                        .font(.system(size: 11))
+                        .foregroundColor(MimiTheme.textSecondary)
+                    Text(MimiTheme.formatRM(dailyAverageExpense))
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .foregroundColor(MimiTheme.expenseBlue)
+                } else {
+                    Text("月收入")
+                        .font(.system(size: 11))
+                        .foregroundColor(MimiTheme.textSecondary)
+                    Text(MimiTheme.formatRM(monthlyIncomeTotal))
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .foregroundColor(MimiTheme.incomeOrange)
+                }
             }
 
             Spacer()
@@ -232,7 +254,7 @@ public struct AllRecordsCalendarView: View {
                 onDismiss()
             } label: {
                 HStack(spacing: 2) {
-                    Text("收支分析")
+                    Text(filterMode == "支出" ? "支出分析" : "收支分析")
                         .font(.system(size: 11, weight: .medium))
                     Image(systemName: "chevron.right")
                         .font(.system(size: 9, weight: .bold))
@@ -247,9 +269,9 @@ public struct AllRecordsCalendarView: View {
 
     private var calendarCard: some View {
         VStack(spacing: 8) {
-            // Weekday Header: 一 二 三 四 五 六 日
+            // Weekday Header: 日 一 二 三 四 五 六 (Sunday-first, gold C0)
             HStack(spacing: 0) {
-                ForEach(["一", "二", "三", "四", "五", "六", "日"], id: \.self) { day in
+                ForEach(["日", "一", "二", "三", "四", "五", "六"], id: \.self) { day in
                     Text(day)
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(MimiTheme.textMuted)
@@ -262,7 +284,7 @@ public struct AllRecordsCalendarView: View {
                 // Leading blank cells
                 ForEach(0..<leadingBlankCount, id: \.self) { _ in
                     Color.clear
-                        .frame(height: 52)
+                        .frame(height: MimiTheme.calendarDayCellHeight)
                 }
 
                 // Days in Month
@@ -298,7 +320,7 @@ public struct AllRecordsCalendarView: View {
             .padding(.bottom, 2)
         }
         .padding(14)
-        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.white))
+        .background(RoundedRectangle(cornerRadius: MimiTheme.calendarCardCorner, style: .continuous).fill(Color.white))
     }
 
     private func dayCellView(for cell: CalendarDaySummary, isSelected: Bool) -> some View {
@@ -309,8 +331,14 @@ public struct AllRecordsCalendarView: View {
                     .foregroundColor(MimiTheme.textPrimary)
 
                 if cell.isHighestExpenseDay {
-                    Text("💰")
-                        .font(.system(size: 8))
+                    Image(systemName: "circle.fill")
+                        .font(.system(size: 7))
+                        .foregroundColor(MimiTheme.vipGold)
+                        .overlay(
+                            Text("¥")
+                                .font(.system(size: 5, weight: .bold))
+                                .foregroundColor(.white)
+                        )
                 }
             }
             .frame(maxWidth: .infinity, alignment: .center)
@@ -318,7 +346,7 @@ public struct AllRecordsCalendarView: View {
 
             Spacer(minLength: 0)
 
-            if cell.expense > 0 {
+            if cell.expense > 0 && filterMode != "收入" {
                 Text(String(format: "-%.2f", cell.expense))
                     .font(.system(size: 8, weight: .bold, design: .rounded))
                     .foregroundColor(Color(hex: 0x2A4E9E))
@@ -326,7 +354,7 @@ public struct AllRecordsCalendarView: View {
                     .minimumScaleFactor(0.7)
             }
 
-            if cell.income > 0 && filterMode != "仅支出" {
+            if cell.income > 0 && filterMode != "支出" {
                 Text(String(format: "+%.2f", cell.income))
                     .font(.system(size: 8, weight: .bold, design: .rounded))
                     .foregroundColor(Color(hex: 0xB55716))
@@ -337,7 +365,7 @@ public struct AllRecordsCalendarView: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 52)
+        .frame(height: MimiTheme.calendarDayCellHeight)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(cellBackgroundColor(for: cell, isSelected: isSelected))

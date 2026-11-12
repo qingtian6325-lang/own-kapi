@@ -58,6 +58,8 @@ function verifyTask1() {
   assertContains(theme, 'drawerGridIconSize', 'MimiTheme.swift');
   assertContains(theme, 'proBadgeBlueHex', 'MimiTheme.swift');
   assertContains(theme, 'vipGoldHex', 'MimiTheme.swift');
+  assertContains(theme, 'calendarDayCellHeight', 'MimiTheme.swift');
+  assertContains(theme, 'calendarHorizontalPadding', 'MimiTheme.swift');
 
   const models = assertFileExists('Sources/MimiMoneyCore/Models/MimiModels.swift');
   checkBalancedBraces(models, 'MimiModels.swift');
@@ -327,9 +329,14 @@ function verifyTask5() {
     'public struct AllRecordsCalendarView: View',
     '全部记录',
     '回今天',
+    '月支出',
+    '月收入',
+    '日均支出',
     '收支分析',
+    '支出分析',
     '收入多',
-    '支出多'
+    '支出多',
+    '任何事都能问我'
   ]) {
     assertContains(cal, label, 'AllRecordsCalendarView.swift');
   }
