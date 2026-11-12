@@ -28,6 +28,7 @@ public struct BudgetManagementView: View {
     @State private var selectedDayKeyForCustomBudget: String?
     @State private var customDayBudgetInput: String = ""
     @State private var categoryBudgetsExpanded: Bool = true
+    @State private var historyCategory: CategoryBudgetItem? = nil
 
     public init(store: MimiStore, onDismiss: @escaping () -> Void) {
         self.store = store
@@ -74,28 +75,8 @@ public struct BudgetManagementView: View {
         max(0.0, dailyAvailable - todaySpent)
     }
 
-    private var unbudgetedCategories: [CategoryGroup] {
-        let budgetedNames = Set(store.categoryBudgets.map(\.categoryName))
-        return store.expenseCategories.filter { !budgetedNames.contains($0.name) }
-    }
-
-    /// Pool left for uncategorized spend (gold: 未分类预算 已用 | 限额).
     private var categorizedBudgetTotal: Double {
         store.categoryBudgets.reduce(0.0) { $0 + $1.monthlyLimit }
-    }
-
-    private var uncategorizedBudgetLimit: Double {
-        max(0.0, store.monthlyBudgetTotal - categorizedBudgetTotal)
-    }
-
-    private var categorizedSpentTotal: Double {
-        store.categoryBudgets.reduce(0.0) { partial, item in
-            partial + store.categorySpent(for: item.categoryName, year: currentYear, month: currentMonth)
-        }
-    }
-
-    private var uncategorizedSpentTotal: Double {
-        max(0.0, monthlySpent - categorizedSpentTotal)
     }
 
     public var body: some View {
@@ -104,9 +85,10 @@ public struct BudgetManagementView: View {
                 VStack(spacing: 14) {
                     monthlySummaryTopCard
                     categorizedBudgetListCard
-                    uncategorizedBudgetListCard
+                    dynamicDailyInlineCard
                 }
                 .padding(16)
+                .padding(.bottom, 24)
             }
             .background(MimiTheme.background.ignoresSafeArea())
             .navigationTitle("预算管理")
@@ -135,6 +117,9 @@ public struct BudgetManagementView: View {
             }
             .sheet(item: $activeSheetType) { sheetType in
                 budgetModalSheet(for: sheetType)
+            }
+            .sheet(item: $historyCategory) { item in
+                categoryBudgetHistorySheet(for: item)
             }
         }
     }
@@ -385,57 +370,41 @@ public struct BudgetManagementView: View {
                             totalBudgetInput = String(format: "%.2f", store.monthlyBudgetTotal)
                             activeSheetType = .editTotal
                         } label: {
-                            Text(MimiTheme.formatRM(store.monthlyBudgetTotal))
-                                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                                .foregroundColor(MimiTheme.textPrimary)
+                            HStack(spacing: 4) {
+                                Text(MimiTheme.formatRM(store.monthlyBudgetTotal))
+                                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                    .foregroundColor(MimiTheme.textPrimary)
+                                Image(systemName: "pencil")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(MimiTheme.expenseBlue)
+                            }
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("修改月预算")
                     }
                 }
 
                 Spacer(minLength: 12)
 
-                Button {
-                    showDynamicDailySheet = true
-                } label: {
-                    ZStack {
-                        Circle()
-                            .stroke(Color(hex: 0xEEF0F6), lineWidth: 9)
-                            .frame(width: 86, height: 86)
-                        Circle()
-                            .trim(from: 0, to: CGFloat(min(1, todayRemainingAvailable / max(dailyAvailable, 0.0001))))
-                            .stroke(MimiTheme.expenseBlue, style: StrokeStyle(lineWidth: 9, lineCap: .round))
-                            .rotationEffect(.degrees(-90))
-                            .frame(width: 86, height: 86)
-                        VStack(spacing: 2) {
-                            Text("今日可用")
-                                .font(.system(size: 9, weight: .semibold))
-                                .foregroundColor(MimiTheme.expenseBlue)
-                            Text(String(format: "%.2f", todayRemainingAvailable))
-                                .font(.system(size: 14, weight: .bold, design: .rounded))
-                                .foregroundColor(MimiTheme.textPrimary)
-                        }
+                ZStack {
+                    Circle()
+                        .stroke(Color(hex: 0xEEF0F6), lineWidth: 9)
+                        .frame(width: 86, height: 86)
+                    Circle()
+                        .trim(from: 0, to: CGFloat(min(1, todayRemainingAvailable / max(dailyAvailable, 0.0001))))
+                        .stroke(MimiTheme.expenseBlue, style: StrokeStyle(lineWidth: 9, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                        .frame(width: 86, height: 86)
+                    VStack(spacing: 2) {
+                        Text("今日可用")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundColor(MimiTheme.expenseBlue)
+                        Text(String(format: "%.2f", todayRemainingAvailable))
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundColor(MimiTheme.textPrimary)
                     }
                 }
-                .buttonStyle(.plain)
             }
-
-            Button {
-                showDynamicDailySheet = true
-            } label: {
-                HStack {
-                    Text("查看动态日预算日历")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(MimiTheme.expenseBlue)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 11))
-                        .foregroundColor(MimiTheme.expenseBlue)
-                }
-                .padding(10)
-                .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xE8F0FE)))
-            }
-            .buttonStyle(.plain)
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
@@ -470,8 +439,7 @@ public struct BudgetManagementView: View {
                     let ratio = item.monthlyLimit > 0 ? min(1.0, spent / item.monthlyLimit) : 0
 
                     Button {
-                        categoryBudgetInput = String(format: "%.2f", item.monthlyLimit)
-                        activeSheetType = .editCategory(item)
+                        historyCategory = item
                     } label: {
                         VStack(spacing: 8) {
                             HStack(spacing: 10) {
@@ -512,6 +480,7 @@ public struct BudgetManagementView: View {
                             .frame(height: 8)
                         }
                         .padding(.vertical, 4)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
@@ -539,82 +508,209 @@ public struct BudgetManagementView: View {
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
     }
 
-    // MARK: - 未分类预算 (IMG_2264: Remaining categories with spent amounts)
+    // MARK: - 动态日预算（主页下方）
 
-    private var uncategorizedBudgetListCard: some View {
-        let overspent = uncategorizedSpentTotal > uncategorizedBudgetLimit + 0.009
+    private var dynamicDailyInlineCard: some View {
+        let cells = DynamicBudgetEngine.buildMonthDayCells(
+            year: currentYear,
+            month: currentMonth,
+            ledger: store.currentLedger,
+            transactions: store.transactions
+        )
 
         return VStack(alignment: .leading, spacing: 12) {
-            // Gold: single pool card 未分类预算 已用 | 限额 (highlight when over)
-            HStack(spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(hex: 0xFFE8CC))
-                        .frame(width: 40, height: 40)
-                    Image(systemName: "shippingbox.fill")
-                        .foregroundColor(MimiTheme.incomeOrange)
-                }
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("未分类预算")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(MimiTheme.textPrimary)
-                    Text("已用\(MimiTheme.formatRM(uncategorizedSpentTotal)) | \(MimiTheme.formatRM(uncategorizedBudgetLimit))")
-                        .font(.system(size: 12, design: .rounded))
-                        .foregroundColor(overspent ? MimiTheme.dangerRed : MimiTheme.textSecondary)
-                }
+            HStack {
+                Text("动态日预算")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
+                Button {
+                    showDynamicDailySheet = true
+                } label: {
+                    Text("全屏")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(MimiTheme.expenseBlue)
+                }
+                .buttonStyle(.plain)
             }
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(overspent ? Color(hex: 0xEAF1FF) : Color(hex: 0xF7F8FA))
-            )
 
-            if !unbudgetedCategories.isEmpty {
-                Text("可设预算的分类")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(MimiTheme.textMuted)
-
-                ForEach(unbudgetedCategories.prefix(8)) { group in
-                    let spent = store.categorySpent(for: group.name, year: currentYear, month: currentMonth)
-                    HStack(spacing: 10) {
-                        MimiStickerIconView(
-                            iconName: group.displayBadgeToken,
-                            categoryName: group.name,
-                            transactionType: .expense,
-                            useFirstCharIcon: group.useFirstCharIcon,
-                            size: 32
-                        )
-                        Text(group.name)
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(MimiTheme.textPrimary)
-                        Spacer()
-                        Text("已用 \(MimiTheme.formatRM(spent))")
-                            .font(.system(size: 12, design: .rounded))
-                            .foregroundColor(MimiTheme.textSecondary)
-
-                        Button {
-                            newCategoryBudgetInput = "200.00"
-                            activeSheetType = .addCategory(group)
-                        } label: {
-                            HStack(spacing: 2) {
-                                Image(systemName: "plus.circle.fill")
-                                Text("设预算")
-                            }
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(MimiTheme.expenseBlue)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+            if let editingKey = selectedDayKeyForCustomBudget {
+                HStack(spacing: 8) {
+                    Text("调整 \(editingKey)")
+                        .font(.system(size: 12, weight: .semibold))
+                    TextField("输入金额", text: $customDayBudgetInput)
+                        .font(.system(size: 13))
+                        .padding(6)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.white))
+                    Button("保存") {
+                        if let val = Double(customDayBudgetInput) {
+                            store.setCustomDailyBudget(dateKey: editingKey, amount: val)
                         }
-                        .buttonStyle(.plain)
+                        selectedDayKeyForCustomBudget = nil
                     }
-                    .padding(.vertical, 2)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Capsule().fill(MimiTheme.expenseBlue))
+                }
+                .padding(10)
+                .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xE8F0FE)))
+            }
+
+            HStack(spacing: 0) {
+                ForEach(["一", "二", "三", "四", "五", "六", "日"], id: \.self) { w in
+                    Text(w)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(MimiTheme.textMuted)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 7), spacing: 8) {
+                ForEach(0..<dynamicDailyLeadingBlanks, id: \.self) { _ in
+                    Color.clear.frame(height: 58)
+                }
+                ForEach(cells) { cell in
+                    dynamicDayCell(cell)
                 }
             }
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
+    }
+
+    // MARK: - 分类预算历史（按月：预算 / 已用）
+
+    private func categoryHistoryMonths(for item: CategoryBudgetItem) -> [(year: Int, month: Int, spent: Double, limit: Double)] {
+        var cal = Calendar(identifier: .gregorian)
+        var seen = Set<String>()
+        var rows: [(year: Int, month: Int, spent: Double, limit: Double)] = []
+
+        // Always include current month first
+        let currentKey = String(format: "%04d-%02d", currentYear, currentMonth)
+        seen.insert(currentKey)
+        rows.append((
+            year: currentYear,
+            month: currentMonth,
+            spent: store.categorySpent(for: item.categoryName, year: currentYear, month: currentMonth),
+            limit: item.monthlyLimit
+        ))
+
+        for tx in store.transactions where tx.type == .expense {
+            let primary = tx.categoryPath.components(separatedBy: "-").first ?? tx.categoryPath
+            guard primary == item.categoryName else { continue }
+            let y = cal.component(.year, from: tx.date)
+            let m = cal.component(.month, from: tx.date)
+            let key = String(format: "%04d-%02d", y, m)
+            guard seen.insert(key).inserted else { continue }
+            rows.append((
+                year: y,
+                month: m,
+                spent: store.categorySpent(for: item.categoryName, year: y, month: m),
+                limit: item.monthlyLimit
+            ))
+        }
+
+        return rows.sorted {
+            if $0.year != $1.year { return $0.year > $1.year }
+            return $0.month > $1.month
+        }
+    }
+
+    private func categoryBudgetHistorySheet(for item: CategoryBudgetItem) -> some View {
+        let rows = categoryHistoryMonths(for: item)
+        return NavigationStack {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(spacing: 12) {
+                        MimiStickerIconView(
+                            iconName: item.iconName,
+                            categoryName: item.categoryName,
+                            transactionType: .expense,
+                            useFirstCharIcon: item.useFirstCharIcon,
+                            size: 44
+                        )
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.categoryName)
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(MimiTheme.textPrimary)
+                            Text("当前月预算 \(MimiTheme.formatRM(item.monthlyLimit))")
+                                .font(.system(size: 13))
+                                .foregroundColor(MimiTheme.textSecondary)
+                        }
+                        Spacer()
+                    }
+                    .padding(16)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+
+                    Button {
+                        categoryBudgetInput = String(format: "%.2f", item.monthlyLimit)
+                        historyCategory = nil
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                            activeSheetType = .editCategory(item)
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "pencil")
+                            Text("修改分类预算")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                        }
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(MimiTheme.expenseBlue)
+                        .padding(14)
+                        .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xE8F0FE)))
+                    }
+                    .buttonStyle(.plain)
+
+                    Text("历史月份")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(MimiTheme.textSecondary)
+                        .padding(.horizontal, 4)
+
+                    VStack(spacing: 0) {
+                        ForEach(Array(rows.enumerated()), id: \.offset) { idx, row in
+                            let rem = row.limit - row.spent
+                            HStack {
+                                Text(String(format: "%d年%d月", row.year, row.month))
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(MimiTheme.textPrimary)
+                                Spacer()
+                                VStack(alignment: .trailing, spacing: 2) {
+                                    Text("已用 \(MimiTheme.formatRM(row.spent))")
+                                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                        .foregroundColor(MimiTheme.expenseBlue)
+                                    Text("预算 \(MimiTheme.formatRM(row.limit))")
+                                        .font(.system(size: 12, design: .rounded))
+                                        .foregroundColor(MimiTheme.textMuted)
+                                    Text(rem >= 0 ? "剩余 \(MimiTheme.formatRM(rem))" : "超支 \(MimiTheme.formatRM(abs(rem)))")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(rem >= 0 ? MimiTheme.balanceGreen : MimiTheme.dangerRed)
+                                }
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            if idx < rows.count - 1 {
+                                Divider().padding(.leading, 14)
+                            }
+                        }
+                    }
+                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+                }
+                .padding(16)
+            }
+            .background(MimiTheme.background.ignoresSafeArea())
+            .navigationTitle("分类预算")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("关闭") { historyCategory = nil }
+                }
+            }
+        }
     }
 
     // MARK: - 动态日预算 Calendar Sheet (gold)

@@ -425,8 +425,9 @@ function verifyTask7() {
     'public struct BudgetManagementView: View',
     '预算管理',
     '已分类预算',
-    '未分类预算',
-    '动态日预算'
+    '动态日预算',
+    '分类预算',
+    '修改分类预算'
   ]) {
     assertContains(budget, label, 'BudgetManagementView.swift');
   }
