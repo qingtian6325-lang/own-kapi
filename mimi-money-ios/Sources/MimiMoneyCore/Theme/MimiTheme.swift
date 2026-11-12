@@ -34,7 +34,7 @@ public enum MimiTheme {
     public static let homeHorizontalPadding: CGFloat = 16
     public static let homeCardSpacing: CGFloat = 14
     public static let cardCornerRadius: CGFloat = 18
-    public static let askBarHeight: CGFloat = 50
+    public static let askBarHeight: CGFloat = 56
     public static let askBarCornerRadius: CGFloat = 25
     public static let transactionRowIconSize: CGFloat = 38
     public static let progressBarHeight: CGFloat = 18

@@ -897,18 +897,23 @@ public struct HomeRecordView: View {
                 }
                 .buttonStyle(.plain)
 
+                // 金标：右侧大 ＋ → 手动记账；长按展开相册/拍照面板
                 Button {
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
-                        isAskPanelExpanded.toggle()
+                    if isAskPanelExpanded {
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                            isAskPanelExpanded = false
+                        }
+                    } else {
+                        onOpenRecordSheet(false)
                     }
                 } label: {
                     Image(systemName: isAskPanelExpanded ? "xmark" : "plus")
-                        .font(.system(size: isAskPanelExpanded ? 15 : 16, weight: .bold))
+                        .font(.system(size: isAskPanelExpanded ? 16 : 20, weight: .bold))
                         .foregroundColor(isAskPanelExpanded ? MimiTheme.textSecondary : .white)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 44, height: 44)
                         .background(
                             Circle()
-                                .fill(isAskPanelExpanded ? Color.clear : MimiTheme.expenseBlue)
+                                .fill(isAskPanelExpanded ? Color(hex: 0xEEF0F6) : MimiTheme.expenseBlue)
                                 .shadow(
                                     color: isAskPanelExpanded ? Color.clear : MimiTheme.expenseBlue.opacity(0.35),
                                     radius: 8,
@@ -918,6 +923,13 @@ public struct HomeRecordView: View {
                         )
                 }
                 .buttonStyle(.plain)
+                .simultaneousGesture(
+                    LongPressGesture(minimumDuration: 0.4).onEnded { _ in
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                            isAskPanelExpanded = true
+                        }
+                    }
+                )
             }
             .padding(.leading, 8)
             .padding(.trailing, 8)

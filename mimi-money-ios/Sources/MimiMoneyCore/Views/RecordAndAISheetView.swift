@@ -234,16 +234,16 @@ public struct RecordAndAISheetView: View {
                     isAIMode = false
                 }
             } label: {
-                HStack(spacing: 4) {
+                HStack(spacing: 5) {
                     Image(systemName: "arrow.left.arrow.right")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.system(size: 14, weight: .bold))
                     Text("手动记账")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 13, weight: .semibold))
                 }
                 .foregroundColor(MimiTheme.expenseBlue)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Capsule().strokeBorder(Color(hex: 0xD8DEEA), lineWidth: 1))
             }
             .buttonStyle(.plain)
 
@@ -301,16 +301,16 @@ public struct RecordAndAISheetView: View {
                         isAIMode = false
                     }
                 } label: {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 5) {
                         Image(systemName: "arrow.left.arrow.right")
-                            .font(.system(size: 11, weight: .bold))
+                            .font(.system(size: 14, weight: .bold))
                         Text("手动记账")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.system(size: 13, weight: .semibold))
                     }
-                    .foregroundColor(MimiTheme.expenseBlue)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                    .foregroundColor(MimiTheme.textPrimary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Capsule().strokeBorder(Color(hex: 0xD8DEEA), lineWidth: 1))
                 }
                 .buttonStyle(.plain)
                 Spacer()
@@ -402,19 +402,20 @@ public struct RecordAndAISheetView: View {
                                     selectedGroupIndex = idx
                                     selectedSubIndex = group.subcategories.isEmpty ? nil : 0
                                 } label: {
-                                    VStack(spacing: 5) {
+                                    VStack(spacing: 6) {
                                         MimiStickerIconView(
                                             iconName: group.displayBadgeToken,
                                             categoryName: group.name,
                                             transactionType: selectedTab,
                                             useFirstCharIcon: group.useFirstCharIcon,
-                                            size: 40,
+                                            size: 58,
                                             isSelected: isSelected
                                         )
                                         Text(group.name)
-                                            .font(.system(size: 11, weight: isSelected ? .bold : .regular))
+                                            .font(.system(size: 12, weight: isSelected ? .bold : .regular))
                                             .foregroundColor(isSelected ? MimiTheme.textPrimary : MimiTheme.textSecondary)
                                             .lineLimit(1)
+                                            .minimumScaleFactor(0.85)
                                     }
                                 }
                                 .buttonStyle(.plain)
@@ -435,19 +436,20 @@ public struct RecordAndAISheetView: View {
                                         Button {
                                             selectedSubIndex = sIdx
                                         } label: {
-                                            VStack(spacing: 4) {
+                                            VStack(spacing: 5) {
                                                 MimiStickerIconView(
                                                     iconName: sub.iconName,
                                                     categoryName: sub.name,
                                                     transactionType: selectedTab,
                                                     useFirstCharIcon: sub.useFirstCharIcon,
-                                                    size: 32,
+                                                    size: 48,
                                                     isSelected: isSubSelected
                                                 )
                                                 Text(sub.name)
-                                                    .font(.system(size: 10, weight: isSubSelected ? .bold : .regular))
+                                                    .font(.system(size: 11, weight: isSubSelected ? .bold : .regular))
                                                     .foregroundColor(isSubSelected ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
                                                     .lineLimit(1)
+                                                    .minimumScaleFactor(0.85)
                                             }
                                         }
                                         .buttonStyle(.plain)

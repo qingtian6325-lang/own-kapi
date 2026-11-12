@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.2] - 2026-11-12
+
+### 🎯 Highlights
+- **页面动画**：功能页打开从右往左推进，返回从左往右退出。
+- **手动记账入口**：首页 ＋ 加大并直接进手动记账；分类贴纸加大；「手动记账」切换按钮加大。
+- **发版**：`VERSION` / Intent 默认版本升至 1.3.2。
+
 ## [v1.3.1] - 2026-11-12
 
 ### 🎯 Highlights

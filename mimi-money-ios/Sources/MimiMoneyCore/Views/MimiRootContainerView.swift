@@ -35,23 +35,23 @@ public struct MimiRootContainerView: View {
                     }
                 },
                 onSwitchToStats: {
-                    showStatsView = true
+                    pushOpen { showStatsView = true }
                 },
                 onOpenSearchOrCalendar: {
-                    showAllRecordsCalendar = true
+                    pushOpen { showAllRecordsCalendar = true }
                 },
                 onOpenRecordSheet: { aiMode in
                     openRecordSheetInAIMode = aiMode
                     showRecordSheet = true
                 },
                 onSelectTransaction: { tx in
-                    activeBillForEdit = tx
+                    pushOpen { activeBillForEdit = tx }
                 },
                 onOpenBudgetManager: {
-                    showBudgetManager = true
+                    pushOpen { showBudgetManager = true }
                 },
                 onOpenAssetsManager: {
-                    showAssetsManager = true
+                    pushOpen { showAssetsManager = true }
                 },
                 onPickFromAlbum: {
                     showHomeAlbumPicker = true
@@ -60,7 +60,7 @@ public struct MimiRootContainerView: View {
                     showHomeCameraPicker = true
                 },
                 onOpenImportExport: {
-                    activeSettingsTitle = DrawerDestination.importExport.rawValue
+                    pushOpen { activeSettingsTitle = DrawerDestination.importExport.rawValue }
                 }
             )
 
@@ -82,7 +82,7 @@ public struct MimiRootContainerView: View {
                             withAnimation(.easeOut(duration: 0.2)) {
                                 store.pendingShortcutSnippetBill = nil
                             }
-                            activeBillForEdit = snippetBill
+                            pushOpen { activeBillForEdit = snippetBill }
                         },
                         onConfirmTapped: {
                             withAnimation(.easeOut(duration: 0.2)) {
@@ -145,7 +145,7 @@ public struct MimiRootContainerView: View {
                         onModifyTapped: {
                             let saved = ShortcutActionCoordinator.recordRecognizedDraft(homeDraft, in: store)
                             homeRecognizedDraft = nil
-                            activeBillForEdit = saved
+                            pushOpen { activeBillForEdit = saved }
                         },
                         onConfirmTapped: {
                             _ = ShortcutActionCoordinator.recordRecognizedDraft(homeDraft, in: store)
@@ -174,7 +174,7 @@ public struct MimiRootContainerView: View {
                         withAnimation(.easeIn(duration: 0.2)) {
                             isDrawerOpen = false
                         }
-                        // 等抽屉先收完再出 sheet，避免「点了资产管理像卡住、详情不出来」
+                        // 等抽屉先收完再从右侧推进页面
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
                             handleDrawerSelection(dest)
                         }
@@ -183,7 +183,114 @@ public struct MimiRootContainerView: View {
                 .transition(.opacity)
                 .zIndex(30)
             }
+
+            // 功能页：打开从右往左推进，返回从左往右退出
+            if showStatsView {
+                MimiStatsView(
+                    store: store,
+                    onOpenDrawer: {
+                        pushClose { showStatsView = false }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
+                            withAnimation(.easeOut(duration: 0.22)) {
+                                isDrawerOpen = true
+                            }
+                        }
+                    },
+                    onSwitchToHome: {
+                        pushClose { showStatsView = false }
+                    },
+                    onOpenAssets: {
+                        pushClose { showStatsView = false }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
+                            pushOpen { showAssetsManager = true }
+                        }
+                    }
+                )
+                .transition(Self.pagePushTransition)
+                .zIndex(40)
+            }
+
+            if showAllRecordsCalendar {
+                AllRecordsCalendarView(
+                    store: store,
+                    onDismiss: { pushClose { showAllRecordsCalendar = false } },
+                    onSelectTransaction: { tx in
+                        pushClose { showAllRecordsCalendar = false }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
+                            pushOpen { activeBillForEdit = tx }
+                        }
+                    }
+                )
+                .transition(Self.pagePushTransition)
+                .zIndex(41)
+            }
+
+            if showAssetsManager {
+                AssetsAndAccountDetailView(
+                    store: store,
+                    onDismiss: { pushClose { showAssetsManager = false } }
+                )
+                .transition(Self.pagePushTransition)
+                .zIndex(42)
+            }
+
+            if showBudgetManager {
+                BudgetManagementView(
+                    store: store,
+                    onDismiss: { pushClose { showBudgetManager = false } }
+                )
+                .transition(Self.pagePushTransition)
+                .zIndex(43)
+            }
+
+            if showCategoryManager {
+                CategoryManagementView(
+                    store: store,
+                    onDismiss: { pushClose { showCategoryManager = false } }
+                )
+                .transition(Self.pagePushTransition)
+                .zIndex(44)
+            }
+
+            if let settingsTitle = activeSettingsTitle {
+                SettingsAndShortcutsGuideView(
+                    store: store,
+                    aiEngine: aiEngine,
+                    initialSectionTitle: settingsTitle,
+                    onDismiss: { pushClose { activeSettingsTitle = nil } },
+                    onModifyTransactionFromPopup: { tx in
+                        pushClose { activeSettingsTitle = nil }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
+                            pushOpen { activeBillForEdit = tx }
+                        }
+                    }
+                )
+                .transition(Self.pagePushTransition)
+                .zIndex(45)
+            }
+
+            if let bill = activeBillForEdit {
+                BillDetailSheetView(
+                    store: store,
+                    transaction: bill,
+                    onDismiss: {
+                        pushClose {
+                            activeBillForEdit = nil
+                            store.pendingEditTransactionId = nil
+                        }
+                    }
+                )
+                .transition(Self.pagePushTransition)
+                .zIndex(50)
+            }
         }
+        .animation(Self.pagePushAnimation, value: showStatsView)
+        .animation(Self.pagePushAnimation, value: showAllRecordsCalendar)
+        .animation(Self.pagePushAnimation, value: showAssetsManager)
+        .animation(Self.pagePushAnimation, value: showBudgetManager)
+        .animation(Self.pagePushAnimation, value: showCategoryManager)
+        .animation(Self.pagePushAnimation, value: activeSettingsTitle)
+        .animation(Self.pagePushAnimation, value: activeBillForEdit?.id)
         .sheet(isPresented: $showRecordSheet) {
             RecordAndAISheetView(
                 store: store,
@@ -193,98 +300,19 @@ public struct MimiRootContainerView: View {
                 onOpenCategorySettings: {
                     showRecordSheet = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                        showCategoryManager = true
+                        pushOpen { showCategoryManager = true }
                     }
                 },
                 onEditRecognizedTransaction: { savedTx in
                     showRecordSheet = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                        activeBillForEdit = savedTx
+                        pushOpen { activeBillForEdit = savedTx }
                     }
                 },
                 onOpenImportExport: {
                     showRecordSheet = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                        activeSettingsTitle = DrawerDestination.importExport.rawValue
-                    }
-                }
-            )
-        }
-        .sheet(item: $activeBillForEdit) { bill in
-            BillDetailSheetView(
-                store: store,
-                transaction: bill,
-                onDismiss: {
-                    activeBillForEdit = nil
-                    store.pendingEditTransactionId = nil
-                }
-            )
-        }
-        .sheet(isPresented: $showStatsView) {
-            MimiStatsView(
-                store: store,
-                onOpenDrawer: {
-                    showStatsView = false
-                    withAnimation(.easeOut(duration: 0.22)) {
-                        isDrawerOpen = true
-                    }
-                },
-                onSwitchToHome: {
-                    showStatsView = false
-                },
-                onOpenAssets: {
-                    showStatsView = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                        showAssetsManager = true
-                    }
-                }
-            )
-        }
-        .sheet(isPresented: $showAllRecordsCalendar) {
-            AllRecordsCalendarView(
-                store: store,
-                onDismiss: { showAllRecordsCalendar = false },
-                onSelectTransaction: { tx in
-                    showAllRecordsCalendar = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                        activeBillForEdit = tx
-                    }
-                }
-            )
-        }
-        .sheet(isPresented: $showAssetsManager) {
-            AssetsAndAccountDetailView(
-                store: store,
-                onDismiss: { showAssetsManager = false }
-            )
-        }
-        .sheet(isPresented: $showBudgetManager) {
-            BudgetManagementView(
-                store: store,
-                onDismiss: { showBudgetManager = false }
-            )
-        }
-        .sheet(isPresented: $showCategoryManager) {
-            CategoryManagementView(
-                store: store,
-                onDismiss: { showCategoryManager = false }
-            )
-        }
-        .sheet(
-            isPresented: Binding(
-                get: { activeSettingsTitle != nil },
-                set: { if !$0 { activeSettingsTitle = nil } }
-            )
-        ) {
-            SettingsAndShortcutsGuideView(
-                store: store,
-                aiEngine: aiEngine,
-                initialSectionTitle: activeSettingsTitle ?? "自动记账",
-                onDismiss: { activeSettingsTitle = nil },
-                onModifyTransactionFromPopup: { tx in
-                    activeSettingsTitle = nil
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                        activeBillForEdit = tx
+                        pushOpen { activeSettingsTitle = DrawerDestination.importExport.rawValue }
                     }
                 }
             )
@@ -306,7 +334,7 @@ public struct MimiRootContainerView: View {
         .onChange(of: store.pendingEditTransactionId) { _, newId in
             if let id = newId,
                let match = store.transactions.first(where: { $0.id == id }) {
-                activeBillForEdit = match
+                pushOpen { activeBillForEdit = match }
             }
         }
         .onChange(of: store.isRecordSheetPresented) { _, presented in
@@ -320,7 +348,7 @@ public struct MimiRootContainerView: View {
             if ShortcutActionCoordinator.handleIncomingURL(url, in: store),
                let id = store.pendingEditTransactionId,
                let match = store.transactions.first(where: { $0.id == id }) {
-                activeBillForEdit = match
+                pushOpen { activeBillForEdit = match }
             }
         }
         .alert("AI 识别失败", isPresented: Binding(
@@ -331,6 +359,26 @@ public struct MimiRootContainerView: View {
         } message: {
             Text(homeRecognitionFailureText ?? "")
         }
+    }
+
+    /// 打开：从右往左；关闭：从左往右（同一 trailing edge）
+    private static var pagePushTransition: AnyTransition {
+        .asymmetric(
+            insertion: .move(edge: .trailing).combined(with: .opacity),
+            removal: .move(edge: .trailing).combined(with: .opacity)
+        )
+    }
+
+    private static var pagePushAnimation: Animation {
+        .easeInOut(duration: 0.32)
+    }
+
+    private func pushOpen(_ updates: @escaping () -> Void) {
+        withAnimation(Self.pagePushAnimation, updates)
+    }
+
+    private func pushClose(_ updates: @escaping () -> Void) {
+        withAnimation(Self.pagePushAnimation, updates)
     }
 
     /// 首页问账条面板选图/拍照后的识别：纯 AI（Gemini），成功才出草稿卡等待确认；
@@ -349,8 +397,8 @@ public struct MimiRootContainerView: View {
                         )
                         store.addTransaction(tx)
                         _ = ShortcutActionCoordinator.markForInAppModification(transactionId: tx.id, in: store)
-                        activeBillForEdit = tx
                         homeRecognizedDraft = nil
+                        pushOpen { activeBillForEdit = tx }
                     } else {
                         homeRecognizedDraft = result.draft
                     }
@@ -366,19 +414,21 @@ public struct MimiRootContainerView: View {
     }
 
     private func handleDrawerSelection(_ destination: DrawerDestination) {
-        switch destination {
-        case .calendar:
-            showAllRecordsCalendar = true
-        case .stats:
-            showStatsView = true
-        case .assets:
-            showAssetsManager = true
-        case .budgets:
-            showBudgetManager = true
-        case .categories:
-            showCategoryManager = true
-        case .ledgers, .widgets, .tags, .importExport, .autoBookkeeping, .scheduledBookkeeping, .settings:
-            activeSettingsTitle = destination.rawValue
+        pushOpen {
+            switch destination {
+            case .calendar:
+                showAllRecordsCalendar = true
+            case .stats:
+                showStatsView = true
+            case .assets:
+                showAssetsManager = true
+            case .budgets:
+                showBudgetManager = true
+            case .categories:
+                showCategoryManager = true
+            case .ledgers, .widgets, .tags, .importExport, .autoBookkeeping, .scheduledBookkeeping, .settings:
+                activeSettingsTitle = destination.rawValue
+            }
         }
     }
 }
