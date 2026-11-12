@@ -29,7 +29,7 @@ public struct AssetsAndAccountDetailView: View {
                 .padding(16)
             }
             .background(MimiTheme.background.ignoresSafeArea())
-            .navigationTitle("资产管理")
+            .navigationTitle("资产")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -39,6 +39,19 @@ public struct AssetsAndAccountDetailView: View {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(MimiTheme.textPrimary)
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
+                        showAddAccountSheet = true
+                    } label: {
+                        HStack(spacing: 2) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 12, weight: .bold))
+                            Text("添加账户")
+                                .font(.system(size: 13, weight: .semibold))
+                        }
+                        .foregroundColor(MimiTheme.expenseBlue)
                     }
                 }
             }
@@ -125,10 +138,10 @@ public struct AssetsAndAccountDetailView: View {
                 .foregroundColor(store.netWorth < -0.0001 ? Color(hex: 0xE53935) : MimiTheme.textPrimary)
 
             HStack(spacing: 24) {
-                Text("总资产 \(MimiTheme.formatRM(store.totalAssets))")
+                Text("资产 \(MimiTheme.formatRM(store.totalAssets))")
                     .font(.system(size: 12))
                     .foregroundColor(store.totalAssets < -0.0001 ? Color(hex: 0xE53935) : MimiTheme.textSecondary)
-                Text("总负债 \(MimiTheme.formatRM(store.totalLiabilities))")
+                Text("负债 \(MimiTheme.formatRM(store.totalLiabilities))")
                     .font(.system(size: 12))
                     .foregroundColor(MimiTheme.textSecondary)
             }
@@ -137,38 +150,28 @@ public struct AssetsAndAccountDetailView: View {
         .padding(18)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color(hex: 0xEAF1FF))
+                .fill(MimiTheme.assetCream)
         )
     }
 
-    // MARK: - Reimbursement & Lending Row (IMG_2258)
+    // MARK: - Reimbursement row (gold: single grey bar 待报销)
 
     private var reimbursementAndLendingRow: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("借出/借入")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(MimiTheme.textSecondary)
-                Text("RM0.00")
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
-                    .foregroundColor(MimiTheme.textPrimary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14)
-            .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("待报销")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(MimiTheme.textSecondary)
-                Text(MimiTheme.formatRM(store.pendingReimbursementAmount))
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
-                    .foregroundColor(MimiTheme.incomeOrange)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14)
-            .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+        HStack {
+            Text("待报销")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(MimiTheme.textSecondary)
+            Spacer()
+            Text(MimiTheme.formatRM(store.pendingReimbursementAmount))
+                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .foregroundColor(MimiTheme.textPrimary)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(MimiTheme.textMuted)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xF0F1F5)))
     }
 
     // MARK: - Account List Card (现金, CIMB, TNGewallet, PBBank)
@@ -176,13 +179,22 @@ public struct AssetsAndAccountDetailView: View {
     private var accountGroupCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("资金账户 (\(store.accounts.count))")
+                Text("资金账户 (资产)")
                     .font(.system(size: 14, weight: .bold))
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
-                Text(MimiTheme.formatRM(store.totalAssets))
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundColor(MimiTheme.textSecondary)
+                Button {
+                    showAddAccountSheet = true
+                } label: {
+                    HStack(spacing: 2) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 11, weight: .bold))
+                        Text("添加账户")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .foregroundColor(MimiTheme.expenseBlue)
+                }
+                .buttonStyle(.plain)
             }
 
             ForEach(store.accounts) { account in
@@ -191,13 +203,12 @@ public struct AssetsAndAccountDetailView: View {
                     selectedAccount = account
                 } label: {
                     HStack(spacing: 12) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(hex: 0xF2F4F8))
-                                .frame(width: 40, height: 40)
-                            Text("💳")
-                                .font(.system(size: 18))
-                        }
+                        MimiStickerIconView(
+                            iconName: account.iconName,
+                            categoryName: account.name,
+                            transactionType: .income,
+                            size: 40
+                        )
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(account.name)
