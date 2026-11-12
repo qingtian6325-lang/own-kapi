@@ -29,6 +29,17 @@ public struct BudgetManagementView: View {
     @State private var customDayBudgetInput: String = ""
     @State private var categoryBudgetsExpanded: Bool = true
     @State private var historyCategory: CategoryBudgetItem? = nil
+    @State private var historyMonthDrill: CategoryMonthDrill? = nil
+    @State private var historyBillForDetail: TransactionItem? = nil
+    @State private var selectedDynamicDay: Int? = nil
+    @State private var dynamicDayBillForDetail: TransactionItem? = nil
+
+    private struct CategoryMonthDrill: Identifiable, Hashable {
+        let categoryName: String
+        let year: Int
+        let month: Int
+        var id: String { "\(categoryName)-\(year)-\(month)" }
+    }
 
     public init(store: MimiStore, onDismiss: @escaping () -> Void) {
         self.store = store
@@ -522,7 +533,6 @@ public struct BudgetManagementView: View {
             ledger: store.currentLedger,
             transactions: store.transactions
         )
-
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("动态日预算")
@@ -538,6 +548,10 @@ public struct BudgetManagementView: View {
                 }
                 .buttonStyle(.plain)
             }
+
+            Text("点击查看当日花费，长按编辑日预算")
+                .font(.system(size: 12))
+                .foregroundColor(MimiTheme.textMuted)
 
             if let editingKey = selectedDayKeyForCustomBudget {
                 HStack(spacing: 8) {
@@ -577,7 +591,7 @@ public struct BudgetManagementView: View {
                     Color.clear.frame(height: 58)
                 }
                 ForEach(cells) { cell in
-                    dynamicDayCell(cell)
+                    dynamicDayCell(cell, isSelected: false, opensFullSheetOnTap: true)
                 }
             }
         }
@@ -677,25 +691,38 @@ public struct BudgetManagementView: View {
                     VStack(spacing: 0) {
                         ForEach(Array(rows.enumerated()), id: \.offset) { idx, row in
                             let rem = row.limit - row.spent
-                            HStack {
-                                Text(String(format: "%d年%d月", row.year, row.month))
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .foregroundColor(MimiTheme.textPrimary)
-                                Spacer()
-                                VStack(alignment: .trailing, spacing: 2) {
-                                    Text("已用 \(MimiTheme.formatRM(row.spent))")
-                                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                                        .foregroundColor(MimiTheme.expenseBlue)
-                                    Text("预算 \(MimiTheme.formatRM(row.limit))")
-                                        .font(.system(size: 12, design: .rounded))
+                            Button {
+                                historyMonthDrill = CategoryMonthDrill(
+                                    categoryName: item.categoryName,
+                                    year: row.year,
+                                    month: row.month
+                                )
+                            } label: {
+                                HStack {
+                                    Text(String(format: "%d年%d月", row.year, row.month))
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundColor(MimiTheme.textPrimary)
+                                    Spacer()
+                                    VStack(alignment: .trailing, spacing: 2) {
+                                        Text("已用 \(MimiTheme.formatRM(row.spent))")
+                                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                            .foregroundColor(MimiTheme.expenseBlue)
+                                        Text("预算 \(MimiTheme.formatRM(row.limit))")
+                                            .font(.system(size: 12, design: .rounded))
+                                            .foregroundColor(MimiTheme.textMuted)
+                                        Text(rem >= 0 ? "剩余 \(MimiTheme.formatRM(rem))" : "超支 \(MimiTheme.formatRM(abs(rem)))")
+                                            .font(.system(size: 11))
+                                            .foregroundColor(rem >= 0 ? MimiTheme.balanceGreen : MimiTheme.dangerRed)
+                                    }
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 11, weight: .semibold))
                                         .foregroundColor(MimiTheme.textMuted)
-                                    Text(rem >= 0 ? "剩余 \(MimiTheme.formatRM(rem))" : "超支 \(MimiTheme.formatRM(abs(rem)))")
-                                        .font(.system(size: 11))
-                                        .foregroundColor(rem >= 0 ? MimiTheme.balanceGreen : MimiTheme.dangerRed)
                                 }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+                                .contentShape(Rectangle())
                             }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 12)
+                            .buttonStyle(.plain)
                             if idx < rows.count - 1 {
                                 Divider().padding(.leading, 14)
                             }
@@ -712,7 +739,31 @@ public struct BudgetManagementView: View {
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("关闭") { historyCategory = nil }
+                    Button("关闭") {
+                        historyMonthDrill = nil
+                        historyCategory = nil
+                    }
+                }
+            }
+            .navigationDestination(item: $historyMonthDrill) { drill in
+                CategoryBillsListView(
+                    store: store,
+                    categoryName: drill.categoryName,
+                    transactionType: .expense,
+                    year: drill.year,
+                    month: drill.month,
+                    onSelectTransaction: { tx in
+                        historyBillForDetail = tx
+                    },
+                    onDismiss: {
+                        historyMonthDrill = nil
+                    }
+                )
+                .navigationBarBackButtonHidden(true)
+            }
+            .sheet(item: $historyBillForDetail) { tx in
+                BillDetailSheetView(store: store, transaction: tx) {
+                    historyBillForDetail = nil
                 }
             }
         }
@@ -739,6 +790,10 @@ public struct BudgetManagementView: View {
             ledger: store.currentLedger,
             transactions: store.transactions
         )
+        let activeDay = selectedDynamicDay
+            ?? cells.first(where: { $0.isToday })?.day
+            ?? cells.first?.day
+            ?? 1
 
         return NavigationStack {
             ScrollView(.vertical, showsIndicators: false) {
@@ -749,7 +804,6 @@ public struct BudgetManagementView: View {
                             .foregroundColor(MimiTheme.textPrimary)
                         Spacer()
                         Button {
-                            // Focus edit on today cell when available
                             if let today = cells.first(where: { $0.isToday }) {
                                 selectedDayKeyForCustomBudget = today.id
                                 customDayBudgetInput = String(format: "%.2f", today.dynamicAvailableBudget)
@@ -765,6 +819,10 @@ public struct BudgetManagementView: View {
                         }
                         .buttonStyle(.plain)
                     }
+
+                    Text("点击查看当日花费，长按编辑日预算")
+                        .font(.system(size: 12))
+                        .foregroundColor(MimiTheme.textMuted)
 
                     if let editingKey = selectedDayKeyForCustomBudget {
                         HStack(spacing: 8) {
@@ -805,14 +863,18 @@ public struct BudgetManagementView: View {
                                 Color.clear.frame(height: 58)
                             }
                             ForEach(cells) { cell in
-                                dynamicDayCell(cell)
+                                dynamicDayCell(cell, isSelected: cell.day == activeDay, opensFullSheetOnTap: false)
                             }
                         }
                     }
                     .padding(14)
                     .background(RoundedRectangle(cornerRadius: 18).fill(Color.white))
+
+                    // 点一天 → 下方出「全部记录」样式的当日账单
+                    dynamicDayRecordsSection(day: activeDay)
                 }
                 .padding(16)
+                .padding(.bottom, 24)
             }
             .background(MimiTheme.background.ignoresSafeArea())
             .navigationTitle("动态日预算")
@@ -824,49 +886,192 @@ public struct BudgetManagementView: View {
                     Button("关闭") { showDynamicDailySheet = false }
                 }
             }
+            .onAppear {
+                if selectedDynamicDay == nil {
+                    selectedDynamicDay = cells.first(where: { $0.isToday })?.day
+                        ?? cells.first?.day
+                }
+            }
+            .sheet(item: $dynamicDayBillForDetail) { tx in
+                BillDetailSheetView(store: store, transaction: tx) {
+                    dynamicDayBillForDetail = nil
+                }
+            }
         }
     }
 
-    private func dynamicDayCell(_ cell: CalendarDaySummary) -> some View {
-        return VStack(spacing: 2) {
-            Text(cell.isToday ? "今" : "\(cell.day)")
-                .font(.system(size: 12, weight: .bold, design: .rounded))
-                .foregroundColor(cell.isToday ? .white : MimiTheme.textPrimary)
+    private func dynamicDayCell(
+        _ cell: CalendarDaySummary,
+        isSelected: Bool,
+        opensFullSheetOnTap: Bool
+    ) -> some View {
+        let selectedFill = Color(hex: 0xF0F5FF)
+        let todayFill = MimiTheme.expenseBlue
+        let normalFill = Color(hex: 0xF8F9FC)
 
-            if cell.isToday {
-                Text(MimiTheme.formatRM(todaySpent))
-                    .font(.system(size: 8, weight: .semibold, design: .rounded))
-                    .foregroundColor(.white.opacity(0.95))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                Text(MimiTheme.formatRM(todayRemainingAvailable))
-                    .font(.system(size: 8, design: .rounded))
-                    .foregroundColor(.white.opacity(0.85))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-            } else if cell.isPast {
-                Text(String(format: "-RM%.2f", cell.expense))
-                    .font(.system(size: 8, weight: .semibold, design: .rounded))
-                    .foregroundColor(MimiTheme.expenseBlue)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-            } else {
-                Text(MimiTheme.formatRM(cell.dynamicAvailableBudget))
-                    .font(.system(size: 8, design: .rounded))
+        return Button {
+            selectedDynamicDay = cell.day
+            if opensFullSheetOnTap {
+                showDynamicDailySheet = true
+            }
+        } label: {
+            VStack(spacing: 2) {
+                Text(cell.isToday ? "今" : "\(cell.day)")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundColor(cell.isToday && !isSelected ? .white : MimiTheme.textPrimary)
+
+                if cell.isToday {
+                    Text(MimiTheme.formatRM(todaySpent))
+                        .font(.system(size: 8, weight: .semibold, design: .rounded))
+                        .foregroundColor(isSelected ? MimiTheme.expenseBlue : .white.opacity(0.95))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                    Text(MimiTheme.formatRM(todayRemainingAvailable))
+                        .font(.system(size: 8, design: .rounded))
+                        .foregroundColor(isSelected ? MimiTheme.textMuted : .white.opacity(0.85))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                } else if cell.isPast {
+                    Text(String(format: "-RM%.2f", cell.expense))
+                        .font(.system(size: 8, weight: .semibold, design: .rounded))
+                        .foregroundColor(MimiTheme.expenseBlue)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                } else {
+                    Text(MimiTheme.formatRM(cell.dynamicAvailableBudget))
+                        .font(.system(size: 8, design: .rounded))
+                        .foregroundColor(MimiTheme.textMuted)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 58)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isSelected ? selectedFill : (cell.isToday ? todayFill : normalFill))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(isSelected ? Color(hex: 0x3366FF) : Color.clear, lineWidth: 2)
+            )
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.45).onEnded { _ in
+                selectedDayKeyForCustomBudget = cell.id
+                customDayBudgetInput = String(format: "%.2f", cell.dynamicAvailableBudget)
+            }
+        )
+    }
+
+    private func dynamicDayRecordsSection(day: Int) -> some View {
+        let cal = Calendar(identifier: .gregorian)
+        let txs = store.transactions.filter { tx in
+            let comps = cal.dateComponents([.year, .month, .day], from: tx.date)
+            return comps.year == currentYear && comps.month == currentMonth && comps.day == day
+        }
+        .sorted { $0.date > $1.date }
+        let dayExpense = txs.filter { $0.type == .expense }.reduce(0.0) { $0 + $1.amount }
+        let dayIncome = txs.filter { $0.type == .income }.reduce(0.0) { $0 + $1.amount }
+        let weekdayNames = ["", "周日", "周一", "周二", "周三", "周四", "周五", "周六"]
+        let weekday: String = {
+            let comps = DateComponents(year: currentYear, month: currentMonth, day: day)
+            guard let date = cal.date(from: comps) else { return "" }
+            let w = cal.component(.weekday, from: date)
+            return (w >= 1 && w <= 7) ? weekdayNames[w] : ""
+        }()
+
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(String(format: "%d月%d日 (%@)", currentMonth, day, weekday))
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(MimiTheme.textPrimary)
+                Spacer()
+                HStack(spacing: 8) {
+                    Text("支 \(MimiTheme.formatRM(dayExpense))")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundColor(MimiTheme.textPrimary)
+                    Text("|")
+                        .foregroundColor(Color.gray.opacity(0.3))
+                    Text("收 \(MimiTheme.formatRM(dayIncome))")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundColor(MimiTheme.textSecondary)
+                }
+            }
+            .padding(.horizontal, 2)
+
+            if txs.isEmpty {
+                Text("当日暂无记账记录")
+                    .font(.system(size: 13))
                     .foregroundColor(MimiTheme.textMuted)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 28)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(txs.enumerated()), id: \.element.id) { index, item in
+                        Button {
+                            dynamicDayBillForDetail = item
+                        } label: {
+                            HStack(spacing: 12) {
+                                MimiStickerIconView(
+                                    iconName: item.iconName,
+                                    categoryName: item.categoryPath,
+                                    transactionType: item.type,
+                                    size: 40
+                                )
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(item.categoryPath.components(separatedBy: "-").last ?? item.categoryPath)
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(MimiTheme.textPrimary)
+                                    HStack(spacing: 6) {
+                                        Text(dynamicDayTimeString(item.date))
+                                            .font(.system(size: 11))
+                                            .foregroundColor(MimiTheme.textMuted)
+                                        if !item.note.isEmpty {
+                                            Text("| \(item.note)")
+                                                .font(.system(size: 11))
+                                                .foregroundColor(MimiTheme.textSecondary)
+                                                .lineLimit(1)
+                                        }
+                                    }
+                                    if !item.accountName.isEmpty {
+                                        Text(item.accountName)
+                                            .font(.system(size: 10, weight: .medium))
+                                            .foregroundColor(MimiTheme.textSecondary)
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 2)
+                                            .background(Capsule().fill(Color(hex: 0xF0F2F6)))
+                                    }
+                                }
+                                Spacer(minLength: 8)
+                                Text(item.type == .expense || item.type == .transfer
+                                     ? "-\(MimiTheme.formatRM(item.amount))"
+                                     : "+\(MimiTheme.formatRM(item.amount))")
+                                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                                    .foregroundColor(item.type == .expense || item.type == .transfer
+                                                     ? Color(hex: 0x2A4E9E)
+                                                     : MimiTheme.incomeOrange)
+                            }
+                            .padding(14)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+
+                        if index < txs.count - 1 {
+                            Divider().padding(.leading, 66)
+                        }
+                    }
+                }
+                .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.white))
             }
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 58)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(cell.isToday ? MimiTheme.expenseBlue : Color(hex: 0xF8F9FC))
-        )
-        .onLongPressGesture {
-            selectedDayKeyForCustomBudget = cell.id
-            customDayBudgetInput = String(format: "%.2f", cell.dynamicAvailableBudget)
-        }
+    }
+
+    private func dynamicDayTimeString(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm"
+        return f.string(from: date)
     }
 }

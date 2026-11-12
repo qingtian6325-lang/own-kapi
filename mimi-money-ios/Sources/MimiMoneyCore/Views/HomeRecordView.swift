@@ -601,7 +601,7 @@ public struct HomeRecordView: View {
         }
     }
 
-    /// 往右滑：删除图标出现在行左侧；点图标 → 确认弹窗 → 确认才删。
+    /// 往左滑：删除图标出现在行右侧；点图标 → 确认弹窗 → 确认才删。
     private func dayTransactionGroupCard(date: Date, items: [TransactionItem]) -> some View {
         let openID = items.first { $0.id == revealedDeleteID }?.id
         let gutter: CGFloat = openID == nil ? 0 : FeedDeleteChrome.gap + FeedDeleteChrome.side
@@ -609,17 +609,21 @@ public struct HomeRecordView: View {
 
         return VStack(spacing: 0) {
             HStack(spacing: 0) {
-                if gutter > 0 {
-                    Color.clear.frame(width: gutter)
-                }
                 dayFeedHeader(date: date, items: items)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .clipShape(feedCardEndClip(radius: cardRadius, top: true))
+                if gutter > 0 {
+                    Color.clear.frame(width: gutter)
+                }
             }
 
             ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                 let isLast = index == items.count - 1
                 HStack(alignment: .center, spacing: gutter > 0 ? FeedDeleteChrome.gap : 0) {
+                    feedRowButton(item, showsDivider: !isLast)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .clipShape(feedCardEndClip(radius: cardRadius, bottom: isLast))
+
                     if gutter > 0 {
                         ZStack {
                             if item.id == openID {
@@ -629,20 +633,16 @@ public struct HomeRecordView: View {
                         }
                         .frame(width: FeedDeleteChrome.side, height: FeedDeleteChrome.side)
                     }
-
-                    feedRowButton(item, showsDivider: !isLast)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .clipShape(feedCardEndClip(radius: cardRadius, bottom: isLast))
                 }
             }
         }
-        .background(alignment: .trailing) {
+        .background(alignment: .leading) {
             HStack(spacing: 0) {
+                RoundedRectangle(cornerRadius: cardRadius, style: .continuous)
+                    .fill(MimiTheme.cardBackground)
                 if gutter > 0 {
                     Color.clear.frame(width: gutter)
                 }
-                RoundedRectangle(cornerRadius: cardRadius, style: .continuous)
-                    .fill(MimiTheme.cardBackground)
             }
         }
         .animation(.spring(response: 0.28, dampingFraction: 0.86), value: revealedDeleteID)
@@ -781,10 +781,10 @@ public struct HomeRecordView: View {
                     }
                 }
                 guard abs(dx) > abs(dy) else { return }
-                // 往右滑 → 露出左侧删除图标；往左滑 / 轻滑回去 → 收起。不直接删除。
-                if dx >= 48 {
+                // 往左滑 → 露出右侧删除图标；往右滑 / 轻滑回去 → 收起。不直接删除。
+                if dx <= -48 {
                     animateFeedChange { revealedDeleteID = id }
-                } else if dx <= -36 {
+                } else if dx >= 36 {
                     dismissRevealedDelete()
                 }
             }

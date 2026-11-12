@@ -4,7 +4,7 @@ public struct AssetsAndAccountDetailView: View {
     @ObservedObject public var store: MimiStore
     public var onDismiss: () -> Void
 
-    @State private var selectedAccount: AccountItem?
+    @State private var selectedAccountID: String?
     @State private var showBalanceEditSheet: Bool = false
     @State private var newBalanceInput: String = ""
     @State private var balanceEditMode: Int = 0 // 0: 设定期初起始资金, 1: 校准当前余额
@@ -56,10 +56,15 @@ public struct AssetsAndAccountDetailView: View {
                     }
                 }
             }
-            .sheet(item: $selectedAccount) { account in
-                accountDetailSheet(for: account)
+            .navigationDestination(item: $selectedAccountID) { accountID in
+                if let account = store.accounts.first(where: { $0.id == accountID }) {
+                    accountDetailSheet(for: account)
+                } else {
+                    Text("账户不存在")
+                        .foregroundColor(MimiTheme.textMuted)
+                }
             }
-            // 与账户 sheet 同级弹出，避免嵌套 sheet 点了没反应
+            // 账单详情挂在资产 NavigationStack 上，避免账户详情再嵌套 sheet
             .sheet(item: $billForDetail) { tx in
                 BillDetailSheetView(store: store, transaction: tx) {
                     billForDetail = nil
@@ -207,7 +212,9 @@ public struct AssetsAndAccountDetailView: View {
             ForEach(store.accounts) { account in
                 Button {
                     newBalanceInput = String(format: "%.2f", account.balance)
-                    selectedAccount = account
+                    detailTabMode = "明细"
+                    showBalanceEditSheet = false
+                    selectedAccountID = account.id
                 } label: {
                     HStack(spacing: 12) {
                         MimiStickerIconView(
@@ -250,7 +257,7 @@ public struct AssetsAndAccountDetailView: View {
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
     }
 
-    // MARK: - Account Detail Sheet (IMG_2261 & IMG_2262: 明细 [记/改/删] vs 账单)
+    // MARK: - Account Detail (push，避免 sheet 套 sheet 点了卡住)
 
     private func accountDetailSheet(for initialAccount: AccountItem) -> some View {
         let liveAccount = store.accounts.first(where: { $0.id == initialAccount.id }) ?? initialAccount
@@ -259,8 +266,7 @@ public struct AssetsAndAccountDetailView: View {
             $0.accountName == liveAccount.name || $0.accountId == liveAccount.id
         }
 
-        return NavigationStack {
-            ScrollView(.vertical, showsIndicators: false) {
+        return ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 14) {
                     // Gold cream account header: icon · name · 自定义余额 · … / 余额 / 记账·转账
                     VStack(alignment: .leading, spacing: 14) {
@@ -491,20 +497,20 @@ public struct AssetsAndAccountDetailView: View {
                 }
                 .padding(16)
             }
-            .background(MimiTheme.background.ignoresSafeArea())
-            .navigationTitle("账户详情")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button {
-                        selectedAccount = nil
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(MimiTheme.textPrimary)
-                    }
+        .background(MimiTheme.background.ignoresSafeArea())
+        .navigationTitle("账户详情")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button {
+                    selectedAccountID = nil
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(MimiTheme.textPrimary)
                 }
             }
         }

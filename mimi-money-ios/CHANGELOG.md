@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.1] - 2026-11-12
+
+### 🎯 Highlights
+- **左划删除**：首页账单改为往左滑露出删除，点确认后才删。
+- **资产管理**：修抽屉点开卡住；账户详情改为导航推入，不再套 sheet 点不动。
+- **分类预算点月份**：历史月份可点进该月分类账单页。
+- **动态日预算**：点一天下方显示「全部记录」样式当日明细；长按仍编辑日预算。
+- **问账聊天**：欢迎语、气泡、输入条微调。
+- **发版**：`VERSION` / Intent 默认版本升至 1.3.1。
+
 ## [v1.3.0] - 2026-11-12
 
 ### 🎯 Highlights

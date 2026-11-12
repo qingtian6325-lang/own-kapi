@@ -171,8 +171,13 @@ public struct MimiRootContainerView: View {
                         }
                     },
                     onSelectDestination: { dest in
-                        isDrawerOpen = false
-                        handleDrawerSelection(dest)
+                        withAnimation(.easeIn(duration: 0.2)) {
+                            isDrawerOpen = false
+                        }
+                        // 等抽屉先收完再出 sheet，避免「点了资产管理像卡住、详情不出来」
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
+                            handleDrawerSelection(dest)
+                        }
                     }
                 )
                 .transition(.opacity)

@@ -786,7 +786,7 @@ public struct ScanScreenshotIntent: AppIntent {
     @Parameter(title: "类型", default: 2)
     public var type: Int?
 
-    @Parameter(title: "版本", default: "1.3.0")
+    @Parameter(title: "版本", default: "1.3.1")
     public var version: String?
 
     public init() {}
