@@ -30,6 +30,20 @@ public enum MimiTheme {
     public static var textMuted: Color { Color(hex: textMutedHex) }
     public static var pillGray: Color { Color(hex: pillGrayHex) }
 
+    // MARK: - Home layout tokens (gold screenshot A)
+    public static let homeHorizontalPadding: CGFloat = 16
+    public static let homeCardSpacing: CGFloat = 14
+    public static let cardCornerRadius: CGFloat = 18
+    public static let askBarHeight: CGFloat = 50
+    public static let askBarCornerRadius: CGFloat = 25
+    public static let transactionRowIconSize: CGFloat = 38
+    public static let progressBarHeight: CGFloat = 18
+    public static let dailyRingSize: CGFloat = 72
+
+    public static var homeCardShadow: Color { Color.black.opacity(0.06) }
+    public static let homeCardShadowRadius: CGFloat = 10
+    public static let homeCardShadowY: CGFloat = 3
+
     public static func formatRM(_ value: Double) -> String {
         formatAmount(value, currency: .myr, signed: false)
     }

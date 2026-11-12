@@ -50,6 +50,10 @@ function verifyTask1() {
   assertContains(theme, '0x2D5AF0', 'MimiTheme.swift');
   assertContains(theme, '0xE8832E', 'MimiTheme.swift');
   assertContains(theme, '0xF5F6FA', 'MimiTheme.swift');
+  assertContains(theme, 'homeHorizontalPadding', 'MimiTheme.swift');
+  assertContains(theme, 'cardCornerRadius', 'MimiTheme.swift');
+  assertContains(theme, 'askBarHeight', 'MimiTheme.swift');
+  assertContains(theme, 'homeCardShadow', 'MimiTheme.swift');
 
   const models = assertFileExists('Sources/MimiMoneyCore/Models/MimiModels.swift');
   checkBalancedBraces(models, 'MimiModels.swift');
