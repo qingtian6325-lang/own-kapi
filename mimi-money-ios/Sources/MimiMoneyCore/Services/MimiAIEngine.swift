@@ -191,9 +191,13 @@ public final class MimiAIEngine: ObservableObject {
         guard let tx = store.transactions.first(where: { $0.accountId != nil || !$0.accountName.isEmpty }) else {
             return nil
         }
-        let id = tx.accountId ?? DefaultCatalog.resolveAccountId(from: tx.accountName)
+        // resolveAccountId 返回 String?；必须解包成非可选，否则 macOS host 编译报
+        // cannot convert '(String?, String)' to '(id: String, name: String)'
+        guard let id = tx.accountId ?? DefaultCatalog.resolveAccountId(from: tx.accountName) else {
+            return nil
+        }
         let name = DefaultCatalog.resolveAccountName(from: id)
-        return (id, name)
+        return (id: id, name: name)
     }
 
     // MARK: - Chat Flow (UI 入口)
