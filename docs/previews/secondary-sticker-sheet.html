@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>咪咪记账 · 二级分类贴纸预览</title>
+<style>
+  :root { --page:#F5F6FA; --ink:#5C4A3A; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "SF Pro Text", "PingFang SC", "Segoe UI", sans-serif;
+    background:
+      radial-gradient(1000px 420px at 8% -8%, #fff7e8 0%, transparent 55%),
+      radial-gradient(800px 360px at 100% 0%, #e8f3ff 0%, transparent 50%),
+      var(--page);
+    color: #2a2a2a;
+    padding: 24px 16px 48px;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  h1 { margin: 0 0 6px; font-size: 22px; font-weight: 700; }
+  .sub { margin: 0 0 18px; font-size: 13px; color: #6b7280; line-height: 1.5; }
+  .group {
+    background: #fff;
+    border-radius: 18px;
+    padding: 16px 14px 10px;
+    margin-bottom: 14px;
+    border: 1px solid rgba(0,0,0,0.04);
+    box-shadow: 0 6px 20px rgba(40,50,80,0.05);
+  }
+  .group h2 {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .group h2 .pill {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    background: #F3F4F8;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    gap: 14px 8px;
+  }
+  .cell { display:flex; flex-direction:column; align-items:center; gap:7px; }
+  .sticker {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.10);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    display: grid; place-items: center;
+  }
+  .disc {
+    width: 90%; height: 90%; border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 22px; line-height: 1;
+  }
+  .label {
+    font-size: 11px; color: #4b5563; text-align: center;
+    line-height: 1.25; max-width: 80px;
+  }
+  .note {
+    margin-top: 8px; font-size: 12px; color: #9ca3af;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>二级分类贴纸预览</h1>
+  <p class="sub">下面是目录里每个二级分类当前会用到的图案（数据仍是 emoji key；App 里会画成粉彩贴纸）。这是给你看的对照表，不是金标原图。</p>
+
+  <section class="group">
+    <h2>餐饮 <span class="pill">7 个二级</span></h2>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8F5E9">🎃</div></div><div class="label">做饭食材</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFE0B2">🍜</div></div><div class="label">餐厅</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">🛍️</div></div><div class="label">外卖外带</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#EFEBE9">☕</div></div><div class="label">咖啡</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FCE4EC">🥤</div></div><div class="label">饮品</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">🍟</div></div><div class="label">零食甜品</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F3E5F5">🍺</div></div><div class="label">酒吧酒水</div></div>
+    </div>
+  </section>
+
+  <section class="group">
+    <h2>购物 <span class="pill">7 个二级</span></h2>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FCE4EC">👕</div></div><div class="label">服饰鞋包</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F8BBD0">🧴</div></div><div class="label">美妆护肤</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8EAF6">📷</div></div><div class="label">数码电器</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">🧻</div></div><div class="label">生活用品</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8F5E9">🧼</div></div><div class="label">个护服务</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">📦</div></div><div class="label">运费</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FCE4EC">🎁</div></div><div class="label">二手租借</div></div>
+    </div>
+  </section>
+
+  <section class="group">
+    <h2>交通 <span class="pill">7 个二级</span></h2>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">🚌</div></div><div class="label">公共交通</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFFDE7">🚕</div></div><div class="label">打车叫车</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8EAF6">🚄</div></div><div class="label">城际出行</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#D6F1FA">⛽</div></div><div class="label">加油充电</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">🅿️</div></div><div class="label">过路停车</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E0F7FA">🚙</div></div><div class="label">养车</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F1F8E9">🎫</div></div><div class="label">交通卡充值</div></div>
+    </div>
+  </section>
+
+  <section class="group">
+    <h2>住房 <span class="pill">6 个二级</span></h2>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">🏡</div></div><div class="label">房租房贷</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E1F5FE">💧</div></div><div class="label">物业水电</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">🖥️</div></div><div class="label">话费网费</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF8E1">🏢</div></div><div class="label">物业管理费</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#ECEFF1">🖌️</div></div><div class="label">装修维修</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8F5E9">🧹</div></div><div class="label">家政服务</div></div>
+    </div>
+  </section>
+
+  <section class="group">
+    <h2>休闲娱乐 <span class="pill">6 个二级</span></h2>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8F5E9">🏸</div></div><div class="label">运动健身</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFE3C2">🎟️</div></div><div class="label">线下娱乐</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8EAF6">🎮</div></div><div class="label">数字娱乐</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E1F5FE">🚩</div></div><div class="label">旅游度假</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FCE4EC">🎁</div></div><div class="label">收藏爱好</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">💳</div></div><div class="label">订阅会员</div></div>
+    </div>
+  </section>
+
+  <section class="group">
+    <h2>医疗健康 <span class="pill">5 个二级</span></h2>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFEBEE">💊</div></div><div class="label">看病买药</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E1F5FE">🦷</div></div><div class="label">医美齿科</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8F5E9">🫙</div></div><div class="label">保健养生</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E0F2F1">💉</div></div><div class="label">体检疫苗</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFEBEE">🧑‍⚕️</div></div><div class="label">康复陪护</div></div>
+    </div>
+  </section>
+
+  <section class="group">
+    <h2>学习办公 <span class="pill">4 个二级</span></h2>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8EAF6">🎓</div></div><div class="label">教育学费</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#ECEFF1">💻</div></div><div class="label">职业培训</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F3E5F5">🎹</div></div><div class="label">兴趣课程</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">✏️</div></div><div class="label">图书文具</div></div>
+    </div>
+  </section>
+
+  <section class="group">
+    <h2>宠物（含猫猫） <span class="pill">4 个二级</span></h2>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">🐱</div></div><div class="label">宠物（一级）</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF8E1">🦴</div></div><div class="label">宠物食品</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">🐾</div></div><div class="label">宠物用品</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E0F2F1">🩺</div></div><div class="label">宠物医疗</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E1F5FE">✂️</div></div><div class="label">宠物服务</div></div>
+    </div>
+    <p class="note">一级已是猫；二级还是骨头/爪印/医疗，猫感可以再加强。</p>
+  </section>
+
+  <section class="group">
+    <h2>母婴 <span class="pill">3 个二级</span></h2>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FCE4EC">🍼</div></div><div class="label">婴儿食品</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">🛒</div></div><div class="label">母婴用品</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F3E5F5">🧷</div></div><div class="label">母婴服务</div></div>
+    </div>
+  </section>
+
+  <section class="group">
+    <h2>资金往来 <span class="pill">2 个二级</span></h2>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">🗓️</div></div><div class="label">还款</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFEBEE">🧧</div></div><div class="label">人情往来</div></div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

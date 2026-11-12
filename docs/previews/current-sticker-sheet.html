@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>咪咪记账 · 当前分类贴纸预览</title>
+<style>
+  :root {
+    --page: #F5F6FA;
+    --ink: #5C4A3A;
+    --card: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "SF Pro Text", "PingFang SC", "Segoe UI", sans-serif;
+    background:
+      radial-gradient(1200px 500px at 10% -10%, #fff7e8 0%, transparent 55%),
+      radial-gradient(900px 400px at 100% 0%, #e8f3ff 0%, transparent 50%),
+      var(--page);
+    color: #2a2a2a;
+    padding: 28px 20px 48px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 {
+    margin: 0 0 6px;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .sub {
+    margin: 0 0 22px;
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.5;
+  }
+  .panel {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 22px 18px 10px;
+    box-shadow: 0 8px 28px rgba(40, 50, 80, 0.06);
+    border: 1px solid rgba(0,0,0,0.04);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px 10px;
+  }
+  @media (max-width: 520px) {
+    .grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  .cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .sticker {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.10);
+    display: grid;
+    place-items: center;
+    position: relative;
+  }
+  .disc {
+    width: 90%;
+    height: 90%;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+  }
+  .disc svg {
+    width: 42%;
+    height: 42%;
+    display: block;
+  }
+  .label {
+    font-size: 12px;
+    color: #374151;
+    font-weight: 500;
+  }
+  .meta {
+    font-size: 10px;
+    color: #9ca3af;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    text-align: center;
+    line-height: 1.3;
+    max-width: 88px;
+    word-break: break-all;
+  }
+  .section-title {
+    margin: 28px 0 10px;
+    font-size: 14px;
+    font-weight: 650;
+    color: #4b5563;
+  }
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 560px) {
+    .compare { grid-template-columns: 1fr; }
+  }
+  .box {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 14px 14px 12px;
+    border: 1px solid rgba(0,0,0,0.05);
+  }
+  .box h3 {
+    margin: 0 0 8px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .box p {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: #4b5563;
+  }
+  .emoji-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .emoji-sticker {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.10);
+    display: grid;
+    place-items: center;
+    font-size: 26px;
+    line-height: 1;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .emoji-sticker span.bg {
+    width: 90%;
+    height: 90%;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+  }
+  footer {
+    margin-top: 18px;
+    font-size: 11px;
+    color: #9ca3af;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>当前分类贴纸预览</h1>
+    <p class="sub">
+      来自 <code>MimiStickerIconView.swift</code> 的现网映射：白底圆环 + 粉彩圆盘 + SF Symbol 单色线标（暖棕墨色）。
+      下图为首页流水常见类目。
+    </p>
+
+    <div class="panel">
+      <div class="grid">
+        <!-- 餐饮 -->
+        <div class="cell">
+          <div class="sticker"><div class="disc" style="background:#FFE0B2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#5C4A3A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 3v9"/><path d="M5 3v5a2 2 0 0 0 4 0V3"/><path d="M7 12v9"/><path d="M16 3v18"/><path d="M14 3c0 3 4 3 4 6V3"/>
+            </svg>
+          </div></div>
+          <div class="label">餐饮</div>
+          <div class="meta">fork.knife<br>#FFE0B2</div>
+        </div>
+
+        <!-- 加油 -->
+        <div class="cell">
+          <div class="sticker"><div class="disc" style="background:#D6F1FA">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#2A6F8A" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="4" width="10" height="16" rx="1.5"/><path d="M8 8h2"/><path d="M14 7l4 3v7a2 2 0 0 0 2 2"/><path d="M7 20v1"/><path d="M11 20v1"/>
+            </svg>
+          </div></div>
+          <div class="label">加油</div>
+          <div class="meta">fuelpump.fill<br>#D6F1FA</div>
+        </div>
+
+        <!-- 电灯 -->
+        <div class="cell">
+          <div class="sticker"><div class="disc" style="background:#FFF6D0">
+            <svg viewBox="0 0 24 24" fill="#8A6A20" stroke="none">
+              <path d="M9 18h6v1.2a1.8 1.8 0 0 1-1.8 1.8h-2.4A1.8 1.8 0 0 1 9 19.2V18z"/>
+              <path d="M8.2 14.5c-1.7-1.3-2.7-3.2-2.7-5.3C5.5 5.5 8.3 3 12 3s6.5 2.5 6.5 6.2c0 2.1-1 4-2.7 5.3H8.2z" opacity=".95"/>
+              <rect x="9.2" y="14.8" width="5.6" height="1.4" rx=".4" fill="#8A6A20"/>
+            </svg>
+          </div></div>
+          <div class="label">电灯/水电</div>
+          <div class="meta">lightbulb.fill<br>#FFF6D0</div>
+        </div>
+
+        <!-- 投资 -->
+        <div class="cell">
+          <div class="sticker"><div class="disc" style="background:#FFF3C4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#8A6A20" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 17l6-6 4 4 7-8"/><path d="M15 7h5v5"/>
+            </svg>
+          </div></div>
+          <div class="label">投资</div>
+          <div class="meta">chart.line…<br>#FFF3C4</div>
+        </div>
+
+        <!-- 娱乐 -->
+        <div class="cell">
+          <div class="sticker"><div class="disc" style="background:#FFE3C2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#5C4A3A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 8.5c0-1.5 1.2-2.5 3-2.5h10c1.8 0 3 1 3 2.5v7c0 1.5-1.2 2.5-3 2.5H7c-1.8 0-3-1-3-2.5v-7z"/>
+              <path d="M8 6v12"/><circle cx="15.5" cy="12" r="1.2" fill="#5C4A3A"/>
+            </svg>
+          </div></div>
+          <div class="label">娱乐</div>
+          <div class="meta">ticket.fill<br>#FFE3C2</div>
+        </div>
+
+        <!-- 转账人 -->
+        <div class="cell">
+          <div class="sticker"><div class="disc" style="background:#FFE6CC">
+            <svg viewBox="0 0 24 24" fill="#5C4A3A">
+              <circle cx="12" cy="8" r="3.4"/>
+              <path d="M5.5 19.2c.8-3.6 3.2-5.2 6.5-5.2s5.7 1.6 6.5 5.2" opacity=".95"/>
+            </svg>
+          </div></div>
+          <div class="label">别人转账</div>
+          <div class="meta">person.fill<br>#FFE6CC</div>
+        </div>
+
+        <!-- 购物 -->
+        <div class="cell">
+          <div class="sticker"><div class="disc" style="background:#E3F2FD">
+            <svg viewBox="0 0 24 24" fill="#356A9A">
+              <path d="M7.2 8.2h9.6l-.7 10.2a2 2 0 0 1-2 1.8H9.9a2 2 0 0 1-2-1.8L7.2 8.2z"/>
+              <path d="M9 8.2V7a3 3 0 0 1 6 0v1.2" fill="none" stroke="#356A9A" stroke-width="2"/>
+            </svg>
+          </div></div>
+          <div class="label">购物</div>
+          <div class="meta">bag.fill<br>#E3F2FD</div>
+        </div>
+
+        <!-- 交通 -->
+        <div class="cell">
+          <div class="sticker"><div class="disc" style="background:#E3F2FD">
+            <svg viewBox="0 0 24 24" fill="#356A9A">
+              <rect x="5" y="3.5" width="14" height="13" rx="3"/>
+              <rect x="7" y="6" width="10" height="4" rx="1" fill="#E3F2FD"/>
+              <circle cx="8.5" cy="18.5" r="1.6"/>
+              <circle cx="15.5" cy="18.5" r="1.6"/>
+              <rect x="8" y="16.5" width="8" height="1.2" rx=".4"/>
+            </svg>
+          </div></div>
+          <div class="label">交通</div>
+          <div class="meta">bus.fill<br>#E3F2FD</div>
+        </div>
+
+        <!-- 住房 -->
+        <div class="cell">
+          <div class="sticker"><div class="disc" style="background:#FFF3E0">
+            <svg viewBox="0 0 24 24" fill="#5C4A3A">
+              <path d="M4 11.5L12 5l8 6.5V20a1 1 0 0 1-1 1h-5.2v-5.5H10.2V21H5a1 1 0 0 1-1-1v-8.5z"/>
+            </svg>
+          </div></div>
+          <div class="label">住房</div>
+          <div class="meta">house.fill<br>#FFF3E0</div>
+        </div>
+
+        <!-- 医疗 -->
+        <div class="cell">
+          <div class="sticker"><div class="disc" style="background:#FFEBEE">
+            <svg viewBox="0 0 24 24" fill="#9C3D4A">
+              <rect x="4.5" y="6" width="15" height="13" rx="2.5"/>
+              <path d="M11 10h2v2h2v2h-2v2h-2v-2H9v-2h2v-2z" fill="#FFEBEE"/>
+              <rect x="9.5" y="4.2" width="5" height="2.4" rx="1" />
+            </svg>
+          </div></div>
+          <div class="label">医疗</div>
+          <div class="meta">cross.case.fill<br>#FFEBEE</div>
+        </div>
+
+        <!-- 收入 -->
+        <div class="cell">
+          <div class="sticker"><div class="disc" style="background:#FFF3E0">
+            <svg viewBox="0 0 24 24" fill="#5C4A3A">
+              <rect x="3.5" y="7" width="17" height="11" rx="2"/>
+              <circle cx="12" cy="12.5" r="2.4" fill="#FFF3E0"/>
+              <path d="M3.5 10h17" stroke="#FFF3E0" stroke-width="1.4"/>
+            </svg>
+          </div></div>
+          <div class="label">收入</div>
+          <div class="meta">banknote.fill<br>#FFF3E0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">和金标对照（金标 A 流水行）</div>
+    <div class="compare">
+      <div class="box">
+        <h3>当前（代码实现）</h3>
+        <p>系统 SF Symbol 线标 + 粉彩底圆。偏「系统图标 / 记账工具感」，统一、可扩展，但缺少金标那种手绘贴纸趣味。</p>
+      </div>
+      <div class="box">
+        <h3>金标（截图 A）</h3>
+        <p>白环 + 粉彩底上叠<strong>彩色 emoji / 小插画贴纸</strong>（如彩色拉面碗、加油泵、灯泡）。更萌、更产品化；spec 允许 Canvas 近似，不裁原图 PNG。</p>
+        <div class="emoji-row" aria-label="金标风格示意">
+          <div class="emoji-sticker"><span class="bg" style="background:#FFF6D0">💡</span></div>
+          <div class="emoji-sticker"><span class="bg" style="background:#D6EAF8">🍜</span></div>
+          <div class="emoji-sticker"><span class="bg" style="background:#D6F1FA">⛽</span></div>
+          <div class="emoji-sticker"><span class="bg" style="background:#FFF3C4">📈</span></div>
+          <div class="emoji-sticker"><span class="bg" style="background:#FFE6CC">🧑</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">若重做（最多两档）</div>
+    <div class="compare">
+      <div class="box">
+        <h3>方案 1 · 轻改（推荐先试）</h3>
+        <p>保留圆环结构，把首页常见类目从 SF Symbol 换回 emoji / 简易 Canvas 彩绘，尺寸约贴纸直径 58%，边框与阴影对齐金标 A/C。</p>
+      </div>
+      <div class="box">
+        <h3>方案 2 · 全套手绘近似</h3>
+        <p>为餐饮/加油/电灯等首页高频类目各画一枚 Canvas 小插画（非裁图），其余类目仍用 emoji；工作量更大，风格最接近金标。</p>
+      </div>
+    </div>
+
+    <footer>
+      预览文件 · 未改 App 代码 · 色值与 symbol 来自 MimiStickerIconView.stickerSpec / homeGoldSpec
+    </footer>
+  </div>
+</body>
+</html>

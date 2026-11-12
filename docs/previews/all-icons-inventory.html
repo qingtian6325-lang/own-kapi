@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>咪咪记账 · 全量图标清单（要对齐金标 + 现实风）</title>
+<style>
+  :root { --bg:#F3F4F8; --ink:#2C2F36; --muted:#6B7280; --card:#fff; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: "PingFang SC", "SF Pro Text", sans-serif;
+    background: var(--bg); color: var(--ink); padding: 20px 14px 60px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  .lead { color: var(--muted); font-size: 13px; line-height: 1.55; margin: 0 0 16px; }
+  .banner {
+    background: #FFF7ED; border: 1px solid #FED7AA; border-radius: 14px;
+    padding: 12px 14px; font-size: 13px; line-height: 1.5; margin-bottom: 16px;
+  }
+  .banner strong { color: #9A3412; }
+  .toc { display:flex; flex-wrap:wrap; gap:8px; margin-bottom: 18px; }
+  .toc a {
+    font-size: 12px; text-decoration:none; color:#1D4ED8; background:#EFF6FF;
+    padding: 6px 10px; border-radius: 999px;
+  }
+  section {
+    background: var(--card); border-radius: 16px; padding: 14px;
+    margin-bottom: 12px; border: 1px solid rgba(0,0,0,.05);
+  }
+  h2 { font-size: 15px; margin: 0 0 4px; }
+  .meta { font-size: 12px; color: var(--muted); margin: 0 0 12px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+    gap: 12px 6px;
+  }
+  .cell { text-align:center; }
+  .sticker {
+    width: 52px; height: 52px; margin: 0 auto 6px; border-radius: 50%;
+    background: #fff; border: 1px solid rgba(0,0,0,.1);
+    box-shadow: 0 1px 2px rgba(0,0,0,.05);
+    display:grid; place-items:center; font-size: 24px;
+  }
+  .disc { width:90%; height:90%; border-radius:50%; display:grid; place-items:center; }
+  .label { font-size: 10.5px; color:#4B5563; line-height:1.25; }
+  .tag { display:inline-block; font-size:10px; background:#F3F4F6; color:#6B7280; padding:1px 6px; border-radius:6px; margin-left:6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>全量图标清单 · 你要看的全部</h1>
+  <p class="lead">对照你仓库里 60+ 张金标截图：凡是有图标的都列入。当前 App 数据仍用 emoji key；目标改成<strong>现实风软立体贴纸</strong>（更像首页流水里的灯泡/油枪/面碗，而不是分类管理里那种卡通大脸）。猫猫元素会加在宠物类 + 问句吉祥物。</p>
+  <div class="banner">
+    <strong>风格确认（等你点头再全量改代码）：</strong>
+    现实风 = 软 3D / 写实小物件贴纸，少卡通脸、少线描系统图标；宠物相关加猫；首页「问我」吉祥物也可改猫。
+  </div>
+  <nav class="toc">
+    <a href="#exp">支出一级+二级</a>
+    <a href="#inc">收入一级+二级</a>
+    <a href="#acc">账户</a>
+    <a href="#drawer">抽屉宫格</a>
+    <a href="#chrome">其它 UI 图标</a>
+    <a href="#lib">选图标库</a>
+  </nav>
+
+  <section id="exp">
+    <h2>支出分类 <span class="tag">一级 + 全部二级</span></h2>
+    <p class="meta">来自 DefaultCatalog.standardExpenseCategories — 流水、记账、分类管理、预算都会用到</p>
+
+    <h2 style="font-size:13px;margin:10px 0 8px">餐饮</h2>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFE0B2">🍜</div></div><div class="label">餐饮</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8F5E9">🎃</div></div><div class="label">做饭食材</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFE0B2">🍜</div></div><div class="label">餐厅</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">🛍️</div></div><div class="label">外卖外带</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#EFEBE9">☕</div></div><div class="label">咖啡</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FCE4EC">🥤</div></div><div class="label">饮品</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">🍟</div></div><div class="label">零食甜品</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F3E5F5">🍺</div></div><div class="label">酒吧酒水</div></div>
+    </div>
+
+    <h2 style="font-size:13px;margin:16px 0 8px">购物</h2>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">🧺</div></div><div class="label">购物</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FCE4EC">👕</div></div><div class="label">服饰鞋包</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F8BBD0">🧴</div></div><div class="label">美妆护肤</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8EAF6">📷</div></div><div class="label">数码电器</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">🧻</div></div><div class="label">生活用品</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8F5E9">🧼</div></div><div class="label">个护服务</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">📦</div></div><div class="label">运费</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FCE4EC">🎁</div></div><div class="label">二手租借</div></div>
+    </div>
+
+    <h2 style="font-size:13px;margin:16px 0 8px">交通</h2>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E0F7FA">🚗</div></div><div class="label">交通</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">🚌</div></div><div class="label">公共交通</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFFDE7">🚕</div></div><div class="label">打车叫车</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8EAF6">🚄</div></div><div class="label">城际出行</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#D6F1FA">⛽</div></div><div class="label">加油充电</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">🅿️</div></div><div class="label">过路停车</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E0F7FA">🚙</div></div><div class="label">养车</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F1F8E9">🎫</div></div><div class="label">交通卡充值</div></div>
+    </div>
+
+    <h2 style="font-size:13px;margin:16px 0 8px">住房</h2>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">🏠</div></div><div class="label">住房</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">🏡</div></div><div class="label">房租房贷</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E1F5FE">💧</div></div><div class="label">物业水电</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">🖥️</div></div><div class="label">话费网费</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF8E1">🏢</div></div><div class="label">物业管理费</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#ECEFF1">🖌️</div></div><div class="label">装修维修</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8F5E9">🧹</div></div><div class="label">家政服务</div></div>
+    </div>
+
+    <h2 style="font-size:13px;margin:16px 0 8px">休闲娱乐</h2>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">🏀</div></div><div class="label">休闲娱乐</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8F5E9">🏸</div></div><div class="label">运动健身</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFE3C2">🎟️</div></div><div class="label">线下娱乐</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8EAF6">🎮</div></div><div class="label">数字娱乐</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E1F5FE">🚩</div></div><div class="label">旅游度假</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FCE4EC">🎁</div></div><div class="label">收藏爱好</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">💳</div></div><div class="label">订阅会员</div></div>
+    </div>
+
+    <h2 style="font-size:13px;margin:16px 0 8px">医疗健康</h2>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFEBEE">🏥</div></div><div class="label">医疗健康</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFEBEE">💊</div></div><div class="label">看病买药</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E1F5FE">🦷</div></div><div class="label">医美齿科</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8F5E9">🫙</div></div><div class="label">保健养生</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E0F2F1">💉</div></div><div class="label">体检疫苗</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFEBEE">🧑‍⚕️</div></div><div class="label">康复陪护</div></div>
+    </div>
+
+    <h2 style="font-size:13px;margin:16px 0 8px">学习办公</h2>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">📖</div></div><div class="label">学习办公</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8EAF6">🎓</div></div><div class="label">教育学费</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#ECEFF1">💻</div></div><div class="label">职业培训</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F3E5F5">🎹</div></div><div class="label">兴趣课程</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">✏️</div></div><div class="label">图书文具</div></div>
+    </div>
+
+    <h2 style="font-size:13px;margin:16px 0 8px">宠物 · 要加猫猫</h2>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">🐱</div></div><div class="label">宠物</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF8E1">🦴</div></div><div class="label">宠物食品</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">🐾</div></div><div class="label">宠物用品</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E0F2F1">🩺</div></div><div class="label">宠物医疗</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E1F5FE">✂️</div></div><div class="label">宠物服务</div></div>
+    </div>
+
+    <h2 style="font-size:13px;margin:16px 0 8px">母婴 / 资金 / 其它一级</h2>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FCE4EC">👶</div></div><div class="label">母婴</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FCE4EC">🍼</div></div><div class="label">婴儿食品</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">🛒</div></div><div class="label">母婴用品</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F3E5F5">🧷</div></div><div class="label">母婴服务</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">💰</div></div><div class="label">资金往来</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">🗓️</div></div><div class="label">还款</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFEBEE">🧧</div></div><div class="label">人情往来</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8F5E9">🛡️</div></div><div class="label">保险</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3C4">📈</div></div><div class="label">投资理财</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">📦</div></div><div class="label">其他支出</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8F5E9">🎃</div></div><div class="label">家用</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E0F7FA">🚙</div></div><div class="label">车贷</div></div>
+    </div>
+  </section>
+
+  <section id="inc">
+    <h2>收入分类 <span class="tag">一级 + 二级</span></h2>
+    <p class="meta">standardIncomeCategories</p>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">💳</div></div><div class="label">职业收入</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF8E1">🏆</div></div><div class="label">绩效奖金</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">💴</div></div><div class="label">津贴补助</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">🏪</div></div><div class="label">个体经营</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8EAF6">💼</div></div><div class="label">副业兼职</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3C4">📈</div></div><div class="label">投资收入</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8EAF6">📊</div></div><div class="label">股息分红</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF8E1">🪙</div></div><div class="label">利息</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E0F7FA">🚙</div></div><div class="label">保险理赔</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#ECEFF1">📑</div></div><div class="label">退款返还</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E0F2F1">💸</div></div><div class="label">返现</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">🧾</div></div><div class="label">报销</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFE6CC">🤝</div></div><div class="label">他人还款</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">🏦</div></div><div class="label">退税</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">💰</div></div><div class="label">礼金收入</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFEBEE">🧧</div></div><div class="label">生活费</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">📦</div></div><div class="label">其他收入</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E0F2F1">🏷️</div></div><div class="label">二手买卖</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8F5E9">🍀</div></div><div class="label">好运收入</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFE6CC">🧑</div></div><div class="label">别人转账</div></div>
+    </div>
+  </section>
+
+  <section id="acc">
+    <h2>账户图标</h2>
+    <p class="meta">defaultAccounts — 资产管理页</p>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF3E0">💰</div></div><div class="label">现金</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">🏦</div></div><div class="label">CIMB</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8F5E9">💬</div></div><div class="label">TNGewallet</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E3F2FD">🏦</div></div><div class="label">PBBank</div></div>
+    </div>
+  </section>
+
+  <section id="drawer">
+    <h2>抽屉宫格图标</h2>
+    <p class="meta">SideDrawerMenuView — 更多功能 + 快捷记账（金标 D0）</p>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F3F4F8">📊</div></div><div class="label">图表统计</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F3F4F8">💳</div></div><div class="label">资产管理</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F3F4F8">📒</div></div><div class="label">账本管理</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F3F4F8">📋</div></div><div class="label">预算管理</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F3F4F8">▦</div></div><div class="label">小组件</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F3F4F8">📁+</div></div><div class="label">分类管理</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F3F4F8">🔖</div></div><div class="label">标签管理</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F3F4F8">A</div></div><div class="label">自动记账</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F3F4F8">⏱</div></div><div class="label">定时记账</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F3F4F8">📄+</div></div><div class="label">导入导出</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F0F2F6">⚙</div></div><div class="label">设置齿轮</div></div>
+    </div>
+  </section>
+
+  <section id="chrome">
+    <h2>其它 UI 图标</h2>
+    <p class="meta">首页 / 问句栏 / 统计 / 日历等 chrome</p>
+    <div class="grid">
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFE8CC">🐱</div></div><div class="label">问我·吉祥物<br/>（拟改猫）</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#E8F0FE">＋</div></div><div class="label">记一笔</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#F3F4F8">☰</div></div><div class="label">开抽屉</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFF6D0">💡</div></div><div class="label">流水贴纸示例</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#D6F1FA">⛽</div></div><div class="label">流水贴纸示例</div></div>
+      <div class="cell"><div class="sticker"><div class="disc" style="background:#FFE0B2">🍜</div></div><div class="label">流水贴纸示例</div></div>
+    </div>
+  </section>
+
+  <section id="lib">
+    <h2>分类管理 · 选图标库</h2>
+    <p class="meta">stickerIconLibrary() 约 100 个候选 — 添加/改分类时可选；这些也要统一现实风化</p>
+    <div class="grid" id="libgrid"></div>
+  </section>
+</div>
+<script>
+const lib = ["🍜","🎃","🛍️","☕","🥤","🍟","🍺","🧺","👕","🧴","📷","🧻","🧼","📦","🎁","🚗","🚌","🚕","🚄","⛽","🅿️","🚙","🎫","🏠","🏡","💧","🖥️","🏢","🖌️","🧹","🏀","🏸","🎟️","🎮","🚩","💳","🏥","💊","🦷","🫙","💉","🧑‍⚕️","📖","🎓","💻","🎹","✏️","🐱","🦴","🐾","🩺","✂️","👶","🍼","🛒","🧷","💰","🗓️","🧧","🛡️","📈","🏆","💴","🏪","💼","📊","🪙","📑","💸","🧾","🤝","🏦","🏷️","🍀","🍔","🍕","🍣","🥩","🧁","🍇","🍎","dumpling","🍳","🫖","🍷","🍹","🎱","🎪","🏈","🔥","💌","📫","👛","💍","💄","🪞","🔦","🧽"];
+const g = document.getElementById('libgrid');
+lib.forEach((e,i) => {
+  if (e === 'dumpling') e = '🥟';
+  const d = document.createElement('div');
+  d.className = 'cell';
+  d.innerHTML = `<div class="sticker"><div class="disc" style="background:#FFF8F0">${e}</div></div><div class="label">#${i+1}</div>`;
+  g.appendChild(d);
+});
+</script>
+</body>
+</html>
