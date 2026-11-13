@@ -249,7 +249,7 @@ public struct BillDetailSheetView: View {
                         Divider().padding(.leading, 16)
 
                         detailRow(label: "交易方") {
-                            TextField("如：Eggette Lab / Jaya Grocer", text: $editableBill.counterparty)
+                            TextField("如：咖啡店 / 超市", text: $editableBill.counterparty)
                                 .mimiFont(14)
                                 .multilineTextAlignment(.trailing)
                         }

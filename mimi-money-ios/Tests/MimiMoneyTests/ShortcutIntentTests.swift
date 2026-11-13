@@ -9,7 +9,7 @@ final class ShortcutIntentTests: XCTestCase {
         GeminiBillDTO(
             type: "expense",
             amount: 5.90,
-            counterparty: "Near Me Voucher Eggette Lab",
+            counterparty: "示例商户",
             counterpartyKind: "merchant",
             account: "TNGewallet",
             primaryCategory: "餐饮",

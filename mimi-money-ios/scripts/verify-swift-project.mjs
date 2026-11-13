@@ -142,10 +142,29 @@ function verifyTask2() {
     'public enum MimiCSVService',
     'public static func parseMimiCSV(',
     'public static func exportMimiCSV(',
-    'public static let userExportedCSV'
+    'public static let standardImportTemplate'
   ]) {
     assertContains(csvService, sym, 'MimiCSVService.swift');
   }
+  if (csvService.includes('userExportedCSV') || csvService.includes('151 笔') || csvService.includes('Real Exported')) {
+    throw new Error('MimiCSVService.swift must not ship personal backup sample CSV');
+  }
+
+  const xlsx = assertFileExists('Sources/MimiMoneyCore/Services/MimiKapiXLSXService.swift');
+  checkBalancedBraces(xlsx, 'MimiKapiXLSXService.swift');
+  for (const sym of [
+    'public enum MimiKapiXLSXService',
+    'public static func parseXLSX(',
+    'public static func exportXLSX(',
+    '收支账单',
+    '内部转账'
+  ]) {
+    assertContains(xlsx, sym, 'MimiKapiXLSXService.swift');
+  }
+
+  const pkg = assertFileExists('Package.swift');
+  assertContains(pkg, 'CoreXLSX', 'Package.swift');
+  assertContains(pkg, 'ZIPFoundation', 'Package.swift');
 
   console.log('Task 2 verified: KeypadCalculator, DynamicBudgetEngine, MimiCSVService, and MimiStore audit & balance logic valid');
 }

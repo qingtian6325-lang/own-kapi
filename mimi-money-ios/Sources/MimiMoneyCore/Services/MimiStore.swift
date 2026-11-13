@@ -692,7 +692,17 @@ public final class MimiStore: ObservableObject {
     /// Imports Mimi Money dual-table CSV text and reconciles account balances & audit logs
     @discardableResult
     public func importMimiCSV(_ csvText: String, replaceExisting: Bool = false) -> Int {
-        let parsed = MimiCSVService.parseMimiCSV(csvText)
+        applyImportedTransactions(MimiCSVService.parseMimiCSV(csvText), replaceExisting: replaceExisting)
+    }
+
+    /// Imports 咔皮同款 Excel（收支账单 + 内部转账）
+    @discardableResult
+    public func importKapiXLSX(_ data: Data, replaceExisting: Bool = false) throws -> Int {
+        applyImportedTransactions(try MimiKapiXLSXService.parseXLSX(data: data), replaceExisting: replaceExisting)
+    }
+
+    @discardableResult
+    private func applyImportedTransactions(_ parsed: [TransactionItem], replaceExisting: Bool) -> Int {
         guard !parsed.isEmpty else { return 0 }
         if replaceExisting {
             transactions = []
@@ -701,7 +711,6 @@ public final class MimiStore: ObservableObject {
                 accounts[idx].balance = 0.0
             }
         }
-        // Apply chronologically so audit logs & balances accumulate accurately
         for item in parsed.sorted(by: { $0.date < $1.date }) {
             addTransaction(item, at: item.date)
         }
@@ -709,22 +718,27 @@ public final class MimiStore: ObservableObject {
         return parsed.count
     }
 
-    public func exportMimiCSV(startDate: Date? = nil, endDate: Date? = nil) -> String {
-        let filtered: [TransactionItem]
+    private func filteredTransactions(startDate: Date?, endDate: Date?) -> [TransactionItem] {
         if let start = startDate, let end = endDate {
-            filtered = transactions.filter { $0.date >= start && $0.date <= end }
+            return transactions.filter { $0.date >= start && $0.date <= end }
         } else if let start = startDate {
-            filtered = transactions.filter { $0.date >= start }
+            return transactions.filter { $0.date >= start }
         } else if let end = endDate {
-            filtered = transactions.filter { $0.date <= end }
-        } else {
-            filtered = transactions
+            return transactions.filter { $0.date <= end }
         }
-        return MimiCSVService.exportMimiCSV(transactions: filtered)
+        return transactions
+    }
+
+    public func exportMimiCSV(startDate: Date? = nil, endDate: Date? = nil) -> String {
+        MimiCSVService.exportMimiCSV(transactions: filteredTransactions(startDate: startDate, endDate: endDate))
     }
 
     public func exportMimiCSV() -> String {
         exportMimiCSV(startDate: nil, endDate: nil)
+    }
+
+    public func exportKapiXLSX(startDate: Date? = nil, endDate: Date? = nil) throws -> Data {
+        try MimiKapiXLSXService.exportXLSX(transactions: filteredTransactions(startDate: startDate, endDate: endDate))
     }
 
     public func groupedTransactionsByDay() -> [(date: Date, items: [TransactionItem])] {
@@ -967,7 +981,7 @@ public final class MimiStore: ObservableObject {
         }
     }
 
-    // Preloaded exact transactions and audit logs matching IMG_2240 - IMG_2262
+    /// Anonymous demo seed for UI/dev preview — no personal backup data.
     public static func makeDemoAppState() -> PersistedAppState {
         let cal = Calendar(identifier: .gregorian)
         func makeDate(_ y: Int, _ m: Int, _ d: Int, _ h: Int, _ min: Int) -> Date {
@@ -984,7 +998,7 @@ public final class MimiStore: ObservableObject {
                 primaryCategoryId: "exp_transport",
                 subCategoryId: "exp_trans_fuel",
                 accountId: "acc_pbb",
-                note: "",
+                note: "示例加油",
                 date: makeDate(2026, 11, 8, 21, 59)
             ),
             TransactionItem(
@@ -994,26 +1008,14 @@ public final class MimiStore: ObservableObject {
                 amount: 5.90,
                 currency: .myr,
                 primaryCategoryId: "exp_food",
-                subCategoryId: "exp_food_restaurant",
+                subCategoryId: "exp_food_snack",
                 accountId: "acc_tng",
-                note: "买egglab的东西",
-                counterparty: "Near Me Voucher Eggette Lab",
+                note: "示例零食",
+                counterparty: "示例商户",
                 date: makeDate(2026, 11, 8, 16, 56)
             ),
             TransactionItem(
                 id: UUID(uuidString: "00000000-0000-0000-0000-000000000003")!,
-                ledgerId: "ledger_main",
-                type: .expense,
-                amount: 1000.00,
-                currency: .myr,
-                primaryCategoryId: "exp_invest",
-                subCategoryId: nil,
-                accountId: "acc_pbb",
-                note: "",
-                date: makeDate(2026, 11, 7, 23, 10)
-            ),
-            TransactionItem(
-                id: UUID(uuidString: "00000000-0000-0000-0000-000000000004")!,
                 ledgerId: "ledger_main",
                 type: .expense,
                 amount: 28.00,
@@ -1021,23 +1023,11 @@ public final class MimiStore: ObservableObject {
                 primaryCategoryId: "exp_entertainment",
                 subCategoryId: "exp_ent_offline",
                 accountId: "acc_tng",
-                note: "打麻将输钱",
+                note: "示例娱乐",
                 date: makeDate(2026, 11, 7, 23, 4)
             ),
             TransactionItem(
-                id: UUID(uuidString: "00000000-0000-0000-0000-000000000005")!,
-                ledgerId: "ledger_main",
-                type: .income,
-                amount: 18.80,
-                currency: .myr,
-                primaryCategoryId: "inc_custom_transfer",
-                subCategoryId: nil,
-                accountId: "acc_tng",
-                note: "买糖水 还我的钱",
-                date: makeDate(2026, 11, 7, 20, 23)
-            ),
-            TransactionItem(
-                id: UUID(uuidString: "00000000-0000-0000-0000-000000000006")!,
+                id: UUID(uuidString: "00000000-0000-0000-0000-000000000004")!,
                 ledgerId: "ledger_main",
                 type: .expense,
                 amount: 8.30,
@@ -1045,176 +1035,58 @@ public final class MimiStore: ObservableObject {
                 primaryCategoryId: "exp_food",
                 subCategoryId: "exp_food_restaurant",
                 accountId: "acc_tng",
-                note: "吃午餐",
+                note: "示例午餐",
                 date: makeDate(2026, 11, 6, 13, 15)
             ),
             TransactionItem(
-                id: UUID(uuidString: "00000000-0000-0000-0000-000000000007")!,
+                id: UUID(uuidString: "00000000-0000-0000-0000-000000000005")!,
                 ledgerId: "ledger_main",
                 type: .income,
-                amount: 1148.31,
+                amount: 1000.00,
                 currency: .myr,
                 primaryCategoryId: "inc_salary",
                 subCategoryId: nil,
                 accountId: "acc_pbb",
-                note: "11月收入",
+                note: "示例工资",
                 date: makeDate(2026, 11, 6, 10, 0)
             ),
             TransactionItem(
-                id: UUID(uuidString: "00000000-0000-0000-0000-000000000008")!,
-                ledgerId: "ledger_main",
-                type: .expense,
-                amount: 1.80,
-                currency: .myr,
-                primaryCategoryId: "exp_food",
-                subCategoryId: "exp_food_drink",
-                accountId: "acc_tng",
-                note: "wiwynn teh tarik",
-                date: makeDate(2026, 11, 5, 15, 20)
-            ),
-            TransactionItem(
-                id: UUID(uuidString: "00000000-0000-0000-0000-000000000009")!,
+                id: UUID(uuidString: "00000000-0000-0000-0000-000000000006")!,
                 ledgerId: "ledger_main",
                 type: .income,
-                amount: 29.60,
+                amount: 20.00,
                 currency: .myr,
                 primaryCategoryId: "inc_custom_transfer",
                 subCategoryId: nil,
                 accountId: "acc_tng",
-                note: "jingxian 还钱",
+                note: "示例收款",
                 date: makeDate(2026, 11, 5, 19, 0)
             ),
             TransactionItem(
-                id: UUID(uuidString: "00000000-0000-0000-0000-000000000010")!,
-                ledgerId: "ledger_main",
-                type: .expense,
-                amount: 10.70,
-                currency: .myr,
-                primaryCategoryId: "exp_food",
-                subCategoryId: nil,
-                accountId: "acc_tng",
-                note: "转账给SOH YI YANG",
-                date: makeDate(2026, 11, 4, 12, 32)
-            ),
-            TransactionItem(
-                id: UUID(uuidString: "00000000-0000-0000-0000-000000000011")!,
-                ledgerId: "ledger_main",
-                type: .expense,
-                amount: 47.34,
-                currency: .myr,
-                primaryCategoryId: "exp_transport",
-                subCategoryId: "exp_trans_fuel",
-                accountId: "acc_pbb",
-                note: "在shell打油",
-                date: makeDate(2026, 11, 3, 18, 10)
-            ),
-            TransactionItem(
-                id: UUID(uuidString: "00000000-0000-0000-0000-000000000012")!,
-                ledgerId: "ledger_main",
-                type: .expense,
-                amount: 7.00,
-                currency: .myr,
-                primaryCategoryId: "exp_food",
-                subCategoryId: nil,
-                accountId: "acc_tng",
-                note: "转账给TAN JOO NI 吃苦瓜汤",
-                date: makeDate(2026, 11, 3, 12, 12)
-            ),
-            TransactionItem(
-                id: UUID(uuidString: "00000000-0000-0000-0000-000000000013")!,
-                ledgerId: "ledger_main",
-                type: .expense,
-                amount: 0.70,
-                currency: .myr,
-                primaryCategoryId: "exp_food",
-                subCategoryId: "exp_food_restaurant",
-                accountId: "acc_tng",
-                note: "RESTORAN FU CHUN 餐飲消費 喝中国茶",
-                date: makeDate(2026, 11, 2, 12, 36)
-            ),
-            TransactionItem(
-                id: UUID(uuidString: "00000000-0000-0000-0000-000000000014")!,
-                ledgerId: "ledger_main",
-                type: .expense,
-                amount: 7.00,
-                currency: .myr,
-                primaryCategoryId: "exp_food",
-                subCategoryId: nil,
-                accountId: "acc_tng",
-                note: "CONNIE MIXED RICE 下午杂菜饭",
-                date: makeDate(2026, 11, 2, 12, 33)
-            ),
-            TransactionItem(
-                id: UUID(uuidString: "00000000-0000-0000-0000-000000000015")!,
-                ledgerId: "ledger_main",
-                type: .expense,
-                amount: 95.00,
-                currency: .myr,
-                primaryCategoryId: "exp_shopping",
-                subCategoryId: "exp_shop_daily",
-                accountId: "acc_pbb",
-                note: "日常采购",
-                date: makeDate(2026, 11, 1, 20, 15)
-            ),
-            TransactionItem(
-                id: UUID(uuidString: "00000000-0000-0000-0000-000000000016")!,
+                id: UUID(uuidString: "00000000-0000-0000-0000-000000000007")!,
                 ledgerId: "ledger_main",
                 type: .expense,
                 amount: 12.00,
                 currency: .myr,
-                primaryCategoryId: "exp_food",
-                subCategoryId: nil,
-                accountId: "acc_tng",
-                note: "Ausitn 消费",
-                date: makeDate(2026, 11, 1, 21, 39)
+                primaryCategoryId: "exp_shopping",
+                subCategoryId: "exp_shop_daily",
+                accountId: "acc_pbb",
+                note: "示例购物",
+                date: makeDate(2026, 11, 1, 20, 15)
             )
         ]
 
-        // Exact audit logs from IMG_2259 & IMG_2260
         let logs: [AccountAuditLog] = [
             AccountAuditLog(
                 accountId: "acc_tng",
-                action: .deleted,
-                transactionType: .expense,
-                categoryTitle: "支出 | 零食甜品",
-                note: "Near Me Voucher Eggette Lab 消费",
-                amount: 5.90,
-                balanceAfter: 68.62,
-                billDate: makeDate(2026, 8, 11, 16, 56),
-                loggedAt: makeDate(2026, 11, 9, 23, 55)
-            ),
-            AccountAuditLog(
-                accountId: "acc_tng",
                 action: .created,
                 transactionType: .expense,
                 categoryTitle: "支出 | 零食甜品",
-                note: "Near Me Voucher Eggette Lab 消费",
+                note: "示例零食",
                 amount: 5.90,
-                balanceAfter: 68.62,
-                billDate: makeDate(2026, 8, 11, 16, 56),
-                loggedAt: makeDate(2026, 11, 9, 23, 53)
-            ),
-            AccountAuditLog(
-                accountId: "acc_tng",
-                action: .created,
-                transactionType: .expense,
-                categoryTitle: "支出 | 餐厅",
-                note: "买egglab的东西",
-                amount: 5.90,
-                balanceAfter: 68.62,
+                balanceAfter: 94.10,
                 billDate: makeDate(2026, 11, 8, 16, 56),
-                loggedAt: makeDate(2026, 11, 9, 22, 27)
-            ),
-            AccountAuditLog(
-                accountId: "acc_tng",
-                action: .created,
-                transactionType: .expense,
-                categoryTitle: "支出 | 线下娱乐",
-                note: "打麻将输钱",
-                amount: 28.00,
-                balanceAfter: 74.52,
-                billDate: makeDate(2026, 11, 9, 22, 26),
-                loggedAt: makeDate(2026, 11, 9, 22, 26)
+                loggedAt: makeDate(2026, 11, 8, 16, 57)
             ),
             AccountAuditLog(
                 accountId: "acc_tng",
@@ -1222,10 +1094,10 @@ public final class MimiStore: ObservableObject {
                 transactionType: .income,
                 categoryTitle: "收入 | 别人转账",
                 note: "账单编辑",
-                amount: 14.80,
-                balanceAfter: 83.72,
+                amount: 20.00,
+                balanceAfter: 100.00,
                 billDate: makeDate(2026, 11, 5, 19, 0),
-                loggedAt: makeDate(2026, 11, 9, 22, 24)
+                loggedAt: makeDate(2026, 11, 5, 19, 5)
             )
         ]
 

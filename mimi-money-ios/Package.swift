@@ -18,9 +18,17 @@ let package = Package(
             targets: ["MimiMoneyApp"]
         )
     ],
+    dependencies: [
+        .package(url: "https://github.com/CoreOffice/CoreXLSX.git", .upToNextMinor(from: "0.14.2")),
+        .package(url: "https://github.com/weichsel/ZIPFoundation.git", .upToNextMajor(from: "0.9.19"))
+    ],
     targets: [
         .target(
             name: "MimiMoneyCore",
+            dependencies: [
+                .product(name: "CoreXLSX", package: "CoreXLSX"),
+                .product(name: "ZIPFoundation", package: "ZIPFoundation")
+            ],
             path: "Sources/MimiMoneyCore"
         ),
         .executableTarget(

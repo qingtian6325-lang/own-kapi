@@ -24,7 +24,7 @@ super.tearDown()
 func testGeminiFixtureExpenseRestaurantTNG() throws {
 // 模拟 Gemini generateContent 响应：candidates[0].content.parts[0].text 是结构化 JSON
 let responseJSON = """
-{"candidates":[{"content":{"parts":[{"text":"{\\"type\\":\\"expense\\",\\"amount\\":38.99,\\"counterparty\\":\\"YING LAI RESTAURANT\\",\\"counterpartyKind\\":\\"merchant\\",\\"account\\":\\"TNGewallet\\",\\"primaryCategory\\":\\"餐饮\\",\\"subCategory\\":\\"餐厅\\",\\"occurredAt\\":\\"2026-11-10 20:07\\",\\"note\\":\\"YING LAI RESTAURANT 消费\\"}"}]}}]}
+{"candidates":[{"content":{"parts":[{"text":"{\\"type\\":\\"expense\\",\\"amount\\":38.99,\\"counterparty\\":\\"示例餐厅\\",\\"counterpartyKind\\":\\"merchant\\",\\"account\\":\\"TNGewallet\\",\\"primaryCategory\\":\\"餐饮\\",\\"subCategory\\":\\"餐厅\\",\\"occurredAt\\":\\"2026-11-10 20:07\\",\\"note\\":\\"示例餐厅 消费\\"}"}]}}]}
 """
 let dto = try decodeDTO(fromGenerateContentResponse: responseJSON)
 let draft = dto.toDraftBill(now: Date())
@@ -35,7 +35,7 @@ XCTAssertEqual(draft.subCategoryId, "exp_food_restaurant")
 XCTAssertEqual(draft.categoryDisplayName, "餐饮-餐厅")
 XCTAssertEqual(draft.accountId, "acc_tng")
 XCTAssertEqual(draft.accountDisplayName, "TNGewallet")
-XCTAssertEqual(draft.merchantOrNote, "YING LAI RESTAURANT 消费")
+XCTAssertEqual(draft.merchantOrNote, "示例餐厅 消费")
 
 let cal = Calendar(identifier:.gregorian)
 let comps = cal.dateComponents([.year,.month,.day,.hour,.minute], from: draft.occurredAt)
@@ -51,7 +51,7 @@ func testGeminiFixtureIncomeFromPersonUsesLocalNoteRule() throws {
 let dto = GeminiBillDTO(
 type: "income",
 amount: 150.0,
-counterparty: "TAN JOO NI",
+counterparty: "示例联系人",
 counterpartyKind: "person",
 account: "PBBank",
 primaryCategory: "别人转账",
@@ -63,14 +63,14 @@ let draft = dto.toDraftBill(now: Date())
 XCTAssertEqual(draft.type,.income)
 XCTAssertEqual(draft.primaryCategoryId, "inc_custom_transfer")
 XCTAssertEqual(draft.accountId, "acc_pbb")
-XCTAssertEqual(draft.merchantOrNote, "TAN JOO NI 转账")
+XCTAssertEqual(draft.merchantOrNote, "示例联系人 转账")
 }
 
 func testGeminiFixtureExpenseToPersonNoteRuleAndCategory() throws {
 let dto = GeminiBillDTO(
 type: "expense",
 amount: 200.0,
-counterparty: "TAN JOO NI",
+counterparty: "示例联系人",
 counterpartyKind: "person",
 account: "TNGewallet",
 primaryCategory: "资金往来",
@@ -81,7 +81,7 @@ note: ""
 let draft = dto.toDraftBill(now: Date())
 XCTAssertEqual(draft.type,.expense)
 XCTAssertEqual(draft.categoryDisplayName, "资金往来-人情往来")
-XCTAssertEqual(draft.merchantOrNote, "转账给TAN JOO NI")
+XCTAssertEqual(draft.merchantOrNote, "转账给示例联系人")
 }
 
 func testGeminiFixtureFuelStationCategory() throws {
@@ -152,16 +152,16 @@ XCTAssertNil(GeminiBillDTO.parseOccurredAt(""))
 
 func testNoteFormatterRules() {
 XCTAssertEqual(
-BillNoteFormatter.makeNote(type:.expense, counterparty: "YING LAI RESTAURANT", counterpartyKind: "merchant", modelNote: nil),
-"YING LAI RESTAURANT 消费"
+BillNoteFormatter.makeNote(type:.expense, counterparty: "示例餐厅", counterpartyKind: "merchant", modelNote: nil),
+"示例餐厅 消费"
 )
 XCTAssertEqual(
-BillNoteFormatter.makeNote(type:.expense, counterparty: "TAN JOO NI", counterpartyKind: "person", modelNote: nil),
-"转账给TAN JOO NI"
+BillNoteFormatter.makeNote(type:.expense, counterparty: "示例联系人", counterpartyKind: "person", modelNote: nil),
+"转账给示例联系人"
 )
 XCTAssertEqual(
-BillNoteFormatter.makeNote(type:.income, counterparty: "TAN JOO NI", counterpartyKind: "person", modelNote: nil),
-"TAN JOO NI 转账"
+BillNoteFormatter.makeNote(type:.income, counterparty: "示例联系人", counterpartyKind: "person", modelNote: nil),
+"示例联系人 转账"
 )
 XCTAssertEqual(
 BillNoteFormatter.makeNote(type:.transfer, counterparty: "", counterpartyKind: "merchant", modelNote: nil),
@@ -178,7 +178,7 @@ BillNoteFormatter.makeNote(type:.expense, counterparty: "SHELL", counterpartyKin
 "SHELL 消费"
 )
 XCTAssertFalse(BillNoteFormatter.isCleanNote("这一句备注实在是太长太长了远远超过三十个字的上限啊啊啊啊啊啊啊啊还不够长继续凑字数"))
-XCTAssertTrue(BillNoteFormatter.isCleanNote("转账给TAN JOO NI"))
+XCTAssertTrue(BillNoteFormatter.isCleanNote("转账给示例联系人"))
 }
 
 // MARK: - 金额合理性拦截

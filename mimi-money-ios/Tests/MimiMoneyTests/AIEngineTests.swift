@@ -6,11 +6,11 @@ final class AIEngineTests: XCTestCase {
     // v1.2.1：本地 OCR 解析器已删除。以下用例把旧 OCR 时代的真实截图场景
     // 改用 Gemini 结构化结果（DTO）表达，验证同一条 DTO → 草稿换算路径。
 
-    func testGeminiDraftForTNGEggetteScreenshot() {
+    func testGeminiDraftForTNGSnackScreenshot() {
         let dto = GeminiBillDTO(
             type: "expense",
             amount: 5.90,
-            counterparty: "Near Me Voucher Eggette Lab",
+            counterparty: "示例商户",
             counterpartyKind: "merchant",
             account: "TNGewallet",
             primaryCategory: "餐饮",
@@ -22,14 +22,14 @@ final class AIEngineTests: XCTestCase {
         XCTAssertEqual(draft.amount, 5.90, accuracy: 0.001)
         XCTAssertTrue(draft.accountDisplayName.contains("TNG"))
         XCTAssertEqual(draft.categoryDisplayName, "餐饮-零食甜品")
-        XCTAssertTrue(draft.merchantOrNote.contains("Near Me Voucher"))
+        XCTAssertTrue(draft.merchantOrNote.contains("示例商户"))
     }
 
-    func testGeminiDraftForYingLaiRestaurant() {
+    func testGeminiDraftForSampleRestaurant() {
         let dto = GeminiBillDTO(
             type: "expense",
             amount: 38.99,
-            counterparty: "YING LAI RESTAURANT",
+            counterparty: "示例餐厅",
             counterpartyKind: "merchant",
             account: "TNGewallet",
             primaryCategory: "餐饮",
@@ -40,7 +40,7 @@ final class AIEngineTests: XCTestCase {
         let draft = dto.toDraftBill(now: Date())
         XCTAssertEqual(draft.amount, 38.99, accuracy: 0.001)
         XCTAssertEqual(draft.type, .expense)
-        XCTAssertEqual(draft.merchantOrNote, "YING LAI RESTAURANT 消费")
+        XCTAssertEqual(draft.merchantOrNote, "示例餐厅 消费")
         XCTAssertEqual(draft.categoryDisplayName, "餐饮-餐厅")
         XCTAssertEqual(draft.accountDisplayName, "TNGewallet")
 
@@ -57,7 +57,7 @@ final class AIEngineTests: XCTestCase {
         let dto = GeminiBillDTO(
             type: "expense",
             amount: 150.0,
-            counterparty: "TAN JING HAO",
+            counterparty: "示例联系人",
             counterpartyKind: "person",
             account: "PBBank",
             primaryCategory: "资金往来",
@@ -68,7 +68,7 @@ final class AIEngineTests: XCTestCase {
         let draft = dto.toDraftBill(now: Date())
         XCTAssertEqual(draft.amount, 150.0, accuracy: 0.001)
         XCTAssertEqual(draft.accountDisplayName, "PBBank")
-        XCTAssertEqual(draft.merchantOrNote, "转账给TAN JING HAO")
+        XCTAssertEqual(draft.merchantOrNote, "转账给示例联系人")
 
         let cal = Calendar(identifier: .gregorian)
         let comps = cal.dateComponents([.year, .month, .day, .hour, .minute], from: draft.occurredAt)
@@ -90,7 +90,7 @@ final class AIEngineTests: XCTestCase {
 
     func testMultiBillNaturalLanguageSentenceSplitting() {
         let engine = MimiAIEngine()
-        let bills = engine.parseNaturalLanguageBills("中午吃餐厅花了8.30，TNG打麻将输钱28，PBBank加油38.78")
+        let bills = engine.parseNaturalLanguageBills("中午吃餐厅花了8.30，TNG娱乐花了28，PBBank加油38.78")
         XCTAssertEqual(bills.count, 3)
         XCTAssertEqual(bills[0].amount, 8.30, accuracy: 0.001)
         XCTAssertEqual(bills[1].amount, 28.00, accuracy: 0.001)

@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.9] - 2026-11-13
+
+### 🎯 Highlights
+- **导入导出**：支持咔皮同款 Excel（`.xlsx` 双 Sheet「收支账单」+「内部转账」）；导入预览后确认，导出真 Excel 文件。
+- **CSV**：表头映射与标准模版对齐；仍可粘贴/选 CSV 作为高级入口。
+- **隐私**：移除内置 151 笔真实备份样例与个人演示备注。
+- **发版**：`VERSION` / Intent 默认版本升至 1.3.9。
+
 ## [v1.3.8] - 2026-11-13
 
 ### 🎯 Highlights

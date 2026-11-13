@@ -21,7 +21,11 @@ public struct SettingsAndShortcutsGuideView: View {
     @State private var exportStartDate: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
     @State private var exportEndDate: Date = Date()
     @State private var importInputText: String = ""
+    @State private var importXLSXData: Data?
+    @State private var importXLSXFileName: String?
+    @State private var importPreviewCount: Int = 0
     @State private var replaceExistingOnImport: Bool = false
+    @State private var exportWorkbookFileURL: URL?
     @State private var showResetCleanAlert: Bool = false
 
     // Ledger management states
@@ -117,13 +121,6 @@ public struct SettingsAndShortcutsGuideView: View {
                     Button("关闭", action: onDismiss)
                 }
             }
-            .fileImporter(
-                isPresented: $showFileImporter,
-                allowedContentTypes: [.commaSeparatedText, .plainText],
-                allowsMultipleSelection: false
-            ) { result in
-                handleFileImport(result)
-            }
             .sheet(isPresented: $showImportModal) {
                 importModalSheet
             }
@@ -153,20 +150,22 @@ public struct SettingsAndShortcutsGuideView: View {
                 Spacer()
             }
 
-            Text("导入支持查看标准模版并直接输入或粘贴数据；导出支持灵活选择时间段（全部/本月/上月/本年/自定义）。")
+            Text("支持咔皮同款 Excel（.xlsx：收支账单 + 内部转账），也可粘贴 CSV。导出为同样双 Sheet 的 .xlsx。")
                 .mimiFont(12)
                 .foregroundColor(MimiTheme.textSecondary)
 
             HStack(spacing: 12) {
-                // Button 1: 导入账单
                 Button {
                     importInputText = ""
+                    importXLSXData = nil
+                    importXLSXFileName = nil
+                    importPreviewCount = 0
                     showImportModal = true
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "square.and.arrow.down.fill")
                             .mimiFont(15)
-                        Text("📥 导入账单")
+                        Text("导入账单")
                             .mimiFont(14, weight: .bold)
                     }
                     .foregroundColor(.white)
@@ -175,15 +174,15 @@ public struct SettingsAndShortcutsGuideView: View {
                     .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.expenseBlue))
                 }
                 .mimiPressable()
+                .accessibilityLabel("导入账单")
 
-                // Button 2: 导出账单
                 Button {
                     showExportModal = true
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "square.and.arrow.up.fill")
                             .mimiFont(15)
-                        Text("📤 导出账单")
+                        Text("导出账单")
                             .mimiFont(14, weight: .bold)
                     }
                     .foregroundColor(.white)
@@ -192,6 +191,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.incomeOrange))
                 }
                 .mimiPressable()
+                .accessibilityLabel("导出账单")
             }
         }
         .padding(16)
@@ -205,109 +205,104 @@ public struct SettingsAndShortcutsGuideView: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Image(systemName: "doc.text")
-                                .foregroundColor(MimiTheme.expenseBlue)
-                            Text("标准 CSV 格式模版")
-                                .mimiFont(14, weight: .bold)
-                                .foregroundColor(MimiTheme.textPrimary)
-                            Spacer()
-                            Button {
-                                #if canImport(UIKit)
-                                UIPasteboard.general.string = standardCSVTemplate
-                                statusBannerMessage = "已复制标准 CSV 模版到剪贴板"
-                                #endif
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "doc.on.doc")
-                                    Text("复制模版")
-                                }
-                                .mimiFont(11, weight: .bold)
-                                .foregroundColor(MimiTheme.expenseBlue)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Capsule().fill(MimiTheme.tintBlueChip))
-                            }
-                            .mimiPressable()
-                        }
-
-                        Text("日期,时间,类型,金额,一级分类,二级分类,账户,备注\n2026-11-08,21:59:00,支出,38.78,交通,加油充电,PBBank,加油\n2026-11-08,16:56:34,支出,5.90,餐饮,餐厅,TNG eWallet,买egglab的东西\n2026-11-06,10:00:00,收入,1148.31,职业收入,工资,CIMB,月度薪资")
-                            .mimiFont(11, design: .monospaced)
-                            .foregroundColor(MimiTheme.textSecondary)
-                            .padding(10)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.background))
-                    }
-
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            Text("用户输入区域 (粘贴或输入 CSV 数据)：")
-                                .mimiFont(13, weight: .bold)
-                                .foregroundColor(MimiTheme.textPrimary)
-                            Spacer()
-                            Button("从剪贴板粘贴") {
-                                #if canImport(UIKit)
-                                if let str = UIPasteboard.general.string, !str.isEmpty {
-                                    importInputText = str
-                                }
-                                #endif
-                            }
-                            .mimiFont(12, weight: .semibold)
-                            .foregroundColor(MimiTheme.expenseBlue)
-                        }
-
-                        TextEditor(text: $importInputText)
-                            .mimiFont(12, design: .monospaced)
-                            .frame(minHeight: 150)
-                            .padding(8)
-                            .background(RoundedRectangle(cornerRadius: 10).stroke(Color.gray.opacity(0.25), lineWidth: 1))
-
-                        HStack(spacing: 10) {
-                            Button {
-                                showFileImporter = true
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "folder")
-                                    Text("选择 CSV 文件")
-                                }
-                                .mimiFont(12, weight: .medium)
-                                .foregroundColor(MimiTheme.textPrimary)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 7)
-                                .background(RoundedRectangle(cornerRadius: 8).fill(MimiTheme.fillSubtle))
-                            }
-                            .mimiPressable()
-
-                            Button {
-                                importInputText = MimiCSVService.userExportedCSV
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "sparkles")
-                                    Text("填入 151 笔真实备份样例")
-                                }
-                                .mimiFont(12, weight: .medium)
-                                .foregroundColor(MimiTheme.successSoftText)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 7)
-                                .background(RoundedRectangle(cornerRadius: 8).fill(MimiTheme.successSoft))
-                            }
-                            .mimiPressable()
-                        }
-
-                        Toggle("覆盖清空现有账单（若关闭则追加合并）", isOn: $replaceExistingOnImport)
+                        Text("推荐：选择咔皮导出的 Excel（.xlsx）")
+                            .mimiFont(14, weight: .bold)
+                            .foregroundColor(MimiTheme.textPrimary)
+                        Text("需含工作表「收支账单」与「内部转账」，列与咔皮导出一致。")
                             .mimiFont(12)
                             .foregroundColor(MimiTheme.textSecondary)
-                            .padding(.top, 4)
+
+                        Button {
+                            showFileImporter = true
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "doc.badge.plus")
+                                Text("选择 Excel / CSV 文件")
+                                    .mimiFont(15, weight: .bold)
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 13)
+                            .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.expenseBlue))
+                        }
+                        .mimiPressable()
+                        .accessibilityLabel("选择 Excel 或 CSV 文件")
+
+                        if let name = importXLSXFileName {
+                            Text("已载入：\(name)")
+                                .mimiFont(12, weight: .medium)
+                                .foregroundColor(MimiTheme.successSoftText)
+                        }
                     }
 
+                    DisclosureGroup {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(MimiCSVService.standardImportTemplate)
+                                .mimiFont(11, design: .monospaced)
+                                .foregroundColor(MimiTheme.textSecondary)
+                                .padding(10)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.background))
+
+                            HStack {
+                                Button {
+                                    #if canImport(UIKit)
+                                    UIPasteboard.general.string = MimiCSVService.standardImportTemplate
+                                    statusBannerMessage = "已复制 CSV 模版"
+                                    #endif
+                                } label: {
+                                    Text("复制 CSV 模版")
+                                        .mimiFont(12, weight: .semibold)
+                                        .foregroundColor(MimiTheme.expenseBlue)
+                                }
+                                .mimiPressable()
+                                Spacer()
+                                Button("从剪贴板粘贴") {
+                                    #if canImport(UIKit)
+                                    if let str = UIPasteboard.general.string, !str.isEmpty {
+                                        importXLSXData = nil
+                                        importXLSXFileName = nil
+                                        importInputText = str
+                                        importPreviewCount = MimiCSVService.parseMimiCSV(str).count
+                                    }
+                                    #endif
+                                }
+                                .mimiFont(12, weight: .semibold)
+                                .foregroundColor(MimiTheme.expenseBlue)
+                            }
+
+                            TextEditor(text: $importInputText)
+                                .mimiFont(12, design: .monospaced)
+                                .frame(minHeight: 120)
+                                .padding(8)
+                                .background(RoundedRectangle(cornerRadius: 10).stroke(Color.gray.opacity(0.25), lineWidth: 1))
+                                .onChange(of: importInputText) { _, newValue in
+                                    if importXLSXData == nil {
+                                        importPreviewCount = MimiCSVService.parseMimiCSV(newValue).count
+                                    }
+                                }
+                        }
+                    } label: {
+                        Text("高级：粘贴 CSV 文本")
+                            .mimiFont(13, weight: .semibold)
+                            .foregroundColor(MimiTheme.textSecondary)
+                    }
+
+                    Toggle("覆盖清空现有账单（若关闭则追加合并）", isOn: $replaceExistingOnImport)
+                        .mimiFont(12)
+                        .foregroundColor(MimiTheme.textSecondary)
+
+                    if importPreviewCount > 0 || importXLSXData != nil || !importInputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Text(importPreviewCount > 0
+                             ? "预览可识别 \(importPreviewCount) 笔，点确认后写入账本"
+                             : "未识别到有效账单行，请核对 Excel 工作表或 CSV 表头")
+                            .mimiFont(12, weight: .medium)
+                            .foregroundColor(importPreviewCount > 0 ? MimiTheme.successSoftText : MimiTheme.dangerRed)
+                    }
+
+                    let canConfirm = importXLSXData != nil || !importInputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                     Button {
-                        let trimmed = importInputText.trimmingCharacters(in: .whitespacesAndNewlines)
-                        guard !trimmed.isEmpty else { return }
-                        let count = store.importMimiCSV(trimmed, replaceExisting: replaceExistingOnImport)
-                        showImportModal = false
-                        statusBannerMessage = "已成功导入 \(count) 笔账单记录"
+                        confirmImport()
                     } label: {
                         Text("确认导入")
                             .mimiFont(15, weight: .bold)
@@ -317,6 +312,8 @@ public struct SettingsAndShortcutsGuideView: View {
                             .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.expenseBlue))
                     }
                     .mimiPressable()
+                    .disabled(!canConfirm)
+                    .opacity(canConfirm ? 1 : 0.5)
                 }
                 .padding(16)
             }
@@ -329,16 +326,25 @@ public struct SettingsAndShortcutsGuideView: View {
                     Button("取消") { showImportModal = false }
                 }
             }
+            .fileImporter(
+                isPresented: $showFileImporter,
+                allowedContentTypes: importAllowedTypes,
+                allowsMultipleSelection: false
+            ) { result in
+                handleFileImport(result)
+            }
         }
     }
 
-    private var standardCSVTemplate: String {
-        """
-        日期,时间,类型,金额,一级分类,二级分类,账户,备注
-        2026-11-08,21:59:00,支出,38.78,交通,加油充电,PBBank,加油
-        2026-11-08,16:56:34,支出,5.90,餐饮,餐厅,TNG eWallet,买egglab的东西
-        2026-11-06,10:00:00,收入,1148.31,职业收入,工资,CIMB,月度薪资
-        """
+    private var importAllowedTypes: [UTType] {
+        var types: [UTType] = [.commaSeparatedText, .plainText, .data]
+        if let xlsx = UTType(filenameExtension: "xlsx") {
+            types.insert(xlsx, at: 0)
+        }
+        if let spreadsheet = UTType("org.openxmlformats.spreadsheetml.sheet") {
+            types.insert(spreadsheet, at: 0)
+        }
+        return types
     }
 
     // MARK: - Export Modal Sheet (支持选择时间段导出)
@@ -423,23 +429,45 @@ public struct SettingsAndShortcutsGuideView: View {
 
                 Spacer()
 
-                let csvData = store.exportMimiCSV(startDate: exportDateRange.start, endDate: exportDateRange.end)
+                Text("导出为咔皮同款 Excel：工作表「收支账单」+「内部转账」。")
+                    .mimiFont(12)
+                    .foregroundColor(MimiTheme.textSecondary)
 
-                ShareLink(
-                    item: csvData,
-                    preview: SharePreview("MimiMoney_Export_\(exportPeriodOption).csv", image: Image(systemName: "tablecells"))
-                ) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "square.and.arrow.up.fill")
-                        Text("📤 导出并分享 CSV 文件")
-                            .mimiFont(15, weight: .bold)
+                Group {
+                    if let fileURL = exportWorkbookFileURL {
+                        ShareLink(
+                            item: fileURL,
+                            preview: SharePreview(fileURL.lastPathComponent, image: Image(systemName: "tablecells"))
+                        ) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "square.and.arrow.up.fill")
+                                Text("导出并分享 Excel 文件")
+                                    .mimiFont(15, weight: .bold)
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.incomeOrange))
+                        }
+                        .mimiPressable()
+                        .accessibilityLabel("导出并分享 Excel 文件")
+                    } else {
+                        Button {
+                            refreshExportWorkbookFile()
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "square.and.arrow.up.fill")
+                                Text("生成 Excel 文件")
+                                    .mimiFont(15, weight: .bold)
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.incomeOrange))
+                        }
+                        .mimiPressable()
                     }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.incomeOrange))
                 }
-                .mimiPressable()
             }
             .padding(16)
             .navigationTitle("导出账单")
@@ -451,6 +479,10 @@ public struct SettingsAndShortcutsGuideView: View {
                     Button("关闭") { showExportModal = false }
                 }
             }
+            .onAppear { refreshExportWorkbookFile() }
+            .onChange(of: exportPeriodOption) { _, _ in refreshExportWorkbookFile() }
+            .onChange(of: exportStartDate) { _, _ in refreshExportWorkbookFile() }
+            .onChange(of: exportEndDate) { _, _ in refreshExportWorkbookFile() }
         }
     }
 
@@ -499,13 +531,13 @@ public struct SettingsAndShortcutsGuideView: View {
         GeminiBillDTO(
             type: "expense",
             amount: 5.90,
-            counterparty: "Near Me Voucher Eggette Lab",
+            counterparty: "示例商户",
             counterpartyKind: "merchant",
             account: "TNGewallet",
             primaryCategory: "餐饮",
             subCategory: "零食甜品",
             occurredAt: "2026-11-08 16:56",
-            note: ""
+            note: "示例零食"
         ).toDraftBill(now: Date())
     }
 
@@ -529,15 +561,85 @@ public struct SettingsAndShortcutsGuideView: View {
                 if canAccess { selectedUrl.stopAccessingSecurityScopedResource() }
             }
             let data = try Data(contentsOf: selectedUrl)
-            guard let content = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .unicode) else {
-                statusBannerMessage = "CSV 文件编码未能识别为 UTF-8"
+            let name = selectedUrl.lastPathComponent
+            let ext = selectedUrl.pathExtension.lowercased()
+
+            if !showImportModal {
+                showImportModal = true
+            }
+
+            if ext == "xlsx" || ext == "xlsm" {
+                importInputText = ""
+                importXLSXData = data
+                importXLSXFileName = name
+                let parsed = try MimiKapiXLSXService.parseXLSX(data: data)
+                importPreviewCount = parsed.count
+                statusBannerMessage = parsed.isEmpty
+                    ? "已载入 \(name)，但未识别到有效账单行"
+                    : "已载入 \(name)，预览可识别 \(parsed.count) 笔，请确认后导入"
                 return
             }
+
+            guard let content = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .unicode) else {
+                statusBannerMessage = "文件编码未能识别为 UTF-8"
+                return
+            }
+            importXLSXData = nil
+            importXLSXFileName = name
             importInputText = content
-            let count = store.importMimiCSV(content, replaceExisting: replaceExistingOnImport)
-            statusBannerMessage = "已从文件成功导入 \(count) 笔账单记录"
+            importPreviewCount = MimiCSVService.parseMimiCSV(content).count
+            statusBannerMessage = importPreviewCount > 0
+                ? "已载入 \(name)，预览可识别 \(importPreviewCount) 笔，请确认后导入"
+                : "已载入 \(name)，但未识别到有效账单行"
         } catch {
-            statusBannerMessage = "读取 CSV 文件失败：\(error.localizedDescription)"
+            statusBannerMessage = "读取文件失败：\(error.localizedDescription)"
+        }
+    }
+
+    private func confirmImport() {
+        do {
+            let count: Int
+            if let data = importXLSXData {
+                count = try store.importKapiXLSX(data, replaceExisting: replaceExistingOnImport)
+            } else {
+                let trimmed = importInputText.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else {
+                    statusBannerMessage = "请先选择 Excel 或粘贴 CSV"
+                    return
+                }
+                count = store.importMimiCSV(trimmed, replaceExisting: replaceExistingOnImport)
+            }
+            showImportModal = false
+            importXLSXData = nil
+            importXLSXFileName = nil
+            importInputText = ""
+            importPreviewCount = 0
+            if count == 0 {
+                statusBannerMessage = "没有导入任何账单，请确认文件格式"
+            } else {
+                statusBannerMessage = "已成功导入 \(count) 笔账单记录"
+            }
+        } catch {
+            statusBannerMessage = "导入失败：\(error.localizedDescription)"
+        }
+    }
+
+    private func refreshExportWorkbookFile() {
+        do {
+            let data = try store.exportKapiXLSX(startDate: exportDateRange.start, endDate: exportDateRange.end)
+            let fileName = MimiKapiXLSXService.suggestedExportFileName(
+                start: exportDateRange.start,
+                end: exportDateRange.end
+            )
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+            if FileManager.default.fileExists(atPath: url.path) {
+                try FileManager.default.removeItem(at: url)
+            }
+            try data.write(to: url, options: .atomic)
+            exportWorkbookFileURL = url
+        } catch {
+            exportWorkbookFileURL = nil
+            statusBannerMessage = "生成 Excel 失败：\(error.localizedDescription)"
         }
     }
 
@@ -839,7 +941,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 iconName: "food_snack",
                 amount: 5.90,
                 accountName: "TNGewallet",
-                note: "Near Me Voucher Eggette Lab",
+                note: "示例商户",
                 date: DefaultCatalog.makeDate(year: 2026, month: 11, day: 8, hour: 16, minute: 56)
             )
 

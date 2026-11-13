@@ -43,7 +43,7 @@ final class StoreAndBudgetTests: XCTestCase {
             primaryCategoryId: "exp_food",
             subCategoryId: "exp_food_snack",
             accountId: tngId,
-            note: "Near Me Voucher Eggette Lab 消费"
+            note: "示例商户消费"
         )
         store.addTransaction(tx)
         XCTAssertEqual(store.accounts.first(where: { $0.id == tngId })!.balance, initialTng - 5.90, accuracy: 0.001)
@@ -90,23 +90,62 @@ final class StoreAndBudgetTests: XCTestCase {
         XCTAssertEqual(store.streakDaysCount, 0)
         XCTAssertEqual(store.netWorth, 0.0, accuracy: 0.001)
 
-        let parsed = MimiCSVService.parseMimiCSV(MimiCSVService.userExportedCSV)
-        XCTAssertEqual(parsed.count, 151)
-        let transfers = parsed.filter { $0.type == .transfer }
-        let expensesAndIncomes = parsed.filter { $0.type != .transfer }
-        XCTAssertEqual(transfers.count, 11)
-        XCTAssertEqual(expensesAndIncomes.count, 140)
+        let fixture = Self.syntheticDualTableCSV
+        let parsed = MimiCSVService.parseMimiCSV(fixture)
+        XCTAssertEqual(parsed.count, 5)
+        XCTAssertEqual(parsed.filter { $0.type == .transfer }.count, 1)
+        XCTAssertEqual(parsed.filter { $0.type == .expense }.count, 3)
+        XCTAssertEqual(parsed.filter { $0.type == .income }.count, 1)
 
-        let importedCount = store.importMimiCSV(MimiCSVService.userExportedCSV, replaceExisting: true)
-        XCTAssertEqual(importedCount, 151)
-        XCTAssertEqual(store.totalRecordsCount, 151)
-        XCTAssertGreaterThan(store.recordedDaysCount, 10)
+        let importedCount = store.importMimiCSV(fixture, replaceExisting: true)
+        XCTAssertEqual(importedCount, 5)
+        XCTAssertEqual(store.totalRecordsCount, 5)
+        XCTAssertGreaterThan(store.recordedDaysCount, 0)
 
         let exported = store.exportMimiCSV()
         XCTAssertTrue(exported.contains("日期,时间,类型,金额,一级分类,二级分类,标签,账户,计入收支,计入预算,所属账本,备注,分摊明细"))
         XCTAssertTrue(exported.contains("日期,时间,类型,金额,转入账户,转出账户,备注"))
         XCTAssertTrue(exported.contains("账户互转"))
+
+        let fromTemplate = MimiCSVService.parseMimiCSV(MimiCSVService.standardImportTemplate)
+        XCTAssertEqual(fromTemplate.count, 3)
+        XCTAssertEqual(fromTemplate.filter { $0.type == .expense }.count, 2)
+        XCTAssertEqual(fromTemplate.filter { $0.type == .income }.count, 1)
+
+        let simplified = """
+        日期,时间,类型,金额,一级分类,二级分类,账户,备注
+        2026-11-08,21:59:00,支出,38.78,交通,加油充电,PBBank,示例
+        2026-11-06,10:00:00,收入,1000.00,职业收入,工资,CIMB,示例
+        """
+        let simplifiedParsed = MimiCSVService.parseMimiCSV(simplified)
+        XCTAssertEqual(simplifiedParsed.count, 2)
+        XCTAssertEqual(simplifiedParsed.first(where: { $0.type == .expense })?.amount ?? 0, 38.78, accuracy: 0.001)
+        XCTAssertEqual(simplifiedParsed.first(where: { $0.type == .income })?.amount ?? 0, 1000.0, accuracy: 0.001)
+
+        // Kapi-compatible xlsx round-trip
+        do {
+            let xlsxData = try MimiKapiXLSXService.exportXLSX(transactions: parsed)
+            let reparsed = try MimiKapiXLSXService.parseXLSX(data: xlsxData)
+            XCTAssertEqual(reparsed.count, parsed.count)
+            XCTAssertEqual(reparsed.filter { $0.type == .transfer }.count, 1)
+            let importedXLSX = try store.importKapiXLSX(xlsxData, replaceExisting: true)
+            XCTAssertEqual(importedXLSX, parsed.count)
+        } catch {
+            XCTFail("xlsx round-trip failed: \(error)")
+        }
     }
+
+    /// Anonymous dual-table fixture for parser/import tests (not personal data).
+    private static let syntheticDualTableCSV = """
+    日期,时间,类型,金额,一级分类,二级分类,标签,账户,计入收支,计入预算,所属账本,备注,分摊明细
+    2026-11-01,12:00:00,支出,12.50,餐饮,餐厅,,TNGewallet,是,是,Main Ledger,示例午餐,
+    2026-11-02,08:30:00,支出,40.00,交通,加油充电,,PBBank,是,是,Main Ledger,示例加油,
+    2026-11-03,09:00:00,支出,5.90,餐饮,零食甜品,,TNGewallet,是,是,Main Ledger,"多行
+    示例备注",
+    2026-11-04,10:00:00,收入,1000.00,职业收入,工资,,CIMB,是,,Main Ledger,示例工资,
+    日期,时间,类型,金额,转入账户,转出账户,备注
+    2026-11-05,18:00:00,账户互转,50,TNGewallet,PBBank,示例互转
+    """
 
     func testLedgerTagAndScheduledTransactionsCRUD() {
         let store = MimiStore(inMemory: true)

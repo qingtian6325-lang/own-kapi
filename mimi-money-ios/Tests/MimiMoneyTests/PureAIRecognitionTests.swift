@@ -23,7 +23,7 @@ final class PureAIRecognitionTests: XCTestCase {
         GeminiBillDTO(
             type: "expense",
             amount: amount,
-            counterparty: "YING LAI RESTAURANT",
+            counterparty: "示例餐厅",
             counterpartyKind: "merchant",
             account: "TNGewallet",
             primaryCategory: "餐饮",
@@ -89,7 +89,7 @@ final class PureAIRecognitionTests: XCTestCase {
         }
         let result = try await SmartReceiptRecognizer.recognize(imageData: Data([0x89, 0x50]))
         XCTAssertEqual(result.draft.amount, 38.99, accuracy: 0.001)
-        XCTAssertEqual(result.draft.merchantOrNote, "YING LAI RESTAURANT 消费")
+        XCTAssertEqual(result.draft.merchantOrNote, "示例餐厅 消费")
         XCTAssertFalse(result.isSuspiciousAmount)
     }
 
