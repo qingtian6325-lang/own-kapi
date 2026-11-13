@@ -23,6 +23,41 @@ public struct MimiPressableButtonStyle: ButtonStyle {
     }
 }
 
+/// Shared 手动 ↔ AI mode switch chip (same icon + capsule on both sides).
+public struct BookkeepingModeSwitchButton: View {
+    public var title: String
+    public var accessibilityName: String?
+    public var action: () -> Void
+
+    public init(
+        title: String,
+        accessibilityName: String? = nil,
+        action: @escaping () -> Void
+    ) {
+        self.title = title
+        self.accessibilityName = accessibilityName
+        self.action = action
+    }
+
+    public var body: some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: "arrow.left.arrow.right")
+                    .mimiFont(13, weight: .bold)
+                Text(title)
+                    .mimiFont(13, weight: .semibold)
+            }
+            .foregroundColor(MimiTheme.textPrimary)
+            .padding(.horizontal, 11)
+            .padding(.vertical, 7)
+            .frame(minHeight: MimiHIG.minTouch)
+            .background(Capsule().strokeBorder(MimiTheme.strokeSubtle, lineWidth: 1))
+        }
+        .mimiPressable()
+        .accessibilityLabel(accessibilityName ?? "切换到\(title)")
+    }
+}
+
 public extension View {
     /// Expand the tappable area to at least 44×44 pt without forcing a larger visual.
     func mimiMinTouchTarget(_ size: CGFloat = MimiHIG.minTouch) -> some View {

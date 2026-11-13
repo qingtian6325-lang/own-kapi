@@ -33,9 +33,11 @@ No ad-hoc springs / `easeInOut` on chrome; honor Reduce Motion via `*(reduceMoti
 
 ## AI composer
 
-1. Every entry → **compact** bottom chrome + suggestion bubbles  
-2. Explicit **展开** / swipe-up / send → **true full page**  
-3. Full page: **关闭** button + swipe-down + header X  
+1. Home / attach → **compact** bottom chrome + suggestion bubbles  
+2. Manual → AI → **true full page** immediately  
+3. Explicit **展开** / swipe-up / send → **true full page**  
+4. Full page: **关闭** button + swipe-down + header X  
+5. Mode switch chips share `BookkeepingModeSwitchButton` (`⇌` + label)
 
 ## Anti-patterns
 

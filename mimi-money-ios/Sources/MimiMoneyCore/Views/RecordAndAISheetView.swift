@@ -8,7 +8,7 @@ public struct RecordAndAISheetView: View {
     public var onOpenCategorySettings: () -> Void
     public var onEditRecognizedTransaction: (TransactionItem) -> Void
     public var onOpenImportExport: () -> Void = {}
-    /// 手动页点「AI 助手」时回到首页金标 AI 浮层
+    /// 手动页点「AI 助手」→ 全屏 AI 记账
     public var onSwitchToAIOverlay: () -> Void = {}
 
     @State private var isAIMode: Bool
@@ -234,27 +234,11 @@ public struct RecordAndAISheetView: View {
 
             Spacer(minLength: 8)
 
-            Button {
+            BookkeepingModeSwitchButton(title: "手动记账") {
                 withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                     isAIMode = false
                 }
-            } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: "arrow.left.arrow.right")
-                        .mimiFont(13, weight: .bold)
-                    Text("手动记账")
-                        .mimiFont(13, weight: .semibold)
-                }
-                .foregroundColor(MimiTheme.textPrimary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule()
-                        .strokeBorder(MimiTheme.strokeSubtle, lineWidth: 1)
-                        .background(Capsule().fill(MimiTheme.cardBackground))
-                )
             }
-            .mimiPressable()
 
             Button(action: onDismiss) {
                 Image(systemName: "xmark")
@@ -310,25 +294,11 @@ public struct RecordAndAISheetView: View {
                 }
                 .mimiPressable()
                 .accessibilityLabel("关闭")
-                Button {
+                BookkeepingModeSwitchButton(title: "手动记账") {
                     withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                         isAIMode = false
                     }
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: "arrow.left.arrow.right")
-                            .mimiFont(14, weight: .bold)
-                        Text("手动记账")
-                            .mimiFont(13, weight: .semibold)
-                    }
-                    .foregroundColor(MimiTheme.textPrimary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .frame(minHeight: MimiHIG.minTouch)
-                    .background(Capsule().strokeBorder(MimiTheme.strokeSubtle, lineWidth: 1))
                 }
-                .mimiPressable()
-                .accessibilityLabel("切换到手动记账")
                 Spacer()
                 Text("任何事都能问我")
                     .mimiFont(16, weight: .bold)
@@ -374,19 +344,9 @@ public struct RecordAndAISheetView: View {
 
                 Spacer()
 
-                Button {
+                BookkeepingModeSwitchButton(title: "AI 助手", accessibilityName: "切换到 AI 记账") {
                     onSwitchToAIOverlay()
-                } label: {
-                    Text("AI 助手")
-                        .mimiFont(13, weight: .semibold)
-                        .foregroundColor(MimiTheme.expenseBlue)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .frame(minHeight: MimiHIG.minTouch)
-                        .background(Capsule().fill(MimiTheme.tintBlueChip))
                 }
-                .mimiPressable()
-                .accessibilityLabel("打开 AI 助手")
 
                 Button(action: onDismiss) {
                     Image(systemName: "xmark")

@@ -13,14 +13,15 @@ public struct AIPendingAttachment: Identifiable, Equatable {
     }
 }
 
-/// AI 记账浮层（重做）：
-/// - **一律先小窗**：首页问账 / 手动切 AI / 选图后，都是底部小窗 + 三快捷气泡
-/// - **上滑或发送** → **真整页**聊天（铺满屏幕，不是 90% 浮卡）
-/// - **整页下滑** → 直接关闭
+/// AI 记账浮层：
+/// - **首页 / 选图**：先底部小窗 + 三快捷气泡；上滑 /「展开」/ 发送 → 真整页
+/// - **手动→AI**：直接进真整页聊天
+/// - **整页下滑 /「关闭」** → 退出
 public struct MimiAIAskOverlayView: View {
     @ObservedObject public var store: MimiStore
     @ObservedObject public var aiEngine: MimiAIEngine
     public var initialAttachments: [AIPendingAttachment]
+    public var startExpanded: Bool
     public var onDismiss: () -> Void
     public var onOpenManual: () -> Void
     public var onOpenImportExport: () -> Void
@@ -42,6 +43,7 @@ public struct MimiAIAskOverlayView: View {
         store: MimiStore,
         aiEngine: MimiAIEngine,
         initialAttachments: [AIPendingAttachment] = [],
+        startExpanded: Bool = false,
         onDismiss: @escaping () -> Void,
         onOpenManual: @escaping () -> Void,
         onOpenImportExport: @escaping () -> Void = {}
@@ -49,12 +51,12 @@ public struct MimiAIAskOverlayView: View {
         self.store = store
         self.aiEngine = aiEngine
         self.initialAttachments = initialAttachments
+        self.startExpanded = startExpanded
         self.onDismiss = onDismiss
         self.onOpenManual = onOpenManual
         self.onOpenImportExport = onOpenImportExport
-        // 任意入口都先小窗；只有上滑 / 发送后才进整页
         _pendingAttachments = State(initialValue: initialAttachments)
-        _isExpanded = State(initialValue: false)
+        _isExpanded = State(initialValue: startExpanded)
     }
 
     public var body: some View {
@@ -72,7 +74,7 @@ public struct MimiAIAskOverlayView: View {
         .animation(MimiMotion.interactive(reduceMotion: reduceMotion), value: dragOffset)
         .onAppear {
             BookkeepingEntryPreference.rememberAI()
-            isExpanded = false
+            isExpanded = startExpanded
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
                 inputFocused = true
             }
@@ -289,25 +291,11 @@ public struct MimiAIAskOverlayView: View {
 
             Spacer(minLength: 6)
 
-            Button {
+            BookkeepingModeSwitchButton(title: "手动记账") {
                 BookkeepingEntryPreference.rememberManual()
                 inputFocused = false
                 onOpenManual()
-            } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: "arrow.left.arrow.right")
-                        .mimiFont(13, weight: .bold)
-                    Text("手动记账")
-                        .mimiFont(13, weight: .semibold)
-                }
-                .foregroundColor(MimiTheme.textPrimary)
-                .padding(.horizontal, 11)
-                .padding(.vertical, 7)
-                .frame(minHeight: MimiHIG.minTouch)
-                .background(Capsule().strokeBorder(MimiTheme.strokeSubtle, lineWidth: 1))
             }
-            .mimiPressable()
-            .accessibilityLabel("切换到手动记账")
 
             Button {
                 inputFocused = false

@@ -13,6 +13,8 @@ public struct MimiRootContainerView: View {
     @State private var openRecordSheetInAIMode: Bool = false
     /// 金标 AI 记账：首页浮层（不是整页 sheet）
     @State private var showAIAskOverlay: Bool = false
+    /// 手动→AI 时直接全屏；首页 / 选图仍先小窗
+    @State private var aiOverlayStartExpanded: Bool = false
     @State private var aiOverlayAttachments: [AIPendingAttachment] = []
     @State private var activeBillForEdit: TransactionItem?
     @State private var showAssetsManager: Bool = false
@@ -47,6 +49,7 @@ public struct MimiRootContainerView: View {
                 onOpenRecordSheet: { aiMode in
                     if aiMode {
                         aiOverlayAttachments = []
+                        aiOverlayStartExpanded = false
                         withAnimation(MimiMotion.sheet(reduceMotion: reduceMotion)) {
                             showAIAskOverlay = true
                         }
@@ -183,10 +186,12 @@ public struct MimiRootContainerView: View {
                     store: store,
                     aiEngine: aiEngine,
                     initialAttachments: aiOverlayAttachments,
+                    startExpanded: aiOverlayStartExpanded,
                     onDismiss: {
                         withAnimation(MimiMotion.sheet(reduceMotion: reduceMotion)) {
                             showAIAskOverlay = false
                             aiOverlayAttachments = []
+                            aiOverlayStartExpanded = false
                         }
                     },
                     onOpenManual: {
@@ -194,6 +199,7 @@ public struct MimiRootContainerView: View {
                         withAnimation(MimiMotion.sheet(reduceMotion: reduceMotion)) {
                             showAIAskOverlay = false
                             aiOverlayAttachments = []
+                            aiOverlayStartExpanded = false
                         }
                         DispatchQueue.main.asyncAfter(deadline: .now() + pageHandoffDelay) {
                             openRecordSheetInAIMode = false
@@ -204,14 +210,18 @@ public struct MimiRootContainerView: View {
                         withAnimation(MimiMotion.sheet(reduceMotion: reduceMotion)) {
                             showAIAskOverlay = false
                             aiOverlayAttachments = []
+                            aiOverlayStartExpanded = false
                         }
                         DispatchQueue.main.asyncAfter(deadline: .now() + pageHandoffDelay) {
                             pushOpen { activeSettingsTitle = DrawerDestination.importExport.rawValue }
                         }
                     }
                 )
-                // 小窗从底部升起（非整页大块）
-                .transition(MimiMotion.sheetTransition)
+                .transition(
+                    aiOverlayStartExpanded
+                        ? .opacity
+                        : MimiMotion.sheetTransition
+                )
                 .zIndex(55)
             }
 
@@ -358,6 +368,7 @@ public struct MimiRootContainerView: View {
                     BookkeepingEntryPreference.rememberAI()
                     showRecordSheet = false
                     aiOverlayAttachments = []
+                    aiOverlayStartExpanded = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + sheetHandoffDelay) {
                         withAnimation(MimiMotion.sheet(reduceMotion: reduceMotion)) {
                             showAIAskOverlay = true
@@ -430,6 +441,7 @@ public struct MimiRootContainerView: View {
     private func openAIComposer(withImageData imageData: Data, label: String) {
         BookkeepingEntryPreference.rememberAI()
         aiOverlayAttachments = [AIPendingAttachment(imageData: imageData, label: label)]
+        aiOverlayStartExpanded = false
         withAnimation(MimiMotion.sheet(reduceMotion: reduceMotion)) {
             showAIAskOverlay = true
         }
