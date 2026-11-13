@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.8] - 2026-11-13
+
+### 🎯 Highlights
+- **手动→AI**：点「AI 助手」直接进全屏问账；首页/选图仍先小窗。
+- **图标统一**：手动↔AI 共用 `⇌` 切换胶囊；问账条/顶栏/思考中统一橘猫 `MimiAskMascotView`。
+- **AI 文案**：`**粗体**` 渲染为真正加粗，不再显示星号。
+- **字体**：全 App 默认 SF Pro Rounded（更圆润，仍支持 Dynamic Type）。
+- **发版**：`VERSION` / Intent 默认版本升至 1.3.8。
+
 ## [v1.3.7] - 2026-11-13
 
 ### 🎯 Highlights
