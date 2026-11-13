@@ -115,6 +115,8 @@ public enum MimiTheme {
     public static let transactionRowIconSize: CGFloat = 38
     public static let progressBarHeight: CGFloat = 18
     public static let dailyRingSize: CGFloat = 72
+    /// Extra air below status bar / Dynamic Island for top chrome.
+    public static let topChromeExtraPadding: CGFloat = 10
 
     public static var homeCardShadow: Color {
         Color(light: Color.black.opacity(0.06), dark: Color.black.opacity(0.45))

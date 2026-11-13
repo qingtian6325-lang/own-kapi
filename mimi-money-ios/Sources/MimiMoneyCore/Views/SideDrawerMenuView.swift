@@ -65,8 +65,10 @@ public struct SideDrawerMenuView: View {
                         quickBookkeepingCard
                     }
                     .padding(MimiTheme.drawerContentPadding)
+                    .padding(.top, MimiTheme.topChromeExtraPadding)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .safeAreaPadding(.top)
                 .frame(width: panelWidth, height: geo.size.height, alignment: .top)
                 .background(MimiTheme.background.ignoresSafeArea())
                 .offset(x: panelVisible ? 0 : -panelWidth)
