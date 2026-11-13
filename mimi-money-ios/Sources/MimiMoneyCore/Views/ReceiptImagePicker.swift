@@ -193,10 +193,10 @@ public struct FullscreenReceiptViewer: View {
             } else {
                 VStack(spacing: 12) {
                     Image(systemName: "photo.badge.exclamationmark")
-                        .font(.system(size: 48))
+                        .mimiFont(48)
                         .foregroundColor(.white.opacity(0.6))
                     Text("无法加载小票大图")
-                        .font(.system(size: 16, weight: .medium))
+                        .mimiFont(16, weight: .medium)
                         .foregroundColor(.white.opacity(0.8))
                 }
             }
@@ -210,7 +210,7 @@ public struct FullscreenReceiptViewer: View {
                     Spacer()
                     Button(action: onClose) {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 28))
+                            .mimiFont(28)
                             .foregroundColor(.white.opacity(0.85))
                             .padding(20)
                     }

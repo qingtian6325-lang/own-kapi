@@ -111,7 +111,7 @@ public struct RecordAndAISheetView: View {
                 manualBookkeepingBody
             }
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(MimiTheme.cardBackground.ignoresSafeArea())
         .sheet(isPresented: $showDatePickerSheet) {
             MimiDatePickerSheet(
                 selection: $selectedDate,
@@ -226,7 +226,7 @@ public struct RecordAndAISheetView: View {
             MimiAskMascotView(size: 34)
 
             Text("来记笔账吧")
-                .font(.system(size: 17, weight: .bold))
+                .mimiFont(17, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
 
             Spacer(minLength: 8)
@@ -238,27 +238,27 @@ public struct RecordAndAISheetView: View {
             } label: {
                 HStack(spacing: 5) {
                     Image(systemName: "arrow.left.arrow.right")
-                        .font(.system(size: 13, weight: .bold))
+                        .mimiFont(13, weight: .bold)
                     Text("手动记账")
-                        .font(.system(size: 13, weight: .semibold))
+                        .mimiFont(13, weight: .semibold)
                 }
                 .foregroundColor(MimiTheme.textPrimary)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .background(
                     Capsule()
-                        .strokeBorder(Color(hex: 0xD5DAE6), lineWidth: 1)
-                        .background(Capsule().fill(Color.white))
+                        .strokeBorder(MimiTheme.strokeSubtle, lineWidth: 1)
+                        .background(Capsule().fill(MimiTheme.cardBackground))
                 )
             }
             .buttonStyle(.plain)
 
             Button(action: onDismiss) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 13, weight: .bold))
+                    .mimiFont(13, weight: .bold)
                     .foregroundColor(MimiTheme.textSecondary)
                     .frame(width: 30, height: 30)
-                    .background(Circle().strokeBorder(Color(hex: 0xD5DAE6), lineWidth: 1))
+                    .background(Circle().strokeBorder(MimiTheme.strokeSubtle, lineWidth: 1))
                     .mimiMinTouchTarget()
             }
             .mimiPressable()
@@ -299,10 +299,10 @@ public struct RecordAndAISheetView: View {
             if isAIMode {
                 Button(action: onDismiss) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 15, weight: .bold))
+                        .mimiFont(15, weight: .bold)
                         .foregroundColor(MimiTheme.textSecondary)
                         .frame(width: 32, height: 32)
-                        .background(Circle().fill(Color(hex: 0xF2F4F8)))
+                        .background(Circle().fill(MimiTheme.fillSubtle))
                         .mimiMinTouchTarget()
                 }
                 .mimiPressable()
@@ -314,21 +314,21 @@ public struct RecordAndAISheetView: View {
                 } label: {
                     HStack(spacing: 5) {
                         Image(systemName: "arrow.left.arrow.right")
-                            .font(.system(size: 14, weight: .bold))
+                            .mimiFont(14, weight: .bold)
                         Text("手动记账")
-                            .font(.system(size: 13, weight: .semibold))
+                            .mimiFont(13, weight: .semibold)
                     }
                     .foregroundColor(MimiTheme.textPrimary)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                     .frame(minHeight: MimiHIG.minTouch)
-                    .background(Capsule().strokeBorder(Color(hex: 0xD8DEEA), lineWidth: 1))
+                    .background(Capsule().strokeBorder(MimiTheme.strokeSubtle, lineWidth: 1))
                 }
                 .mimiPressable()
                 .accessibilityLabel("切换到手动记账")
                 Spacer()
                 Text("任何事都能问我")
-                    .font(.system(size: 16, weight: .bold))
+                    .mimiFont(16, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
                 Color.clear.frame(width: 44, height: 32)
@@ -350,7 +350,7 @@ public struct RecordAndAISheetView: View {
                         } label: {
                             VStack(spacing: 4) {
                                 Text(titleText)
-                                    .font(.system(size: 15, weight: selectedTab == tab ? .bold : .medium))
+                                    .mimiFont(15, weight: selectedTab == tab ? .bold : .medium)
                                     .foregroundColor(
                                         selectedTab == tab
                                             ? (tab == .income ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
@@ -375,22 +375,22 @@ public struct RecordAndAISheetView: View {
                     onSwitchToAIOverlay()
                 } label: {
                     Text("AI 助手")
-                        .font(.system(size: 13, weight: .semibold))
+                        .mimiFont(13, weight: .semibold)
                         .foregroundColor(MimiTheme.expenseBlue)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
                         .frame(minHeight: MimiHIG.minTouch)
-                        .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                        .background(Capsule().fill(MimiTheme.tintBlueChip))
                 }
                 .mimiPressable()
                 .accessibilityLabel("打开 AI 助手")
 
                 Button(action: onDismiss) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 14, weight: .bold))
+                        .mimiFont(14, weight: .bold)
                         .foregroundColor(MimiTheme.textSecondary)
                         .frame(width: 30, height: 30)
-                        .background(Circle().fill(Color(hex: 0xF2F4F8)))
+                        .background(Circle().fill(MimiTheme.fillSubtle))
                         .mimiMinTouchTarget()
                 }
                 .mimiPressable()
@@ -427,7 +427,7 @@ public struct RecordAndAISheetView: View {
                                             isSelected: isSelected
                                         )
                                         Text(group.name)
-                                            .font(.system(size: 12, weight: isSelected ? .bold : .regular))
+                                            .mimiFont(12, weight: isSelected ? .bold : .regular)
                                             .foregroundColor(isSelected ? MimiTheme.textPrimary : MimiTheme.textSecondary)
                                             .lineLimit(1)
                                             .minimumScaleFactor(0.85)
@@ -442,7 +442,7 @@ public struct RecordAndAISheetView: View {
                         if let group = currentGroup, !group.subcategories.isEmpty {
                             VStack(alignment: .leading, spacing: 10) {
                                 Text("\(group.name) · 二级分类")
-                                    .font(.system(size: 11, weight: .semibold))
+                                    .mimiFont(11, weight: .semibold)
                                     .foregroundColor(MimiTheme.textMuted)
 
                                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5), spacing: 10) {
@@ -461,7 +461,7 @@ public struct RecordAndAISheetView: View {
                                                     isSelected: isSubSelected
                                                 )
                                                 Text(sub.name)
-                                                    .font(.system(size: 11, weight: isSubSelected ? .bold : .regular))
+                                                    .mimiFont(11, weight: isSubSelected ? .bold : .regular)
                                                     .foregroundColor(isSubSelected ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
                                                     .lineLimit(1)
                                                     .minimumScaleFactor(0.85)
@@ -474,7 +474,7 @@ public struct RecordAndAISheetView: View {
                             .padding(12)
                             .background(
                                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .fill(Color(hex: 0xF5F6FA))
+                                    .fill(MimiTheme.background)
                             )
                         }
                     }
@@ -587,7 +587,7 @@ public struct RecordAndAISheetView: View {
             VStack(spacing: 8) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(expression.isEmpty ? "RM0.00" : "RM\(expression)")
-                        .font(.system(size: 30, weight: .bold, design: .rounded))
+                        .mimiFont(30, weight: .bold, design: .rounded)
                         .foregroundColor(selectedTab == .income ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
 
                     Menu {
@@ -597,9 +597,9 @@ public struct RecordAndAISheetView: View {
                     } label: {
                         HStack(spacing: 2) {
                             Text(selectedCurrency.rawValue)
-                                .font(.system(size: 12, weight: .semibold))
+                                .mimiFont(12, weight: .semibold)
                             Image(systemName: "chevron.down")
-                                .font(.system(size: 9, weight: .bold))
+                                .mimiFont(9, weight: .bold)
                         }
                         .foregroundColor(MimiTheme.textMuted)
                     }
@@ -610,14 +610,14 @@ public struct RecordAndAISheetView: View {
 
                 HStack(spacing: 8) {
                     TextField("点击填写备注信息", text: $noteText)
-                        .font(.system(size: 14))
+                        .mimiFont(14)
                         .foregroundColor(MimiTheme.textPrimary)
 
                     Button {
                         showImageSourceDialog = true
                     } label: {
                         Image(systemName: "photo.on.rectangle")
-                            .font(.system(size: 15))
+                            .mimiFont(15)
                             .foregroundColor(Color(hex: 0x9AA0B0))
                     }
                     .buttonStyle(.plain)
@@ -626,14 +626,14 @@ public struct RecordAndAISheetView: View {
                         showImageSourceDialog = true
                     } label: {
                         Image(systemName: "camera")
-                            .font(.system(size: 15))
+                            .mimiFont(15)
                             .foregroundColor(Color(hex: 0x9AA0B0))
                     }
                     .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
-                .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(hex: 0xF5F6FA)))
+                .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(MimiTheme.background))
                 .padding(.horizontal, 16)
 
                 if !attachedReceiptFilenames.isEmpty {
@@ -675,7 +675,7 @@ public struct RecordAndAISheetView: View {
                                         }
                                     } label: {
                                         Image(systemName: "xmark.circle.fill")
-                                            .font(.system(size: 14))
+                                            .mimiFont(14)
                                             .foregroundColor(.white)
                                             .background(Circle().fill(Color.black.opacity(0.65)))
                                     }
@@ -715,10 +715,10 @@ public struct RecordAndAISheetView: View {
                 targetAccountName = from
             } label: {
                 Image(systemName: "arrow.left.arrow.right")
-                    .font(.system(size: 16, weight: .semibold))
+                    .mimiFont(16, weight: .semibold)
                     .foregroundColor(MimiTheme.expenseBlue)
                     .frame(width: 36, height: 36)
-                    .background(Circle().fill(Color(hex: 0xE8F0FE)))
+                    .background(Circle().fill(MimiTheme.tintBlueChip))
             }
             .buttonStyle(.plain)
 
@@ -738,32 +738,32 @@ public struct RecordAndAISheetView: View {
     private func transferAccountBox(title: String, subtitle: String) -> some View {
         VStack(spacing: 8) {
             Image(systemName: "creditcard")
-                .font(.system(size: 22))
+                .mimiFont(22)
                 .foregroundColor(MimiTheme.textSecondary)
             Text(title)
-                .font(.system(size: 14, weight: .semibold))
+                .mimiFont(14, weight: .semibold)
                 .foregroundColor(MimiTheme.textPrimary)
                 .lineLimit(1)
             Text(subtitle)
-                .font(.system(size: 11))
+                .mimiFont(11)
                 .foregroundColor(MimiTheme.textMuted)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 22)
-        .background(RoundedRectangle(cornerRadius: 16).fill(Color(hex: 0xF5F6FA)))
+        .background(RoundedRectangle(cornerRadius: 16).fill(MimiTheme.background))
     }
 
     private func pillLabel(icon: String, text: String) -> some View {
         HStack(spacing: 4) {
             Image(systemName: icon)
-                .font(.system(size: 11))
+                .mimiFont(11)
             Text(text)
-                .font(.system(size: 12, weight: .medium))
+                .mimiFont(12, weight: .medium)
         }
         .foregroundColor(MimiTheme.textSecondary)
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(Capsule().fill(Color(hex: 0xF2F4F8)))
+        .background(Capsule().fill(MimiTheme.fillSubtle))
     }
 
     private var calculatorKeypad: some View {
@@ -782,7 +782,7 @@ public struct RecordAndAISheetView: View {
                             handleKeyTap(key)
                         } label: {
                             Text(key)
-                                .font(.system(size: key == "完成" || key == "再记" ? 15 : 20, weight: .semibold, design: .rounded))
+                                .mimiFont(key == "完成" || key == "再记" ? 15 : 20, weight: .semibold, design: .rounded)
                                 .foregroundColor(key == "完成" ? .white : MimiTheme.textPrimary)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 48)
@@ -801,7 +801,7 @@ public struct RecordAndAISheetView: View {
             }
         }
         .padding(10)
-        .background(Color(hex: 0xF2F4F8))
+        .background(MimiTheme.fillSubtle)
     }
 
     private func handleKeyTap(_ key: String) {
@@ -922,7 +922,7 @@ public struct RecordAndAISheetView: View {
                                         aiEngine.handleUserMessage(question, store: store)
                                     } label: {
                                         Text(question)
-                                            .font(.system(size: 14))
+                                            .mimiFont(14)
                                             .foregroundColor(Color(hex: 0x6B7280))
                                             .multilineTextAlignment(.leading)
                                             .padding(.horizontal, 14)
@@ -948,7 +948,7 @@ public struct RecordAndAISheetView: View {
                     .padding(.top, 4)
                     .padding(.bottom, 12)
                 }
-                .background(Color.white)
+                .background(MimiTheme.cardBackground)
                 .onChange(of: aiEngine.messages.count) { _, _ in
                     if let last = aiEngine.messages.last {
                         withAnimation(.easeOut(duration: 0.22)) {
@@ -969,20 +969,20 @@ public struct RecordAndAISheetView: View {
                 )
                 .padding(.horizontal, 16)
                 .padding(.bottom, 8)
-                .background(Color.white)
+                .background(MimiTheme.cardBackground)
             }
 
             #if canImport(Speech) && canImport(AVFoundation)
             if speechTranscriber.isRecording {
                 Text("正在聆听：\(speechTranscriber.partialText)")
-                    .font(.system(size: 12))
+                    .mimiFont(12)
                     .foregroundColor(MimiTheme.expenseBlue)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 4)
             } else if !speechTranscriber.statusText.isEmpty {
                 Text(speechTranscriber.statusText)
-                    .font(.system(size: 12))
+                    .mimiFont(12)
                     .foregroundColor(MimiTheme.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16)
@@ -994,7 +994,7 @@ public struct RecordAndAISheetView: View {
             HStack(spacing: 10) {
                 HStack(spacing: 6) {
                     TextField("任何事情都能问我", text: $aiInputText)
-                        .font(.system(size: 14))
+                        .mimiFont(14)
                         .submitLabel(.send)
                         .onSubmit {
                             let prompt = aiInputText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1006,7 +1006,7 @@ public struct RecordAndAISheetView: View {
                     #if canImport(Speech) && canImport(AVFoundation)
                     if aiInputText.trimmingCharacters(in: .whitespaces).isEmpty {
                         Image(systemName: speechTranscriber.isRecording ? "mic.fill" : "mic")
-                            .font(.system(size: 15, weight: .semibold))
+                            .mimiFont(15, weight: .semibold)
                             .foregroundColor(speechTranscriber.isRecording ? MimiTheme.dangerRed : MimiTheme.textMuted)
                             .frame(width: 28, height: 28)
                             .contentShape(Rectangle())
@@ -1033,7 +1033,7 @@ public struct RecordAndAISheetView: View {
                         }
                     } label: {
                         Image(systemName: showChatAttachmentPanel ? "xmark" : "plus")
-                            .font(.system(size: 15, weight: .bold))
+                            .mimiFont(15, weight: .bold)
                             .foregroundColor(MimiTheme.textMuted)
                             .frame(width: 28, height: 28)
                     }
@@ -1044,7 +1044,7 @@ public struct RecordAndAISheetView: View {
                 .padding(.vertical, 8)
                 .background(
                     Capsule()
-                        .fill(Color(hex: 0xF5F6FA))
+                        .fill(MimiTheme.background)
                 )
 
                 Button {
@@ -1054,7 +1054,7 @@ public struct RecordAndAISheetView: View {
                     aiEngine.handleUserMessage(prompt, store: store)
                 } label: {
                     Image(systemName: "arrow.up")
-                        .font(.system(size: 14, weight: .bold))
+                        .mimiFont(14, weight: .bold)
                         .foregroundColor(.white)
                         .frame(width: 36, height: 36)
                         .background(
@@ -1071,7 +1071,7 @@ public struct RecordAndAISheetView: View {
             .padding(.horizontal, 14)
             .padding(.top, 8)
             .padding(.bottom, 12)
-            .background(Color.white)
+            .background(MimiTheme.cardBackground)
         }
     }
 
@@ -1088,16 +1088,16 @@ public struct RecordAndAISheetView: View {
                     )
                     VStack(alignment: .leading, spacing: 2) {
                         Text(draft.categoryPath)
-                            .font(.system(size: 14, weight: .semibold))
+                            .mimiFont(14, weight: .semibold)
                             .foregroundColor(MimiTheme.textPrimary)
                         Text("\(draft.accountName) · \(draft.note)")
-                            .font(.system(size: 12))
+                            .mimiFont(12)
                             .foregroundColor(MimiTheme.textSecondary)
                             .lineLimit(1)
                     }
                     Spacer()
                     Text((draft.type == .income ? "+" : "-") + MimiTheme.formatRM(draft.amount))
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .mimiFont(14, weight: .bold, design: .rounded)
                         .foregroundColor(draft.type == .income ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
                 }
             }
@@ -1107,11 +1107,11 @@ public struct RecordAndAISheetView: View {
                     aiEngine.cancelDrafts(messageId: message.id)
                 } label: {
                     Text("取消")
-                        .font(.system(size: 13, weight: .semibold))
+                        .mimiFont(13, weight: .semibold)
                         .foregroundColor(MimiTheme.textSecondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 9)
-                        .background(Capsule().fill(Color(hex: 0xF2F4F8)))
+                        .background(Capsule().fill(MimiTheme.fillSubtle))
                 }
                 .buttonStyle(.plain)
 
@@ -1119,7 +1119,7 @@ public struct RecordAndAISheetView: View {
                     aiEngine.confirmDrafts(messageId: message.id, in: store)
                 } label: {
                     Text("确认记账")
-                        .font(.system(size: 13, weight: .semibold))
+                        .mimiFont(13, weight: .semibold)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 9)
@@ -1129,7 +1129,7 @@ public struct RecordAndAISheetView: View {
             }
         }
         .padding(14)
-        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.white))
+        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(MimiTheme.cardBackground))
     }
 
     @ViewBuilder
@@ -1145,11 +1145,11 @@ public struct RecordAndAISheetView: View {
                     case .pendingAnswer:
                         HStack(spacing: 6) {
                             Image(systemName: "sparkles")
-                                .font(.system(size: 13, weight: .semibold))
+                                .mimiFont(13, weight: .semibold)
                                 .foregroundColor(MimiTheme.expenseBlue)
                                 .accessibilityHidden(true)
                             Text("咪咪思考中…")
-                                .font(.system(size: 14, weight: .medium))
+                                .mimiFont(14, weight: .medium)
                                 .foregroundColor(MimiTheme.expenseBlue)
                         }
                         .padding(.vertical, 4)
@@ -1159,23 +1159,23 @@ public struct RecordAndAISheetView: View {
                     case .text(let text):
                         if message.isUser {
                             Text(text)
-                                .font(.system(size: 15))
+                                .mimiFont(15)
                                 .foregroundColor(MimiTheme.textPrimary)
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 11)
                                 .background(
                                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .fill(Color(hex: 0xE8EEFF))
+                                        .fill(MimiTheme.tintBlueSoft)
                                 )
                         } else {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(text)
-                                    .font(.system(size: 15))
+                                    .mimiFont(15)
                                     .foregroundColor(MimiTheme.textPrimary)
                                     .fixedSize(horizontal: false, vertical: true)
                                 if idx == message.blocks.count - 1 {
                                     Text("\(aiGeneratedTimeLabel) 内容由AI生成")
-                                        .font(.system(size: 11))
+                                        .mimiFont(11)
                                         .foregroundColor(MimiTheme.textMuted)
                                 }
                             }
@@ -1187,7 +1187,7 @@ public struct RecordAndAISheetView: View {
 
                             if !incomeRows.isEmpty {
                                 Text("标准收入分类如下：")
-                                    .font(.system(size: 13, weight: .bold))
+                                    .mimiFont(13, weight: .bold)
                                     .foregroundColor(MimiTheme.textPrimary)
                                     .padding(.top, 4)
                                 categoryTableBox(rows: incomeRows)
@@ -1195,29 +1195,29 @@ public struct RecordAndAISheetView: View {
 
                             if !customNote.isEmpty {
                                 Text(customNote)
-                                    .font(.system(size: 12))
+                                    .mimiFont(12)
                                     .foregroundColor(MimiTheme.textSecondary)
                             }
                         }
                         .padding(14)
                         .background(
                             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(Color(hex: 0xF7F8FC))
+                                .fill(MimiTheme.fillSubtle)
                         )
 
                     case .spendingSummary(let title, let amount, let count, let details):
                         VStack(alignment: .leading, spacing: 6) {
                             Text(title)
-                                .font(.system(size: 15, weight: .bold))
+                                .mimiFont(15, weight: .bold)
                                 .foregroundColor(MimiTheme.textPrimary)
                             Text("总支出 \(MimiTheme.formatRM(amount)) · 共 \(count) 笔")
-                                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                .mimiFont(14, weight: .semibold, design: .rounded)
                                 .foregroundColor(MimiTheme.expenseBlue)
                             Text(details)
-                                .font(.system(size: 13))
+                                .mimiFont(13)
                                 .foregroundColor(MimiTheme.textSecondary)
                             Text("\(aiGeneratedTimeLabel) 内容由AI生成")
-                                .font(.system(size: 11))
+                                .mimiFont(11)
                                 .foregroundColor(MimiTheme.textMuted)
                         }
 
@@ -1243,23 +1243,23 @@ public struct RecordAndAISheetView: View {
         VStack(spacing: 0) {
             HStack {
                 Text("一级分类")
-                    .font(.system(size: 12, weight: .bold))
+                    .mimiFont(12, weight: .bold)
                     .frame(width: 82, alignment: .leading)
                 Text("二级分类")
-                    .font(.system(size: 12, weight: .bold))
+                    .mimiFont(12, weight: .bold)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .padding(8)
-            .background(Color(hex: 0xF2F4F8))
+            .background(MimiTheme.fillSubtle)
 
             ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                 HStack(alignment: .top) {
                     Text(row.0)
-                        .font(.system(size: 12, weight: .semibold))
+                        .mimiFont(12, weight: .semibold)
                         .foregroundColor(MimiTheme.textPrimary)
                         .frame(width: 82, alignment: .leading)
                     Text(row.1)
-                        .font(.system(size: 12))
+                        .mimiFont(12)
                         .foregroundColor(MimiTheme.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }

@@ -138,7 +138,7 @@ public struct CategoryBillsListView: View {
                     }
                 } label: {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 15, weight: .semibold))
+                        .mimiFont(15, weight: .semibold)
                         .foregroundColor(MimiTheme.textPrimary)
                 }
             }
@@ -154,18 +154,18 @@ public struct CategoryBillsListView: View {
         HStack(alignment: .top, spacing: 0) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(transactionType == .expense ? "支出" : "收入")
-                    .font(.system(size: 13))
+                    .mimiFont(13)
                     .foregroundColor(MimiTheme.textSecondary)
                 Text(MimiTheme.formatRM(monthTotal))
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .mimiFont(26, weight: .bold, design: .rounded)
                     .foregroundColor(transactionType == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange)
                 if let pct = vsLastMonthPercent {
                     Text(String(format: "和上月比 %@ %.0f%%", pct >= 0 ? "↑" : "↓", abs(pct)))
-                        .font(.system(size: 12))
+                        .mimiFont(12)
                         .foregroundColor(MimiTheme.textMuted)
                 } else if previousMonthTotal < 0.009 && monthTotal > 0 {
                     Text("和上月比 ↑ —")
-                        .font(.system(size: 12))
+                        .mimiFont(12)
                         .foregroundColor(MimiTheme.textMuted)
                 }
             }
@@ -173,25 +173,25 @@ public struct CategoryBillsListView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("账单数")
-                    .font(.system(size: 13))
+                    .mimiFont(13)
                     .foregroundColor(MimiTheme.textSecondary)
                 Text("\(monthTransactions.count)")
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .mimiFont(26, weight: .bold, design: .rounded)
                     .foregroundColor(MimiTheme.textPrimary)
                 Text("本月记录")
-                    .font(.system(size: 12))
+                    .mimiFont(12)
                     .foregroundColor(MimiTheme.textMuted)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.white))
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(MimiTheme.cardBackground))
     }
 
     private var compositionCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(transactionType == .expense ? "支出分类构成" : "收入分类构成")
-                .font(.system(size: 15, weight: .bold))
+                .mimiFont(15, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
 
             ForEach(Array(subcategoryBreakdown.enumerated()), id: \.offset) { _, row in
@@ -209,15 +209,15 @@ public struct CategoryBillsListView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             HStack(spacing: 6) {
                                 Text(row.name)
-                                    .font(.system(size: 14, weight: .semibold))
+                                    .mimiFont(14, weight: .semibold)
                                     .foregroundColor(MimiTheme.textPrimary)
                                 Text(String(format: "%.2f%%", row.percent * 100))
-                                    .font(.system(size: 12))
+                                    .mimiFont(12)
                                     .foregroundColor(MimiTheme.textMuted)
                             }
                             GeometryReader { geo in
                                 ZStack(alignment: .leading) {
-                                    Capsule().fill(Color(hex: 0xEEF0F6)).frame(height: 6)
+                                    Capsule().fill(MimiTheme.fillSubtle).frame(height: 6)
                                     Capsule()
                                         .fill(MimiTheme.expenseBlue.opacity(0.85))
                                         .frame(width: max(4, geo.size.width * CGFloat(row.percent)), height: 6)
@@ -228,14 +228,14 @@ public struct CategoryBillsListView: View {
                         Spacer(minLength: 8)
                         VStack(alignment: .trailing, spacing: 2) {
                             Text(MimiTheme.formatRM(row.amount))
-                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .mimiFont(14, weight: .bold, design: .rounded)
                                 .foregroundColor(MimiTheme.textPrimary)
                             Text("\(row.count)笔")
-                                .font(.system(size: 11))
+                                .mimiFont(11)
                                 .foregroundColor(MimiTheme.textMuted)
                         }
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 11, weight: .semibold))
+                            .mimiFont(11, weight: .semibold)
                             .foregroundColor(MimiTheme.textMuted)
                     }
                     .contentShape(Rectangle())
@@ -244,17 +244,17 @@ public struct CategoryBillsListView: View {
             }
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.white))
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(MimiTheme.cardBackground))
     }
 
     private var rangeAndTotalRow: some View {
         HStack {
             Text(rangeLabel)
-                .font(.system(size: 13, weight: .medium))
+                .mimiFont(13, weight: .medium)
                 .foregroundColor(MimiTheme.textSecondary)
             Spacer()
             Text("\(transactionType == .expense ? "月支出" : "月收入")\(MimiTheme.formatRM(monthTotal))")
-                .font(.system(size: 13, weight: .medium))
+                .mimiFont(13, weight: .medium)
                 .foregroundColor(MimiTheme.textSecondary)
         }
         .padding(.horizontal, 4)
@@ -264,11 +264,11 @@ public struct CategoryBillsListView: View {
         Group {
             if dayGroups.isEmpty {
                 Text("本月暂无账单")
-                    .font(.system(size: 14))
+                    .mimiFont(14)
                     .foregroundColor(MimiTheme.textMuted)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 40)
-                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+                    .background(RoundedRectangle(cornerRadius: 16).fill(MimiTheme.cardBackground))
             } else {
                 ForEach(Array(dayGroups.enumerated()), id: \.offset) { _, group in
                     dayCard(date: group.date, items: group.items)
@@ -280,7 +280,7 @@ public struct CategoryBillsListView: View {
     private func dayCard(date: Date, items: [TransactionItem]) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(formatDayHeader(date))
-                .font(.system(size: 13, weight: .semibold))
+                .mimiFont(13, weight: .semibold)
                 .foregroundColor(MimiTheme.textPrimary)
                 .padding(.horizontal, 14)
                 .padding(.top, 12)
@@ -299,27 +299,27 @@ public struct CategoryBillsListView: View {
                         )
                         VStack(alignment: .leading, spacing: 3) {
                             Text(leafTitle(tx))
-                                .font(.system(size: 15, weight: .semibold))
+                                .mimiFont(15, weight: .semibold)
                                 .foregroundColor(MimiTheme.textPrimary)
                                 .lineLimit(1)
                             Text(metaLine(tx))
-                                .font(.system(size: 12))
+                                .mimiFont(12)
                                 .foregroundColor(MimiTheme.textMuted)
                                 .lineLimit(1)
                             if !tx.accountName.isEmpty {
                                 Text(tx.accountName)
-                                    .font(.system(size: 11, weight: .medium))
+                                    .mimiFont(11, weight: .medium)
                                     .foregroundColor(MimiTheme.textSecondary)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 3)
-                                    .background(Capsule().fill(Color(hex: 0xF0F2F6)))
+                                    .background(Capsule().fill(MimiTheme.fillSubtle))
                             }
                         }
                         Spacer(minLength: 8)
                         Text(tx.type == .expense || tx.type == .transfer
                              ? "-\(MimiTheme.formatRM(tx.amount))"
                              : MimiTheme.formatRM(tx.amount))
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .mimiFont(16, weight: .bold, design: .rounded)
                             .foregroundColor(tx.type == .expense || tx.type == .transfer
                                              ? MimiTheme.expenseBlue
                                              : MimiTheme.incomeOrange)
@@ -335,7 +335,7 @@ public struct CategoryBillsListView: View {
                 }
             }
         }
-        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.white))
+        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(MimiTheme.cardBackground))
     }
 
     private func leafTitle(_ tx: TransactionItem) -> String {

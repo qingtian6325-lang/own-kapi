@@ -49,13 +49,13 @@ public struct BillDetailSheetView: View {
                             detailRow(label: "实付金额") {
                                 HStack(spacing: 4) {
                                     Text(editableBill.type == .expense ? "-RM" : "+RM")
-                                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                                        .mimiFont(18, weight: .bold, design: .rounded)
                                         .foregroundColor(editableBill.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange)
                                     Text(amountString.isEmpty ? "0.00" : amountString)
-                                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                                        .mimiFont(18, weight: .bold, design: .rounded)
                                         .foregroundColor(editableBill.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange)
                                     Image(systemName: "chevron.right")
-                                        .font(.system(size: 11, weight: .semibold))
+                                        .mimiFont(11, weight: .semibold)
                                         .foregroundColor(MimiTheme.textMuted)
                                 }
                             }
@@ -90,10 +90,10 @@ public struct BillDetailSheetView: View {
                                         size: 26
                                     )
                                     Text(editableBill.categoryPath)
-                                        .font(.system(size: 14, weight: .semibold))
+                                        .mimiFont(14, weight: .semibold)
                                         .foregroundColor(MimiTheme.textPrimary)
                                     Image(systemName: "chevron.right")
-                                        .font(.system(size: 11))
+                                        .mimiFont(11)
                                         .foregroundColor(MimiTheme.textMuted)
                                 }
                             }
@@ -105,11 +105,11 @@ public struct BillDetailSheetView: View {
                         VStack(alignment: .leading, spacing: 10) {
                             HStack {
                                 Text("备注")
-                                    .font(.system(size: 14, weight: .medium))
+                                    .mimiFont(14, weight: .medium)
                                     .foregroundColor(MimiTheme.textSecondary)
                                 Spacer()
                                 TextField("添加备注...", text: $editableBill.note)
-                                    .font(.system(size: 14))
+                                    .mimiFont(14)
                                     .multilineTextAlignment(.trailing)
                             }
 
@@ -149,7 +149,7 @@ public struct BillDetailSheetView: View {
                                                 }
                                             } label: {
                                                 Image(systemName: "xmark.circle.fill")
-                                                    .font(.system(size: 16))
+                                                    .mimiFont(16)
                                                     .foregroundColor(.white)
                                                     .background(Circle().fill(Color.black.opacity(0.65)))
                                             }
@@ -166,7 +166,7 @@ public struct BillDetailSheetView: View {
                                             .frame(width: 58, height: 58)
                                             .overlay(
                                                 Image(systemName: "plus")
-                                                    .font(.system(size: 20, weight: .medium))
+                                                    .mimiFont(20, weight: .medium)
                                                     .foregroundColor(MimiTheme.textMuted)
                                             )
                                     }
@@ -177,7 +177,7 @@ public struct BillDetailSheetView: View {
                         }
                         .padding(16)
                     }
-                    .background(RoundedRectangle(cornerRadius: 18).fill(Color.white))
+                    .background(RoundedRectangle(cornerRadius: 18).fill(MimiTheme.cardBackground))
 
                     // Time, Account & Ledger Card
                     VStack(spacing: 0) {
@@ -200,10 +200,10 @@ public struct BillDetailSheetView: View {
                             } label: {
                                 HStack(spacing: 4) {
                                     Text(editableBill.accountName)
-                                        .font(.system(size: 14, weight: .semibold))
+                                        .mimiFont(14, weight: .semibold)
                                         .foregroundColor(MimiTheme.textPrimary)
                                     Image(systemName: "chevron.right")
-                                        .font(.system(size: 11))
+                                        .mimiFont(11)
                                         .foregroundColor(MimiTheme.textMuted)
                                 }
                             }
@@ -214,24 +214,24 @@ public struct BillDetailSheetView: View {
                         detailRow(label: "所属账本") {
                             HStack(spacing: 6) {
                                 Image(systemName: "book.closed.fill")
-                                    .font(.system(size: 14))
+                                    .mimiFont(14)
                                     .foregroundColor(MimiTheme.vipGold)
                                 Text(editableBill.ledgerName)
-                                    .font(.system(size: 14, weight: .medium))
+                                    .mimiFont(14, weight: .medium)
                                     .foregroundColor(MimiTheme.textPrimary)
                                 Image(systemName: "chevron.right")
-                                    .font(.system(size: 11))
+                                    .mimiFont(11)
                                     .foregroundColor(MimiTheme.textMuted)
                             }
                         }
                     }
-                    .background(RoundedRectangle(cornerRadius: 18).fill(Color.white))
+                    .background(RoundedRectangle(cornerRadius: 18).fill(MimiTheme.cardBackground))
 
                     // Discount, Refund/Cashback & Counterparty Card (IMG_2242 & IMG_2243)
                     VStack(spacing: 0) {
                         detailRow(label: "添加优惠") {
                             TextField("RM0.00", text: $discountString)
-                                .font(.system(size: 14))
+                                .mimiFont(14)
                                 .multilineTextAlignment(.trailing)
                                 .frame(width: 120)
                         }
@@ -240,7 +240,7 @@ public struct BillDetailSheetView: View {
 
                         detailRow(label: "添加退款/返现") {
                             TextField("RM0.00", text: $refundString)
-                                .font(.system(size: 14))
+                                .mimiFont(14)
                                 .multilineTextAlignment(.trailing)
                                 .frame(width: 120)
                         }
@@ -249,11 +249,11 @@ public struct BillDetailSheetView: View {
 
                         detailRow(label: "交易方") {
                             TextField("如：Eggette Lab / Jaya Grocer", text: $editableBill.counterparty)
-                                .font(.system(size: 14))
+                                .mimiFont(14)
                                 .multilineTextAlignment(.trailing)
                         }
                     }
-                    .background(RoundedRectangle(cornerRadius: 18).fill(Color.white))
+                    .background(RoundedRectangle(cornerRadius: 18).fill(MimiTheme.cardBackground))
 
                     // Save Changes Button
                     Button {
@@ -266,7 +266,7 @@ public struct BillDetailSheetView: View {
                         onDismiss()
                     } label: {
                         Text("保存修改")
-                            .font(.system(size: 16, weight: .bold))
+                            .mimiFont(16, weight: .bold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
@@ -286,7 +286,7 @@ public struct BillDetailSheetView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(action: onDismiss) {
                         Image(systemName: "chevron.down")
-                            .font(.system(size: 14, weight: .bold))
+                            .mimiFont(14, weight: .bold)
                             .foregroundColor(MimiTheme.textSecondary)
                             .mimiMinTouchTarget()
                     }
@@ -297,7 +297,7 @@ public struct BillDetailSheetView: View {
                         showDeleteConfirm = true
                     } label: {
                         Image(systemName: "trash")
-                            .font(.system(size: 14, weight: .semibold))
+                            .mimiFont(14, weight: .semibold)
                             .foregroundColor(MimiTheme.dangerRed)
                             .mimiMinTouchTarget()
                     }
@@ -394,11 +394,11 @@ public struct BillDetailSheetView: View {
                 .padding(.top, 10)
 
             Text("实付金额")
-                .font(.system(size: 15, weight: .semibold))
+                .mimiFont(15, weight: .semibold)
                 .foregroundColor(MimiTheme.textSecondary)
 
             Text(amountExpression.isEmpty ? "RM0.00" : "RM\(amountExpression)")
-                .font(.system(size: 32, weight: .bold, design: .rounded))
+                .mimiFont(32, weight: .bold, design: .rounded)
                 .foregroundColor(accent)
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .padding(.horizontal, 20)
@@ -411,7 +411,7 @@ public struct BillDetailSheetView: View {
                                 handleAmountKey(key)
                             } label: {
                                 Text(key)
-                                    .font(.system(size: key == "完成" || key == "清空" ? 15 : 20, weight: .semibold, design: .rounded))
+                                    .mimiFont(key == "完成" || key == "清空" ? 15 : 20, weight: .semibold, design: .rounded)
                                     .foregroundColor(key == "完成" ? .white : MimiTheme.textPrimary)
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 48)
@@ -426,12 +426,12 @@ public struct BillDetailSheetView: View {
                 }
             }
             .padding(10)
-            .background(Color(hex: 0xF2F4F8))
+            .background(MimiTheme.fillSubtle)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .padding(.horizontal, 12)
             .padding(.bottom, 12)
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(MimiTheme.cardBackground.ignoresSafeArea())
     }
 
     private func handleAmountKey(_ key: String) {
@@ -459,10 +459,10 @@ public struct BillDetailSheetView: View {
             .overlay(
                 VStack(spacing: 2) {
                     Image(systemName: "doc.text.image")
-                        .font(.system(size: 18))
+                        .mimiFont(18)
                         .foregroundColor(MimiTheme.expenseBlue)
                     Text(label)
-                        .font(.system(size: 8))
+                        .mimiFont(8)
                         .foregroundColor(MimiTheme.textSecondary)
                         .lineLimit(1)
                 }
@@ -472,7 +472,7 @@ public struct BillDetailSheetView: View {
     private func detailRow<Content: View>(label: String, @ViewBuilder content: () -> Content) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 14, weight: .medium))
+                .mimiFont(14, weight: .medium)
                 .foregroundColor(MimiTheme.textSecondary)
             Spacer()
             content()

@@ -36,13 +36,13 @@ public struct MimiChoiceSheet: View {
     public var body: some View {
         VStack(spacing: 0) {
             Capsule()
-                .fill(Color(hex: 0xD5DAE6))
+                .fill(MimiTheme.strokeSubtle)
                 .frame(width: 36, height: 4)
                 .padding(.top, 10)
                 .padding(.bottom, 10)
 
             Text(title)
-                .font(.system(size: 17, weight: .bold))
+                .mimiFont(17, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
@@ -55,21 +55,21 @@ public struct MimiChoiceSheet: View {
                     } label: {
                         HStack(spacing: 14) {
                             Image(systemName: item.icon)
-                                .font(.system(size: 20, weight: .regular))
+                                .mimiFont(20, weight: .regular)
                                 .foregroundColor(Color(hex: 0x6B7285))
                                 .frame(width: 40, height: 40)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .fill(Color(hex: 0xEEF1F7))
+                                        .fill(MimiTheme.fillSubtle)
                                 )
 
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(item.title)
-                                    .font(.system(size: 15, weight: .semibold))
+                                    .mimiFont(15, weight: .semibold)
                                     .foregroundColor(MimiTheme.textPrimary)
                                 if let subtitle = item.subtitle, !subtitle.isEmpty {
                                     Text(subtitle)
-                                        .font(.system(size: 12))
+                                        .mimiFont(12)
                                         .foregroundColor(MimiTheme.textSecondary)
                                 }
                             }
@@ -77,13 +77,13 @@ public struct MimiChoiceSheet: View {
                             Spacer(minLength: 0)
 
                             Image(systemName: "chevron.right")
-                                .font(.system(size: 12, weight: .bold))
+                                .mimiFont(12, weight: .bold)
                                 .foregroundColor(MimiTheme.textMuted)
                         }
                         .padding(14)
                         .background(
                             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(Color(hex: 0xF7F8FC))
+                                .fill(MimiTheme.fillSubtle)
                         )
                     }
                     .buttonStyle(.plain)
@@ -93,13 +93,13 @@ public struct MimiChoiceSheet: View {
 
             Button(action: onCancel) {
                 Text("取消")
-                    .font(.system(size: 15, weight: .semibold))
+                    .mimiFont(15, weight: .semibold)
                     .foregroundColor(MimiTheme.textSecondary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
                     .background(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Color(hex: 0xF2F4F8))
+                            .fill(MimiTheme.fillSubtle)
                     )
             }
             .buttonStyle(.plain)
@@ -108,8 +108,7 @@ public struct MimiChoiceSheet: View {
             .padding(.bottom, 18)
         }
         .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color.white)
+            RoundedRectangle(cornerRadius: 24, style: .continuous).fill(MimiTheme.cardBackground)
                 .ignoresSafeArea(edges: .bottom)
         )
     }

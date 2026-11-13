@@ -81,17 +81,17 @@ public struct SideDrawerMenuView: View {
                     .fill(Color(hex: 0xFFE8CC))
                     .frame(width: MimiTheme.drawerAvatarSize, height: MimiTheme.drawerAvatarSize)
                 Text(String(store.userNickname.prefix(1)).uppercased())
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .mimiFont(20, weight: .bold, design: .rounded)
                     .foregroundColor(Color(hex: 0xC47A2C))
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(store.userNickname)
-                        .font(.system(size: 18, weight: .bold))
+                        .mimiFont(18, weight: .bold)
                         .foregroundColor(MimiTheme.textPrimary)
                     Text("Pro")
-                        .font(.system(size: 10, weight: .bold))
+                        .mimiFont(10, weight: .bold)
                         .foregroundColor(.white)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
@@ -99,10 +99,10 @@ public struct SideDrawerMenuView: View {
                 }
                 HStack(spacing: 4) {
                     Image(systemName: "crown.fill")
-                        .font(.system(size: 10))
+                        .mimiFont(10)
                         .foregroundColor(MimiTheme.vipGold)
                     Text("VIP")
-                        .font(.system(size: 11, weight: .semibold))
+                        .mimiFont(11, weight: .semibold)
                         .foregroundColor(MimiTheme.vipGold)
                 }
             }
@@ -113,12 +113,12 @@ public struct SideDrawerMenuView: View {
                 onSelectDestination(.settings)
             } label: {
                 Image(systemName: "gearshape")
-                    .font(.system(size: 18, weight: .medium))
+                    .mimiFont(18, weight: .medium)
                     .foregroundColor(MimiTheme.textPrimary)
                     .frame(width: 40, height: 40)
                     .background(
                         Circle()
-                            .fill(Color(hex: 0xF0F2F6))
+                            .fill(MimiTheme.fillSubtle)
                     )
                     .mimiMinTouchTarget()
             }
@@ -136,7 +136,7 @@ public struct SideDrawerMenuView: View {
         } label: {
             VStack(alignment: .leading, spacing: 12) {
                 Text("November 2026")
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .mimiFont(14, weight: .bold, design: .rounded)
                     .foregroundColor(MimiTheme.textPrimary)
 
                 LazyVGrid(
@@ -166,8 +166,7 @@ public struct SideDrawerMenuView: View {
             }
             .padding(14)
             .background(
-                RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius, style: .continuous)
-                    .fill(Color.white)
+                RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius, style: .continuous).fill(MimiTheme.cardBackground)
                     .shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 2)
             )
         }
@@ -182,11 +181,11 @@ public struct SideDrawerMenuView: View {
 
             if cell.isToday {
                 Text("今")
-                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                    .mimiFont(9, weight: .bold, design: .rounded)
                     .foregroundColor(MimiTheme.expenseBlue)
             } else {
                 Text("\(cell.day)")
-                    .font(.system(size: 9, weight: .regular, design: .rounded))
+                    .mimiFont(9, weight: .regular, design: .rounded)
                     .foregroundColor(
                         cell.expense > 0 || cell.income > 0
                             ? MimiTheme.textPrimary
@@ -201,7 +200,7 @@ public struct SideDrawerMenuView: View {
     private var moreFeaturesCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("更多功能")
-                .font(.system(size: 13, weight: .semibold))
+                .mimiFont(13, weight: .semibold)
                 .foregroundColor(MimiTheme.textSecondary)
 
             LazyVGrid(columns: threeColumnGrid, spacing: 16) {
@@ -230,15 +229,14 @@ public struct SideDrawerMenuView: View {
         }
         .padding(16)
         .background(
-            RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius, style: .continuous)
-                .fill(Color.white)
+            RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius, style: .continuous).fill(MimiTheme.cardBackground)
         )
     }
 
     private var quickBookkeepingCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("快捷记账")
-                .font(.system(size: 13, weight: .semibold))
+                .mimiFont(13, weight: .semibold)
                 .foregroundColor(MimiTheme.textSecondary)
 
             LazyVGrid(columns: threeColumnGrid, spacing: 16) {
@@ -249,7 +247,7 @@ public struct SideDrawerMenuView: View {
                     ZStack(alignment: .bottomTrailing) {
                         Image(systemName: "doc")
                         Image(systemName: "arrow.triangle.2.circlepath")
-                            .font(.system(size: 10, weight: .semibold))
+                            .mimiFont(10, weight: .semibold)
                             .offset(x: 2, y: 2)
                     }
                 }
@@ -260,8 +258,7 @@ public struct SideDrawerMenuView: View {
         }
         .padding(16)
         .background(
-            RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius, style: .continuous)
-                .fill(Color.white)
+            RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius, style: .continuous).fill(MimiTheme.cardBackground)
         )
     }
 
@@ -270,10 +267,10 @@ public struct SideDrawerMenuView: View {
     private func statColumn(value: String, label: String) -> some View {
         VStack(spacing: 4) {
             Text(value)
-                .font(.system(size: 19, weight: .bold, design: .rounded))
+                .mimiFont(19, weight: .bold, design: .rounded)
                 .foregroundColor(MimiTheme.textPrimary)
             Text(label)
-                .font(.system(size: 11))
+                .mimiFont(11)
                 .foregroundColor(MimiTheme.textSecondary)
         }
         .frame(maxWidth: .infinity)
@@ -296,7 +293,7 @@ public struct SideDrawerMenuView: View {
         ZStack {
             Image(systemName: "doc")
             Text(letter)
-                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .mimiFont(11, weight: .bold, design: .rounded)
                 .offset(y: 2)
         }
     }
@@ -315,11 +312,11 @@ public struct SideDrawerMenuView: View {
                         .fill(Color(hex: 0xF3F4F8))
                         .frame(width: MimiTheme.drawerGridIconSize, height: MimiTheme.drawerGridIconSize)
                     icon()
-                        .font(.system(size: 21, weight: .light))
+                        .mimiFont(21, weight: .light)
                         .foregroundColor(Color(hex: 0x2C2F36))
                 }
                 Text(title)
-                    .font(.system(size: 12, weight: .medium))
+                    .mimiFont(12, weight: .medium)
                     .foregroundColor(MimiTheme.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)

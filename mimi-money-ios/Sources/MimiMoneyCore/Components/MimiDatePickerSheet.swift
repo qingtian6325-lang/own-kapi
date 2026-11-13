@@ -33,19 +33,19 @@ public struct MimiDatePickerSheet: View {
     public var body: some View {
         VStack(spacing: 0) {
             Capsule()
-                .fill(Color(hex: 0xD5DAE6))
+                .fill(MimiTheme.strokeSubtle)
                 .frame(width: 36, height: 4)
                 .padding(.top, 10)
                 .padding(.bottom, 8)
 
             HStack {
                 Text(title)
-                    .font(.system(size: 17, weight: .bold))
+                    .mimiFont(17, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
                 Button(action: onDone) {
                     Text("完成")
-                        .font(.system(size: 15, weight: .semibold))
+                        .mimiFont(15, weight: .semibold)
                         .foregroundColor(.white)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 7)
@@ -74,7 +74,7 @@ public struct MimiDatePickerSheet: View {
             }
 
             Text(summaryText)
-                .font(.system(size: 13, weight: .medium))
+                .mimiFont(13, weight: .medium)
                 .foregroundColor(MimiTheme.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
@@ -82,8 +82,7 @@ public struct MimiDatePickerSheet: View {
                 .padding(.bottom, 18)
         }
         .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color.white)
+            RoundedRectangle(cornerRadius: 24, style: .continuous).fill(MimiTheme.cardBackground)
                 .ignoresSafeArea(edges: .bottom)
         )
     }
@@ -94,17 +93,17 @@ public struct MimiDatePickerSheet: View {
                 shiftMonth(-1)
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 14, weight: .bold))
+                    .mimiFont(14, weight: .bold)
                     .foregroundColor(MimiTheme.textSecondary)
                     .frame(width: 36, height: 36)
-                    .background(Circle().fill(Color(hex: 0xF2F4F8)))
+                    .background(Circle().fill(MimiTheme.fillSubtle))
             }
             .buttonStyle(.plain)
 
             Spacer()
 
             Text(monthTitle)
-                .font(.system(size: 16, weight: .bold))
+                .mimiFont(16, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
 
             Spacer()
@@ -113,10 +112,10 @@ public struct MimiDatePickerSheet: View {
                 shiftMonth(1)
             } label: {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .bold))
+                    .mimiFont(14, weight: .bold)
                     .foregroundColor(MimiTheme.textSecondary)
                     .frame(width: 36, height: 36)
-                    .background(Circle().fill(Color(hex: 0xF2F4F8)))
+                    .background(Circle().fill(MimiTheme.fillSubtle))
             }
             .buttonStyle(.plain)
         }
@@ -126,7 +125,7 @@ public struct MimiDatePickerSheet: View {
         HStack(spacing: 0) {
             ForEach(Self.weekdayLabels, id: \.self) { label in
                 Text(label)
-                    .font(.system(size: 12, weight: .semibold))
+                    .mimiFont(12, weight: .semibold)
                     .foregroundColor(MimiTheme.textMuted)
                     .frame(maxWidth: .infinity)
             }
@@ -147,7 +146,7 @@ public struct MimiDatePickerSheet: View {
                         selectDay(day)
                     } label: {
                         Text("\(Self.calendar.component(.day, from: day))")
-                            .font(.system(size: 15, weight: selected ? .bold : .medium))
+                            .mimiFont(15, weight: selected ? .bold : .medium)
                             .foregroundColor(selected ? .white : MimiTheme.textPrimary)
                             .frame(maxWidth: .infinity)
                             .frame(height: 36)
@@ -171,7 +170,7 @@ public struct MimiDatePickerSheet: View {
     private var timeRow: some View {
         HStack(spacing: 12) {
             Text("时间")
-                .font(.system(size: 14, weight: .semibold))
+                .mimiFont(14, weight: .semibold)
                 .foregroundColor(MimiTheme.textSecondary)
 
             Spacer()
@@ -182,7 +181,7 @@ public struct MimiDatePickerSheet: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(hex: 0xF5F6FA))
+                .fill(MimiTheme.background)
         )
     }
 
@@ -192,15 +191,15 @@ public struct MimiDatePickerSheet: View {
                 value.wrappedValue = max(range.lowerBound, value.wrappedValue - 1)
             } label: {
                 Image(systemName: "minus")
-                    .font(.system(size: 12, weight: .bold))
+                    .mimiFont(12, weight: .bold)
                     .foregroundColor(MimiTheme.textSecondary)
                     .frame(width: 28, height: 28)
-                    .background(Circle().fill(Color.white))
+                    .background(Circle().fill(MimiTheme.cardBackground))
             }
             .buttonStyle(.plain)
 
             Text(String(format: "%02d%@", value.wrappedValue, suffix))
-                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .mimiFont(15, weight: .bold, design: .rounded)
                 .foregroundColor(MimiTheme.textPrimary)
                 .frame(minWidth: 52)
 
@@ -208,10 +207,10 @@ public struct MimiDatePickerSheet: View {
                 value.wrappedValue = min(range.upperBound, value.wrappedValue + 1)
             } label: {
                 Image(systemName: "plus")
-                    .font(.system(size: 12, weight: .bold))
+                    .mimiFont(12, weight: .bold)
                     .foregroundColor(MimiTheme.textSecondary)
                     .frame(width: 28, height: 28)
-                    .background(Circle().fill(Color.white))
+                    .background(Circle().fill(MimiTheme.cardBackground))
             }
             .buttonStyle(.plain)
         }
@@ -329,21 +328,21 @@ public struct MimiDateFieldButton: View {
             HStack(spacing: 6) {
                 if let label, !label.isEmpty {
                     Text(label)
-                        .font(.system(size: 13, weight: .medium))
+                        .mimiFont(13, weight: .medium)
                         .foregroundColor(MimiTheme.textSecondary)
                 }
                 Text(displayText)
-                    .font(.system(size: 14, weight: .semibold))
+                    .mimiFont(14, weight: .semibold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 11, weight: .bold))
+                    .mimiFont(11, weight: .bold)
                     .foregroundColor(MimiTheme.textMuted)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color(hex: 0xF2F4F8))
+                    .fill(MimiTheme.fillSubtle)
             )
         }
         .buttonStyle(.plain)

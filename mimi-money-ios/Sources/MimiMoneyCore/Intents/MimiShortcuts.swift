@@ -250,13 +250,13 @@ public struct ScreenshotResultSnippetView: View {
                     MimiStickerIconView(iconName: transaction.iconName, size: 28)
 
                     Text(transaction.categoryPath)
-                        .font(.system(size: 15, weight: .bold))
+                        .mimiFont(15, weight: .bold)
                         .foregroundColor(MimiTheme.textPrimary)
 
                     Spacer()
 
                     Text(signedAmountText)
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .mimiFont(17, weight: .bold, design: .rounded)
                         .foregroundColor(
                             transaction.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange
                         )
@@ -264,7 +264,7 @@ public struct ScreenshotResultSnippetView: View {
                     if let onClose = onCloseTapped {
                         Button(action: onClose) {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 16))
+                                .mimiFont(16)
                                 .foregroundColor(MimiTheme.textMuted.opacity(0.7))
                         }
                         .buttonStyle(.plain)
@@ -273,7 +273,7 @@ public struct ScreenshotResultSnippetView: View {
 
                 HStack(spacing: 6) {
                     Text(transaction.accountName)
-                        .font(.system(size: 11, weight: .medium))
+                        .mimiFont(11, weight: .medium)
                         .foregroundColor(MimiTheme.textSecondary)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
@@ -283,7 +283,7 @@ public struct ScreenshotResultSnippetView: View {
 
                     if !transaction.note.isEmpty {
                         Text(transaction.note)
-                            .font(.system(size: 11, weight: .medium))
+                            .mimiFont(11, weight: .medium)
                             .foregroundColor(MimiTheme.textSecondary)
                             .lineLimit(1)
                             .padding(.horizontal, 8)
@@ -296,7 +296,7 @@ public struct ScreenshotResultSnippetView: View {
                     Spacer()
 
                     Text(formattedTimestamp)
-                        .font(.system(size: 11, weight: .regular))
+                        .mimiFont(11, weight: .regular)
                         .foregroundColor(MimiTheme.textMuted)
                 }
             }
@@ -310,10 +310,10 @@ public struct ScreenshotResultSnippetView: View {
             // Recognition confirmation caption
             HStack(spacing: 6) {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 13))
+                    .mimiFont(13)
                     .foregroundColor(MimiTheme.expenseBlue)
                 Text("已识别记录以上信息，打开「咪咪记账」查看更多")
-                    .font(.system(size: 12, weight: .medium))
+                    .mimiFont(12, weight: .medium)
                     .foregroundColor(MimiTheme.textSecondary)
             }
 
@@ -323,7 +323,7 @@ public struct ScreenshotResultSnippetView: View {
                 HStack(spacing: 12) {
                     Button(intent: OpenBillForEditIntent(transactionId: transaction.id)) {
                         Text("修改 (View)")
-                            .font(.system(size: 14, weight: .semibold))
+                            .mimiFont(14, weight: .semibold)
                             .foregroundColor(MimiTheme.textPrimary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 11)
@@ -335,7 +335,7 @@ public struct ScreenshotResultSnippetView: View {
 
                     Button(intent: ConfirmBillIntent(transactionId: transaction.id)) {
                         Text("确认 (Got it)")
-                            .font(.system(size: 14, weight: .semibold))
+                            .mimiFont(14, weight: .semibold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 11)
@@ -370,7 +370,7 @@ public struct ScreenshotResultSnippetView: View {
                 onModifyTapped?()
             } label: {
                 Text("修改 (View)")
-                    .font(.system(size: 14, weight: .semibold))
+                    .mimiFont(14, weight: .semibold)
                     .foregroundColor(MimiTheme.textPrimary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 11)
@@ -384,7 +384,7 @@ public struct ScreenshotResultSnippetView: View {
                 onConfirmTapped?()
             } label: {
                 Text("确认 (Got it)")
-                    .font(.system(size: 14, weight: .semibold))
+                    .mimiFont(14, weight: .semibold)
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 11)
@@ -429,13 +429,13 @@ public struct ScanConfirmationCardView: View {
                     MimiStickerIconView(iconName: transaction.iconName, size: 28)
 
                     Text(transaction.categoryPath)
-                        .font(.system(size: 15, weight: .bold))
+                        .mimiFont(15, weight: .bold)
                         .foregroundColor(MimiTheme.textPrimary)
 
                     Spacer()
 
                     Text(signedAmountText)
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .mimiFont(17, weight: .bold, design: .rounded)
                         .foregroundColor(
                             transaction.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange
                         )
@@ -443,7 +443,7 @@ public struct ScanConfirmationCardView: View {
 
                 HStack(spacing: 6) {
                     Text(transaction.accountName)
-                        .font(.system(size: 11, weight: .medium))
+                        .mimiFont(11, weight: .medium)
                         .foregroundColor(MimiTheme.textSecondary)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
@@ -453,7 +453,7 @@ public struct ScanConfirmationCardView: View {
 
                     if !transaction.note.isEmpty {
                         Text(transaction.note)
-                            .font(.system(size: 11, weight: .medium))
+                            .mimiFont(11, weight: .medium)
                             .foregroundColor(MimiTheme.textSecondary)
                             .lineLimit(1)
                             .padding(.horizontal, 8)
@@ -466,7 +466,7 @@ public struct ScanConfirmationCardView: View {
                     Spacer()
 
                     Text(formattedTimestamp)
-                        .font(.system(size: 11, weight: .regular))
+                        .mimiFont(11, weight: .regular)
                         .foregroundColor(MimiTheme.textMuted)
                 }
             }
@@ -479,10 +479,10 @@ public struct ScanConfirmationCardView: View {
 
             HStack(spacing: 6) {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 13))
+                    .mimiFont(13)
                     .foregroundColor(MimiTheme.expenseBlue)
                 Text("已识别记录以上信息，打开「咪咪记账」查看更多")
-                    .font(.system(size: 12, weight: .medium))
+                    .mimiFont(12, weight: .medium)
                     .foregroundColor(MimiTheme.textSecondary)
             }
 
@@ -532,13 +532,13 @@ public struct ScanChoiceCardView: View {
                 MimiStickerIconView(iconName: transaction.iconName, size: 28)
 
                 Text(transaction.categoryPath)
-                    .font(.system(size: 15, weight: .bold))
+                    .mimiFont(15, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
 
                 Spacer()
 
                 Text(signedAmountText)
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .mimiFont(17, weight: .bold, design: .rounded)
                     .foregroundColor(
                         transaction.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange
                     )
@@ -546,7 +546,7 @@ public struct ScanChoiceCardView: View {
 
             HStack(spacing: 6) {
                 Text(transaction.accountName)
-                    .font(.system(size: 11, weight: .medium))
+                    .mimiFont(11, weight: .medium)
                     .foregroundColor(MimiTheme.textSecondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
@@ -556,7 +556,7 @@ public struct ScanChoiceCardView: View {
 
                 if !transaction.note.isEmpty {
                     Text(transaction.note)
-                        .font(.system(size: 11, weight: .medium))
+                        .mimiFont(11, weight: .medium)
                         .foregroundColor(MimiTheme.textSecondary)
                         .lineLimit(1)
                         .padding(.horizontal, 8)
@@ -569,7 +569,7 @@ public struct ScanChoiceCardView: View {
                 Spacer()
 
                 Text(formattedTimestamp)
-                    .font(.system(size: 11, weight: .regular))
+                    .mimiFont(11, weight: .regular)
                     .foregroundColor(MimiTheme.textMuted)
             }
         }
@@ -767,7 +767,7 @@ public struct ScanConfirmationSnippetIntent: SnippetIntent {
         }
         return .result(view: AnyView(
             Text("这笔识别结果已处理")
-                .font(.system(size: 13, weight: .medium))
+                .mimiFont(13, weight: .medium)
                 .foregroundColor(MimiTheme.textSecondary)
                 .padding(16)
         ))
@@ -786,7 +786,7 @@ public struct ScanScreenshotIntent: AppIntent {
     @Parameter(title: "类型", default: 2)
     public var type: Int?
 
-    @Parameter(title: "版本", default: "1.3.5")
+    @Parameter(title: "版本", default: "1.3.6")
     public var version: String?
 
     public init() {}

@@ -21,7 +21,9 @@ When changing UI or interaction in this iOS app, follow Apple Human Interface Gu
 - Every icon-only control needs `.accessibilityLabel(...)` (and hint when action is non-obvious).
 - Swipe/drag must not be the only way to complete a critical action — also offer a button, toolbar item, or context menu.
 - Honor `@Environment(\.accessibilityReduceMotion)` for decorative motion (thinking dots, spring flourishes).
-- Prefer Dynamic Type / semantic text styles for body copy when practical; do not clip critical amounts without `minimumScaleFactor` or wrapping.
+- Use `.mimiFont(_:weight:design:)` (Dynamic Type via `UIFontMetrics`) instead of fixed `.font(.system(size:))`.
+- Support Light **and** Dark appearance through `MimiTheme` adaptive tokens (`Color(lightHex:darkHex:)` / `fillSubtle` / `cardBackground`). Do not hardcode light-only greys for surfaces; keep sticker glyph hexes fixed.
+- Do not clip critical amounts without `minimumScaleFactor` or wrapping.
 
 ## Symbols & copy
 - Use **SF Symbols** (or existing `MimiStickerIconView`) for structural icons — no emoji as navigation, empty-state, or control icons.

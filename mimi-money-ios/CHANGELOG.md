@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.6] - 2026-11-13
+
+### 🎯 Highlights
+- **Dark Mode**：`MimiTheme` 全套 light/dark 自适应色；界面表面色改用语义 token，贴纸色保持固定。
+- **Dynamic Type**：新增 `.mimiFont`（`UIFontMetrics`），Views/Components 固定字号批量切换为可缩放字体。
+- **发版**：`VERSION` / Intent 默认版本升至 1.3.6。
+
 ## [v1.3.5] - 2026-11-13
+
 
 ### 🎯 Highlights
 - **Apple HIG + ui-ux-pro-max**：44pt 热区、按压反馈、VoiceOver 标签、删除确认/长按菜单替代左划、结构 emoji 改 SF Symbol、AI 思考色改主蓝并尊重减少动态效果。

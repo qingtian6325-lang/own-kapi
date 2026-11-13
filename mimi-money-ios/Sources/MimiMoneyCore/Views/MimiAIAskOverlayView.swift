@@ -131,14 +131,13 @@ public struct MimiAIAskOverlayView: View {
                     sendComposed()
                 } label: {
                     Text(question)
-                        .font(.system(size: 14))
+                        .mimiFont(14)
                         .foregroundColor(MimiTheme.textPrimary)
                         .multilineTextAlignment(.leading)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 11)
                         .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(Color.white)
+                            RoundedRectangle(cornerRadius: 16, style: .continuous).fill(MimiTheme.cardBackground)
                                 .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 3)
                         )
                 }
@@ -155,7 +154,7 @@ public struct MimiAIAskOverlayView: View {
             // 把手 + 顶栏：上滑放大 / 放大后下滑关闭（不跟聊天列表抢手势）
             VStack(spacing: 0) {
                 Capsule()
-                    .fill(Color(hex: 0xD5DAE6))
+                    .fill(MimiTheme.strokeSubtle)
                     .frame(width: 36, height: 4)
                     .padding(.top, 8)
                     .padding(.bottom, 6)
@@ -170,7 +169,7 @@ public struct MimiAIAskOverlayView: View {
             if !pendingAttachments.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(pendingAttachmentSummary)
-                        .font(.system(size: 12, weight: .medium))
+                        .mimiFont(12, weight: .medium)
                         .foregroundColor(MimiTheme.textSecondary)
                         .padding(.horizontal, 4)
                     pendingAttachmentStrip
@@ -189,7 +188,7 @@ public struct MimiAIAskOverlayView: View {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundColor(MimiTheme.balanceGreen)
                         Text("回答完毕")
-                            .font(.system(size: 13, weight: .semibold))
+                            .mimiFont(13, weight: .semibold)
                             .foregroundColor(MimiTheme.balanceGreen)
                     }
                     .padding(.vertical, 8)
@@ -213,7 +212,7 @@ public struct MimiAIAskOverlayView: View {
             #if canImport(Speech) && canImport(AVFoundation)
             if speechTranscriber.isRecording {
                 Text("正在聆听：\(speechTranscriber.partialText)")
-                    .font(.system(size: 12))
+                    .mimiFont(12)
                     .foregroundColor(MimiTheme.expenseBlue)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 14)
@@ -229,8 +228,7 @@ public struct MimiAIAskOverlayView: View {
         .frame(maxWidth: .infinity)
         .frame(maxHeight: maxHeight)
         .background(
-            RoundedRectangle(cornerRadius: isExpanded ? 20 : 22, style: .continuous)
-                .fill(Color.white)
+            RoundedRectangle(cornerRadius: isExpanded ? 20 : 22, style: .continuous).fill(MimiTheme.cardBackground)
                 .shadow(color: Color.black.opacity(0.14), radius: 18, x: 0, y: 6)
         )
     }
@@ -239,7 +237,7 @@ public struct MimiAIAskOverlayView: View {
         HStack(spacing: 10) {
             MimiAskMascotView(size: 30)
             Text(isExpanded ? "来记笔账吧" : "记账查账，问问题")
-                .font(.system(size: 16, weight: .bold))
+                .mimiFont(16, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
                 .lineLimit(1)
 
@@ -252,15 +250,15 @@ public struct MimiAIAskOverlayView: View {
             } label: {
                 HStack(spacing: 5) {
                     Image(systemName: "arrow.left.arrow.right")
-                        .font(.system(size: 13, weight: .bold))
+                        .mimiFont(13, weight: .bold)
                     Text("手动记账")
-                        .font(.system(size: 13, weight: .semibold))
+                        .mimiFont(13, weight: .semibold)
                 }
                 .foregroundColor(MimiTheme.textPrimary)
                 .padding(.horizontal, 11)
                 .padding(.vertical, 7)
                 .frame(minHeight: MimiHIG.minTouch)
-                .background(Capsule().strokeBorder(Color(hex: 0xD5DAE6), lineWidth: 1))
+                .background(Capsule().strokeBorder(MimiTheme.strokeSubtle, lineWidth: 1))
             }
             .mimiPressable()
             .accessibilityLabel("切换到手动记账")
@@ -270,10 +268,10 @@ public struct MimiAIAskOverlayView: View {
                 onDismiss()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .bold))
+                    .mimiFont(12, weight: .bold)
                     .foregroundColor(MimiTheme.textSecondary)
                     .frame(width: 28, height: 28)
-                    .background(Circle().strokeBorder(Color(hex: 0xD5DAE6), lineWidth: 1))
+                    .background(Circle().strokeBorder(MimiTheme.strokeSubtle, lineWidth: 1))
                     .mimiMinTouchTarget()
             }
             .mimiPressable()
@@ -313,7 +311,7 @@ public struct MimiAIAskOverlayView: View {
                             pendingAttachments.removeAll { $0.id == item.id }
                         } label: {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 18))
+                                .mimiFont(18)
                                 .foregroundStyle(.white, Color.black.opacity(0.55))
                         }
                         .offset(x: 6, y: -6)
@@ -327,13 +325,13 @@ public struct MimiAIAskOverlayView: View {
     private func attachmentPlaceholder(_ label: String) -> some View {
         VStack(spacing: 4) {
             Image(systemName: "doc.fill")
-                .font(.system(size: 20))
+                .mimiFont(20)
             Text(label)
-                .font(.system(size: 10, weight: .medium))
+                .mimiFont(10, weight: .medium)
         }
         .foregroundColor(MimiTheme.textSecondary)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(hex: 0xF0F2F7))
+        .background(MimiTheme.fillSubtle)
     }
 
     private var messageList: some View {
@@ -383,7 +381,7 @@ public struct MimiAIAskOverlayView: View {
                 .foregroundColor(MimiTheme.expenseBlue)
                 .accessibilityHidden(true)
             Text("咪咪思考中…")
-                .font(.system(size: 14, weight: .medium))
+                .mimiFont(14, weight: .medium)
                 .foregroundColor(MimiTheme.expenseBlue)
             Spacer()
         }
@@ -400,7 +398,7 @@ public struct MimiAIAskOverlayView: View {
                     text: $inputText,
                     axis: .vertical
                 )
-                .font(.system(size: 14))
+                .mimiFont(14)
                 .lineLimit(1...4)
                 .focused($inputFocused)
                 .submitLabel(.send)
@@ -409,7 +407,7 @@ public struct MimiAIAskOverlayView: View {
                 #if canImport(Speech) && canImport(AVFoundation)
                 if inputText.trimmingCharacters(in: .whitespaces).isEmpty {
                     Image(systemName: speechTranscriber.isRecording ? "mic.fill" : "mic")
-                        .font(.system(size: 15, weight: .semibold))
+                        .mimiFont(15, weight: .semibold)
                         .foregroundColor(speechTranscriber.isRecording ? MimiTheme.dangerRed : MimiTheme.textMuted)
                         .mimiMinTouchTarget(40)
                         .accessibilityLabel(speechTranscriber.isRecording ? "正在聆听，松开关闭" : "按住说话")
@@ -436,7 +434,7 @@ public struct MimiAIAskOverlayView: View {
                     }
                 } label: {
                     Image(systemName: showAttachmentPanel ? "xmark" : "plus")
-                        .font(.system(size: 15, weight: .bold))
+                        .mimiFont(15, weight: .bold)
                         .foregroundColor(MimiTheme.textMuted)
                         .mimiMinTouchTarget(40)
                 }
@@ -446,11 +444,11 @@ public struct MimiAIAskOverlayView: View {
             .padding(.leading, 14)
             .padding(.trailing, 8)
             .padding(.vertical, 4)
-            .background(Capsule().fill(Color(hex: 0xF5F6FA)))
+            .background(Capsule().fill(MimiTheme.background))
 
             Button(action: sendComposed) {
                 Image(systemName: "arrow.up")
-                    .font(.system(size: 14, weight: .bold))
+                    .mimiFont(14, weight: .bold)
                     .foregroundColor(.white)
                     .frame(width: 36, height: 36)
                     .background(
@@ -502,23 +500,23 @@ public struct MimiAIAskOverlayView: View {
                     case .text(let text):
                         if message.isUser {
                             Text(text)
-                                .font(.system(size: 15))
+                                .mimiFont(15)
                                 .foregroundColor(MimiTheme.textPrimary)
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 10)
                                 .background(
                                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .fill(Color(hex: 0xE8EEFF))
+                                        .fill(MimiTheme.tintBlueSoft)
                                 )
                         } else {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(text)
-                                    .font(.system(size: 15))
+                                    .mimiFont(15)
                                     .foregroundColor(MimiTheme.textPrimary)
                                     .fixedSize(horizontal: false, vertical: true)
                                 if idx == message.blocks.count - 1 {
                                     Text("内容由AI生成")
-                                        .font(.system(size: 11))
+                                        .mimiFont(11)
                                         .foregroundColor(MimiTheme.textMuted)
                                 }
                             }
@@ -531,29 +529,29 @@ public struct MimiAIAskOverlayView: View {
                         VStack(alignment: .leading, spacing: 6) {
                             ForEach(Array(expenseRows.enumerated()), id: \.offset) { _, row in
                                 Text("\(row.0)：\(row.1)")
-                                    .font(.system(size: 13))
+                                    .mimiFont(13)
                                     .foregroundColor(MimiTheme.textSecondary)
                             }
                             if !customNote.isEmpty {
                                 Text(customNote)
-                                    .font(.system(size: 12))
+                                    .mimiFont(12)
                                     .foregroundColor(MimiTheme.textMuted)
                             }
                             if !incomeRows.isEmpty {
                                 Text("收入分类已包含在上方说明里")
-                                    .font(.system(size: 12))
+                                    .mimiFont(12)
                                     .foregroundColor(MimiTheme.textMuted)
                             }
                         }
 
                     case .spendingSummary(let title, let amount, let count, let details):
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(title).font(.system(size: 15, weight: .bold))
+                            Text(title).mimiFont(15, weight: .bold)
                             Text("总支出 \(MimiTheme.formatRM(amount)) · 共 \(count) 笔")
-                                .font(.system(size: 14, weight: .semibold))
+                                .mimiFont(14, weight: .semibold)
                                 .foregroundColor(MimiTheme.expenseBlue)
                             Text(details)
-                                .font(.system(size: 13))
+                                .mimiFont(13)
                                 .foregroundColor(MimiTheme.textSecondary)
                         }
                     }
@@ -576,31 +574,31 @@ public struct MimiAIAskOverlayView: View {
                     )
                     VStack(alignment: .leading, spacing: 2) {
                         Text(draft.categoryPath)
-                            .font(.system(size: 14, weight: .semibold))
+                            .mimiFont(14, weight: .semibold)
                         Text("\(draft.accountName) · \(draft.note)")
-                            .font(.system(size: 12))
+                            .mimiFont(12)
                             .foregroundColor(MimiTheme.textSecondary)
                             .lineLimit(1)
                     }
                     Spacer()
                     Text((draft.type == .income ? "+" : "-") + MimiTheme.formatRM(draft.amount))
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .mimiFont(14, weight: .bold, design: .rounded)
                         .foregroundColor(draft.type == .income ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
                 }
             }
             HStack(spacing: 10) {
                 Button { aiEngine.cancelDrafts(messageId: messageId) } label: {
                     Text("取消")
-                        .font(.system(size: 13, weight: .semibold))
+                        .mimiFont(13, weight: .semibold)
                         .foregroundColor(MimiTheme.textSecondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 9)
-                        .background(Capsule().fill(Color(hex: 0xF2F4F8)))
+                        .background(Capsule().fill(MimiTheme.fillSubtle))
                 }
                 .buttonStyle(.plain)
                 Button { aiEngine.confirmDrafts(messageId: messageId, in: store) } label: {
                     Text("确认记账")
-                        .font(.system(size: 13, weight: .semibold))
+                        .mimiFont(13, weight: .semibold)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 9)
@@ -610,7 +608,7 @@ public struct MimiAIAskOverlayView: View {
             }
         }
         .padding(12)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: 0xF7F8FC)))
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(MimiTheme.fillSubtle))
     }
 
     // MARK: - Gestures / Actions

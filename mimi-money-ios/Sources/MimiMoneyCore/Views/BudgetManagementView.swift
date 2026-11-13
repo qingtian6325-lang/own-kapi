@@ -115,17 +115,17 @@ public struct BudgetManagementView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(action: onDismiss) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 15, weight: .semibold))
+                            .mimiFont(15, weight: .semibold)
                             .foregroundColor(MimiTheme.textPrimary)
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Text("Main Ledger ⌄")
-                        .font(.system(size: 12, weight: .semibold))
+                        .mimiFont(12, weight: .semibold)
                         .foregroundColor(MimiTheme.textPrimary)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
-                        .background(Capsule().fill(Color.white))
+                        .background(Capsule().fill(MimiTheme.cardBackground))
                 }
             }
             .sheet(isPresented: $showDynamicDailySheet) {
@@ -147,25 +147,25 @@ public struct BudgetManagementView: View {
                 switch sheetType {
                 case .editTotal:
                     Text("设置月度总预算")
-                        .font(.system(size: 18, weight: .bold))
+                        .mimiFont(18, weight: .bold)
                         .foregroundColor(MimiTheme.textPrimary)
 
                     Text("当前总预算为 \(MimiTheme.formatRM(store.monthlyBudgetTotal))。设置后将实时影响当月结余与日预算。")
-                        .font(.system(size: 13))
+                        .mimiFont(13)
                         .foregroundColor(MimiTheme.textSecondary)
 
                     HStack(spacing: 6) {
                         Text("RM")
-                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .mimiFont(20, weight: .bold, design: .rounded)
                             .foregroundColor(MimiTheme.textPrimary)
                         TextField("0.00", text: $totalBudgetInput)
-                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .mimiFont(24, weight: .bold, design: .rounded)
                             #if os(iOS)
                             .keyboardType(.decimalPad)
                             #endif
                     }
                     .padding(12)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF5F6FA)))
+                    .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.background))
 
                     Button {
                         if let val = Double(totalBudgetInput), val >= 0 {
@@ -174,7 +174,7 @@ public struct BudgetManagementView: View {
                         activeSheetType = nil
                     } label: {
                         Text("保存总预算")
-                            .font(.system(size: 15, weight: .bold))
+                            .mimiFont(15, weight: .bold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
@@ -193,26 +193,26 @@ public struct BudgetManagementView: View {
                         )
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.categoryName)
-                                .font(.system(size: 17, weight: .bold))
+                                .mimiFont(17, weight: .bold)
                                 .foregroundColor(MimiTheme.textPrimary)
                             Text("修改此分类月度支出上限")
-                                .font(.system(size: 12))
+                                .mimiFont(12)
                                 .foregroundColor(MimiTheme.textSecondary)
                         }
                     }
 
                     HStack(spacing: 6) {
                         Text("RM")
-                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .mimiFont(20, weight: .bold, design: .rounded)
                             .foregroundColor(MimiTheme.textPrimary)
                         TextField("0.00", text: $categoryBudgetInput)
-                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .mimiFont(24, weight: .bold, design: .rounded)
                             #if os(iOS)
                             .keyboardType(.decimalPad)
                             #endif
                     }
                     .padding(12)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF5F6FA)))
+                    .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.background))
 
                     HStack(spacing: 10) {
                         Button {
@@ -220,7 +220,7 @@ public struct BudgetManagementView: View {
                             activeSheetType = nil
                         } label: {
                             Text("删除分类预算")
-                                .font(.system(size: 14, weight: .semibold))
+                                .mimiFont(14, weight: .semibold)
                                 .foregroundColor(MimiTheme.dangerRed)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
@@ -235,7 +235,7 @@ public struct BudgetManagementView: View {
                             activeSheetType = nil
                         } label: {
                             Text("保存修改")
-                                .font(.system(size: 14, weight: .bold))
+                                .mimiFont(14, weight: .bold)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
@@ -255,26 +255,26 @@ public struct BudgetManagementView: View {
                         )
                         VStack(alignment: .leading, spacing: 2) {
                             Text("为「\(grp.name)」添加预算")
-                                .font(.system(size: 17, weight: .bold))
+                                .mimiFont(17, weight: .bold)
                                 .foregroundColor(MimiTheme.textPrimary)
                             Text("设定该分类每月支出上限")
-                                .font(.system(size: 12))
+                                .mimiFont(12)
                                 .foregroundColor(MimiTheme.textSecondary)
                         }
                     }
 
                     HStack(spacing: 6) {
                         Text("RM")
-                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .mimiFont(20, weight: .bold, design: .rounded)
                             .foregroundColor(MimiTheme.textPrimary)
                         TextField("0.00", text: $newCategoryBudgetInput)
-                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .mimiFont(24, weight: .bold, design: .rounded)
                             #if os(iOS)
                             .keyboardType(.decimalPad)
                             #endif
                     }
                     .padding(12)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF5F6FA)))
+                    .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.background))
 
                     Button {
                         if let val = Double(newCategoryBudgetInput), val > 0 {
@@ -283,7 +283,7 @@ public struct BudgetManagementView: View {
                         activeSheetType = nil
                     } label: {
                         Text("确定添加分类预算")
-                            .font(.system(size: 15, weight: .bold))
+                            .mimiFont(15, weight: .bold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
@@ -293,7 +293,7 @@ public struct BudgetManagementView: View {
 
                 case .selectNewCategory:
                     Text("选择要增加预算的分类")
-                        .font(.system(size: 17, weight: .bold))
+                        .mimiFont(17, weight: .bold)
                         .foregroundColor(MimiTheme.textPrimary)
 
                     ScrollView {
@@ -312,15 +312,15 @@ public struct BudgetManagementView: View {
                                             size: 32
                                         )
                                         Text(grp.name)
-                                            .font(.system(size: 15, weight: .medium))
+                                            .mimiFont(15, weight: .medium)
                                             .foregroundColor(MimiTheme.textPrimary)
                                         Spacer()
                                         Image(systemName: "plus.circle.fill")
-                                            .font(.system(size: 16))
+                                            .mimiFont(16)
                                             .foregroundColor(MimiTheme.expenseBlue)
                                     }
                                     .padding(12)
-                                    .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF5F6FA)))
+                                    .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.background))
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -352,25 +352,25 @@ public struct BudgetManagementView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("2026年11月")
-                        .font(.system(size: 12, weight: .medium))
+                        .mimiFont(12, weight: .medium)
                         .foregroundColor(MimiTheme.textSecondary)
 
                     Text("月预算剩余")
-                        .font(.system(size: 13, weight: .medium))
+                        .mimiFont(13, weight: .medium)
                         .foregroundColor(MimiTheme.textSecondary)
 
                     Text(MimiTheme.formatRM(monthlyRemaining))
-                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .mimiFont(26, weight: .bold, design: .rounded)
                         .foregroundColor(MimiTheme.textPrimary)
 
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
-                            Capsule().fill(Color(hex: 0xEEF0F6)).frame(height: MimiTheme.progressBarHeight)
+                            Capsule().fill(MimiTheme.fillSubtle).frame(height: MimiTheme.progressBarHeight)
                             Capsule()
                                 .fill(MimiTheme.expenseBlue)
                                 .frame(width: max(8, geo.size.width * CGFloat(budgetUsedRatio)), height: MimiTheme.progressBarHeight)
                             Text("\(Int((budgetUsedRatio * 100).rounded()))%")
-                                .font(.system(size: 10, weight: .bold))
+                                .mimiFont(10, weight: .bold)
                                 .foregroundColor(.white)
                                 .padding(.leading, 8)
                         }
@@ -379,7 +379,7 @@ public struct BudgetManagementView: View {
 
                     HStack {
                         Text("已用 \(MimiTheme.formatRM(monthlySpent))")
-                            .font(.system(size: 12))
+                            .mimiFont(12)
                             .foregroundColor(MimiTheme.textSecondary)
                         Spacer()
                         Button {
@@ -388,10 +388,10 @@ public struct BudgetManagementView: View {
                         } label: {
                             HStack(spacing: 4) {
                                 Text(MimiTheme.formatRM(store.monthlyBudgetTotal))
-                                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                    .mimiFont(13, weight: .semibold, design: .rounded)
                                     .foregroundColor(MimiTheme.textPrimary)
                                 Image(systemName: "pencil")
-                                    .font(.system(size: 12, weight: .semibold))
+                                    .mimiFont(12, weight: .semibold)
                                     .foregroundColor(MimiTheme.expenseBlue)
                             }
                         }
@@ -404,7 +404,7 @@ public struct BudgetManagementView: View {
 
                 ZStack {
                     Circle()
-                        .stroke(Color(hex: 0xEEF0F6), lineWidth: 9)
+                        .stroke(MimiTheme.fillSubtle, lineWidth: 9)
                         .frame(width: 86, height: 86)
                     Circle()
                         .trim(from: 0, to: CGFloat(min(1, todayRemainingAvailable / max(dailyAvailable, 0.0001))))
@@ -413,17 +413,17 @@ public struct BudgetManagementView: View {
                         .frame(width: 86, height: 86)
                     VStack(spacing: 2) {
                         Text("今日可用")
-                            .font(.system(size: 9, weight: .semibold))
+                            .mimiFont(9, weight: .semibold)
                             .foregroundColor(MimiTheme.expenseBlue)
                         Text(String(format: "%.2f", todayRemainingAvailable))
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .mimiFont(14, weight: .bold, design: .rounded)
                             .foregroundColor(MimiTheme.textPrimary)
                     }
                 }
             }
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
+        .background(RoundedRectangle(cornerRadius: 20).fill(MimiTheme.cardBackground))
     }
 
     // MARK: - 已分类预算 (IMG_2263: 6 configured categories)
@@ -432,17 +432,17 @@ public struct BudgetManagementView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("已分类预算")
-                    .font(.system(size: 15, weight: .bold))
+                    .mimiFont(15, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
                 Text(MimiTheme.formatRM(categorizedBudgetTotal))
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .mimiFont(14, weight: .bold, design: .rounded)
                     .foregroundColor(MimiTheme.textPrimary)
                 Button {
                     activeSheetType = .selectNewCategory
                 } label: {
                     Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 18))
+                        .mimiFont(18)
                         .foregroundColor(MimiTheme.expenseBlue)
                 }
                 .buttonStyle(.plain)
@@ -469,24 +469,24 @@ public struct BudgetManagementView: View {
 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(item.categoryName)
-                                        .font(.system(size: 14, weight: .semibold))
+                                        .mimiFont(14, weight: .semibold)
                                         .foregroundColor(MimiTheme.textPrimary)
                                     Text("已用\(MimiTheme.formatRM(spent)) | \(MimiTheme.formatRM(item.monthlyLimit))")
-                                        .font(.system(size: 12, design: .rounded))
+                                        .mimiFont(12, design: .rounded)
                                         .foregroundColor(MimiTheme.textSecondary)
                                 }
 
                                 Spacer()
 
                                 Image(systemName: "chevron.right")
-                                    .font(.system(size: 11, weight: .semibold))
+                                    .mimiFont(11, weight: .semibold)
                                     .foregroundColor(MimiTheme.textMuted)
                             }
 
                             GeometryReader { geo in
                                 ZStack(alignment: .leading) {
                                     Capsule()
-                                        .fill(Color(hex: 0xEEF0F6))
+                                        .fill(MimiTheme.fillSubtle)
                                         .frame(height: 8)
                                     Capsule()
                                         .fill(rem >= 0 ? MimiTheme.expenseBlue : MimiTheme.dangerRed)
@@ -510,9 +510,9 @@ public struct BudgetManagementView: View {
                 HStack(spacing: 4) {
                     Spacer()
                     Text(categoryBudgetsExpanded ? "收起" : "展开")
-                        .font(.system(size: 12, weight: .semibold))
+                        .mimiFont(12, weight: .semibold)
                     Image(systemName: categoryBudgetsExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 11, weight: .bold))
+                        .mimiFont(11, weight: .bold)
                     Spacer()
                 }
                 .foregroundColor(MimiTheme.textSecondary)
@@ -521,7 +521,7 @@ public struct BudgetManagementView: View {
             .buttonStyle(.plain)
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
+        .background(RoundedRectangle(cornerRadius: 20).fill(MimiTheme.cardBackground))
     }
 
     // MARK: - 动态日预算（主页下方）
@@ -536,51 +536,51 @@ public struct BudgetManagementView: View {
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("动态日预算")
-                    .font(.system(size: 15, weight: .bold))
+                    .mimiFont(15, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
                 Button {
                     showDynamicDailySheet = true
                 } label: {
                     Text("全屏")
-                        .font(.system(size: 12, weight: .semibold))
+                        .mimiFont(12, weight: .semibold)
                         .foregroundColor(MimiTheme.expenseBlue)
                 }
                 .buttonStyle(.plain)
             }
 
             Text("点击查看当日花费，长按编辑日预算")
-                .font(.system(size: 12))
+                .mimiFont(12)
                 .foregroundColor(MimiTheme.textMuted)
 
             if let editingKey = selectedDayKeyForCustomBudget {
                 HStack(spacing: 8) {
                     Text("调整 \(editingKey)")
-                        .font(.system(size: 12, weight: .semibold))
+                        .mimiFont(12, weight: .semibold)
                     TextField("输入金额", text: $customDayBudgetInput)
-                        .font(.system(size: 13))
+                        .mimiFont(13)
                         .padding(6)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.white))
+                        .background(RoundedRectangle(cornerRadius: 8).fill(MimiTheme.cardBackground))
                     Button("保存") {
                         if let val = Double(customDayBudgetInput) {
                             store.setCustomDailyBudget(dateKey: editingKey, amount: val)
                         }
                         selectedDayKeyForCustomBudget = nil
                     }
-                    .font(.system(size: 12, weight: .bold))
+                    .mimiFont(12, weight: .bold)
                     .foregroundColor(.white)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
                     .background(Capsule().fill(MimiTheme.expenseBlue))
                 }
                 .padding(10)
-                .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xE8F0FE)))
+                .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.tintBlueChip))
             }
 
             HStack(spacing: 0) {
                 ForEach(["一", "二", "三", "四", "五", "六", "日"], id: \.self) { w in
                     Text(w)
-                        .font(.system(size: 12, weight: .medium))
+                        .mimiFont(12, weight: .medium)
                         .foregroundColor(MimiTheme.textMuted)
                         .frame(maxWidth: .infinity)
                 }
@@ -596,7 +596,7 @@ public struct BudgetManagementView: View {
             }
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
+        .background(RoundedRectangle(cornerRadius: 20).fill(MimiTheme.cardBackground))
     }
 
     // MARK: - 分类预算历史（按月：预算 / 已用）
@@ -652,16 +652,16 @@ public struct BudgetManagementView: View {
                         )
                         VStack(alignment: .leading, spacing: 4) {
                             Text(item.categoryName)
-                                .font(.system(size: 18, weight: .bold))
+                                .mimiFont(18, weight: .bold)
                                 .foregroundColor(MimiTheme.textPrimary)
                             Text("当前月预算 \(MimiTheme.formatRM(item.monthlyLimit))")
-                                .font(.system(size: 13))
+                                .mimiFont(13)
                                 .foregroundColor(MimiTheme.textSecondary)
                         }
                         Spacer()
                     }
                     .padding(16)
-                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+                    .background(RoundedRectangle(cornerRadius: 16).fill(MimiTheme.cardBackground))
 
                     Button {
                         categoryBudgetInput = String(format: "%.2f", item.monthlyLimit)
@@ -676,15 +676,15 @@ public struct BudgetManagementView: View {
                             Spacer()
                             Image(systemName: "chevron.right")
                         }
-                        .font(.system(size: 14, weight: .semibold))
+                        .mimiFont(14, weight: .semibold)
                         .foregroundColor(MimiTheme.expenseBlue)
                         .padding(14)
-                        .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xE8F0FE)))
+                        .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.tintBlueChip))
                     }
                     .buttonStyle(.plain)
 
                     Text("历史月份")
-                        .font(.system(size: 13, weight: .semibold))
+                        .mimiFont(13, weight: .semibold)
                         .foregroundColor(MimiTheme.textSecondary)
                         .padding(.horizontal, 4)
 
@@ -700,22 +700,22 @@ public struct BudgetManagementView: View {
                             } label: {
                                 HStack {
                                     Text(String(format: "%d年%d月", row.year, row.month))
-                                        .font(.system(size: 15, weight: .semibold))
+                                        .mimiFont(15, weight: .semibold)
                                         .foregroundColor(MimiTheme.textPrimary)
                                     Spacer()
                                     VStack(alignment: .trailing, spacing: 2) {
                                         Text("已用 \(MimiTheme.formatRM(row.spent))")
-                                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                            .mimiFont(13, weight: .semibold, design: .rounded)
                                             .foregroundColor(MimiTheme.expenseBlue)
                                         Text("预算 \(MimiTheme.formatRM(row.limit))")
-                                            .font(.system(size: 12, design: .rounded))
+                                            .mimiFont(12, design: .rounded)
                                             .foregroundColor(MimiTheme.textMuted)
                                         Text(rem >= 0 ? "剩余 \(MimiTheme.formatRM(rem))" : "超支 \(MimiTheme.formatRM(abs(rem)))")
-                                            .font(.system(size: 11))
+                                            .mimiFont(11)
                                             .foregroundColor(rem >= 0 ? MimiTheme.balanceGreen : MimiTheme.dangerRed)
                                     }
                                     Image(systemName: "chevron.right")
-                                        .font(.system(size: 11, weight: .semibold))
+                                        .mimiFont(11, weight: .semibold)
                                         .foregroundColor(MimiTheme.textMuted)
                                 }
                                 .padding(.horizontal, 14)
@@ -728,7 +728,7 @@ public struct BudgetManagementView: View {
                             }
                         }
                     }
-                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+                    .background(RoundedRectangle(cornerRadius: 16).fill(MimiTheme.cardBackground))
                 }
                 .padding(16)
             }
@@ -800,7 +800,7 @@ public struct BudgetManagementView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     HStack {
                         Text("动态日预算")
-                            .font(.system(size: 16, weight: .bold))
+                            .mimiFont(16, weight: .bold)
                             .foregroundColor(MimiTheme.textPrimary)
                         Spacer()
                         Button {
@@ -811,9 +811,9 @@ public struct BudgetManagementView: View {
                         } label: {
                             HStack(spacing: 4) {
                                 Image(systemName: "pencil")
-                                    .font(.system(size: 11, weight: .semibold))
+                                    .mimiFont(11, weight: .semibold)
                                 Text("日预算设置")
-                                    .font(.system(size: 12, weight: .semibold))
+                                    .mimiFont(12, weight: .semibold)
                             }
                             .foregroundColor(MimiTheme.expenseBlue)
                         }
@@ -821,38 +821,38 @@ public struct BudgetManagementView: View {
                     }
 
                     Text("点击查看当日花费，长按编辑日预算")
-                        .font(.system(size: 12))
+                        .mimiFont(12)
                         .foregroundColor(MimiTheme.textMuted)
 
                     if let editingKey = selectedDayKeyForCustomBudget {
                         HStack(spacing: 8) {
                             Text("调整 \(editingKey)")
-                                .font(.system(size: 12, weight: .semibold))
+                                .mimiFont(12, weight: .semibold)
                             TextField("输入金额", text: $customDayBudgetInput)
-                                .font(.system(size: 13))
+                                .mimiFont(13)
                                 .padding(6)
-                                .background(RoundedRectangle(cornerRadius: 8).fill(Color.white))
+                                .background(RoundedRectangle(cornerRadius: 8).fill(MimiTheme.cardBackground))
                             Button("保存") {
                                 if let val = Double(customDayBudgetInput) {
                                     store.setCustomDailyBudget(dateKey: editingKey, amount: val)
                                 }
                                 selectedDayKeyForCustomBudget = nil
                             }
-                            .font(.system(size: 12, weight: .bold))
+                            .mimiFont(12, weight: .bold)
                             .foregroundColor(.white)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
                             .background(Capsule().fill(MimiTheme.expenseBlue))
                         }
                         .padding(10)
-                        .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xE8F0FE)))
+                        .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.tintBlueChip))
                     }
 
                     VStack(spacing: 8) {
                         HStack(spacing: 0) {
                             ForEach(["一", "二", "三", "四", "五", "六", "日"], id: \.self) { w in
                                 Text(w)
-                                    .font(.system(size: 12, weight: .medium))
+                                    .mimiFont(12, weight: .medium)
                                     .foregroundColor(MimiTheme.textMuted)
                                     .frame(maxWidth: .infinity)
                             }
@@ -868,7 +868,7 @@ public struct BudgetManagementView: View {
                         }
                     }
                     .padding(14)
-                    .background(RoundedRectangle(cornerRadius: 18).fill(Color.white))
+                    .background(RoundedRectangle(cornerRadius: 18).fill(MimiTheme.cardBackground))
 
                     // 点一天 → 下方出「全部记录」样式的当日账单
                     dynamicDayRecordsSection(day: activeDay)
@@ -907,7 +907,7 @@ public struct BudgetManagementView: View {
     ) -> some View {
         let selectedFill = Color(hex: 0xF0F5FF)
         let todayFill = MimiTheme.expenseBlue
-        let normalFill = Color(hex: 0xF8F9FC)
+        let normalFill = MimiTheme.fillSubtle
 
         return Button {
             selectedDynamicDay = cell.day
@@ -917,29 +917,29 @@ public struct BudgetManagementView: View {
         } label: {
             VStack(spacing: 2) {
                 Text(cell.isToday ? "今" : "\(cell.day)")
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .mimiFont(12, weight: .bold, design: .rounded)
                     .foregroundColor(cell.isToday && !isSelected ? .white : MimiTheme.textPrimary)
 
                 if cell.isToday {
                     Text(MimiTheme.formatRM(todaySpent))
-                        .font(.system(size: 8, weight: .semibold, design: .rounded))
+                        .mimiFont(8, weight: .semibold, design: .rounded)
                         .foregroundColor(isSelected ? MimiTheme.expenseBlue : .white.opacity(0.95))
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
                     Text(MimiTheme.formatRM(todayRemainingAvailable))
-                        .font(.system(size: 8, design: .rounded))
+                        .mimiFont(8, design: .rounded)
                         .foregroundColor(isSelected ? MimiTheme.textMuted : .white.opacity(0.85))
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
                 } else if cell.isPast {
                     Text(String(format: "-RM%.2f", cell.expense))
-                        .font(.system(size: 8, weight: .semibold, design: .rounded))
+                        .mimiFont(8, weight: .semibold, design: .rounded)
                         .foregroundColor(MimiTheme.expenseBlue)
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
                 } else {
                     Text(MimiTheme.formatRM(cell.dynamicAvailableBudget))
-                        .font(.system(size: 8, design: .rounded))
+                        .mimiFont(8, design: .rounded)
                         .foregroundColor(MimiTheme.textMuted)
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
@@ -985,17 +985,17 @@ public struct BudgetManagementView: View {
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text(String(format: "%d月%d日 (%@)", currentMonth, day, weekday))
-                    .font(.system(size: 13, weight: .bold))
+                    .mimiFont(13, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
                 HStack(spacing: 8) {
                     Text("支 \(MimiTheme.formatRM(dayExpense))")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .mimiFont(12, weight: .bold, design: .rounded)
                         .foregroundColor(MimiTheme.textPrimary)
                     Text("|")
                         .foregroundColor(Color.gray.opacity(0.3))
                     Text("收 \(MimiTheme.formatRM(dayIncome))")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .mimiFont(12, weight: .bold, design: .rounded)
                         .foregroundColor(MimiTheme.textSecondary)
                 }
             }
@@ -1003,11 +1003,11 @@ public struct BudgetManagementView: View {
 
             if txs.isEmpty {
                 Text("当日暂无记账记录")
-                    .font(.system(size: 13))
+                    .mimiFont(13)
                     .foregroundColor(MimiTheme.textMuted)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 28)
-                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+                    .background(RoundedRectangle(cornerRadius: 16).fill(MimiTheme.cardBackground))
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(txs.enumerated()), id: \.element.id) { index, item in
@@ -1023,33 +1023,33 @@ public struct BudgetManagementView: View {
                                 )
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(item.categoryPath.components(separatedBy: "-").last ?? item.categoryPath)
-                                        .font(.system(size: 14, weight: .semibold))
+                                        .mimiFont(14, weight: .semibold)
                                         .foregroundColor(MimiTheme.textPrimary)
                                     HStack(spacing: 6) {
                                         Text(dynamicDayTimeString(item.date))
-                                            .font(.system(size: 11))
+                                            .mimiFont(11)
                                             .foregroundColor(MimiTheme.textMuted)
                                         if !item.note.isEmpty {
                                             Text("| \(item.note)")
-                                                .font(.system(size: 11))
+                                                .mimiFont(11)
                                                 .foregroundColor(MimiTheme.textSecondary)
                                                 .lineLimit(1)
                                         }
                                     }
                                     if !item.accountName.isEmpty {
                                         Text(item.accountName)
-                                            .font(.system(size: 10, weight: .medium))
+                                            .mimiFont(10, weight: .medium)
                                             .foregroundColor(MimiTheme.textSecondary)
                                             .padding(.horizontal, 6)
                                             .padding(.vertical, 2)
-                                            .background(Capsule().fill(Color(hex: 0xF0F2F6)))
+                                            .background(Capsule().fill(MimiTheme.fillSubtle))
                                     }
                                 }
                                 Spacer(minLength: 8)
                                 Text(item.type == .expense || item.type == .transfer
                                      ? "-\(MimiTheme.formatRM(item.amount))"
                                      : "+\(MimiTheme.formatRM(item.amount))")
-                                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                                    .mimiFont(15, weight: .bold, design: .rounded)
                                     .foregroundColor(item.type == .expense || item.type == .transfer
                                                      ? Color(hex: 0x2A4E9E)
                                                      : MimiTheme.incomeOrange)
@@ -1064,7 +1064,7 @@ public struct BudgetManagementView: View {
                         }
                     }
                 }
-                .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.white))
+                .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(MimiTheme.cardBackground))
             }
         }
     }

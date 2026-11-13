@@ -38,7 +38,7 @@ public struct AssetsAndAccountDetailView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(action: onDismiss) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 15, weight: .semibold))
+                            .mimiFont(15, weight: .semibold)
                             .foregroundColor(MimiTheme.textPrimary)
                     }
                 }
@@ -48,9 +48,9 @@ public struct AssetsAndAccountDetailView: View {
                     } label: {
                         HStack(spacing: 2) {
                             Image(systemName: "plus")
-                                .font(.system(size: 12, weight: .bold))
+                                .mimiFont(12, weight: .bold)
                             Text("添加账户")
-                                .font(.system(size: 13, weight: .semibold))
+                                .mimiFont(13, weight: .semibold)
                         }
                         .foregroundColor(MimiTheme.expenseBlue)
                     }
@@ -74,27 +74,27 @@ public struct AssetsAndAccountDetailView: View {
                 NavigationStack {
                     VStack(alignment: .leading, spacing: 16) {
                         Text("新增资产账户")
-                            .font(.system(size: 18, weight: .bold))
+                            .mimiFont(18, weight: .bold)
                             .foregroundColor(MimiTheme.textPrimary)
 
                         VStack(alignment: .leading, spacing: 6) {
                             Text("账户名称")
-                                .font(.system(size: 13, weight: .medium))
+                                .mimiFont(13, weight: .medium)
                                 .foregroundColor(MimiTheme.textSecondary)
                             TextField("例如: Maybank / GrabPay / 备用金", text: $newAccountName)
-                                .font(.system(size: 14))
+                                .mimiFont(14)
                                 .padding(10)
-                                .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                                .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.background))
                         }
 
                         VStack(alignment: .leading, spacing: 6) {
                             Text("起始开局余额 (RM)")
-                                .font(.system(size: 13, weight: .medium))
+                                .mimiFont(13, weight: .medium)
                                 .foregroundColor(MimiTheme.textSecondary)
                             TextField("0.00", text: $newAccountBalance)
-                                .font(.system(size: 14))
+                                .mimiFont(14)
                                 .padding(10)
-                                .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                                .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.background))
                         }
 
                         Button {
@@ -112,7 +112,7 @@ public struct AssetsAndAccountDetailView: View {
                             showAddAccountSheet = false
                         } label: {
                             Text("保存并创建账户")
-                                .font(.system(size: 15, weight: .bold))
+                                .mimiFont(15, weight: .bold)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
@@ -142,19 +142,19 @@ public struct AssetsAndAccountDetailView: View {
     private var netWorthTopBanner: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("净资产")
-                .font(.system(size: 13, weight: .medium))
+                .mimiFont(13, weight: .medium)
                 .foregroundColor(MimiTheme.textSecondary)
 
             Text(MimiTheme.formatRM(store.netWorth))
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .mimiFont(28, weight: .bold, design: .rounded)
                 .foregroundColor(store.netWorth < -0.0001 ? Color(hex: 0xE53935) : MimiTheme.textPrimary)
 
             HStack(spacing: 24) {
                 Text("资产 \(MimiTheme.formatRM(store.totalAssets))")
-                    .font(.system(size: 12))
+                    .mimiFont(12)
                     .foregroundColor(store.totalAssets < -0.0001 ? Color(hex: 0xE53935) : MimiTheme.textSecondary)
                 Text("负债 \(MimiTheme.formatRM(store.totalLiabilities))")
-                    .font(.system(size: 12))
+                    .mimiFont(12)
                     .foregroundColor(MimiTheme.textSecondary)
             }
         }
@@ -171,14 +171,14 @@ public struct AssetsAndAccountDetailView: View {
     private var reimbursementAndLendingRow: some View {
         HStack {
             Text("待报销")
-                .font(.system(size: 13, weight: .medium))
+                .mimiFont(13, weight: .medium)
                 .foregroundColor(MimiTheme.textSecondary)
             Spacer()
             Text(MimiTheme.formatRM(store.pendingReimbursementAmount))
-                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .mimiFont(15, weight: .bold, design: .rounded)
                 .foregroundColor(MimiTheme.textPrimary)
             Image(systemName: "chevron.right")
-                .font(.system(size: 11, weight: .semibold))
+                .mimiFont(11, weight: .semibold)
                 .foregroundColor(MimiTheme.textMuted)
         }
         .padding(.horizontal, 16)
@@ -192,7 +192,7 @@ public struct AssetsAndAccountDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("资金账户 (资产)")
-                    .font(.system(size: 14, weight: .bold))
+                    .mimiFont(14, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
                 Button {
@@ -200,9 +200,9 @@ public struct AssetsAndAccountDetailView: View {
                 } label: {
                     HStack(spacing: 2) {
                         Image(systemName: "plus")
-                            .font(.system(size: 11, weight: .bold))
+                            .mimiFont(11, weight: .bold)
                         Text("添加账户")
-                            .font(.system(size: 12, weight: .semibold))
+                            .mimiFont(12, weight: .semibold)
                     }
                     .foregroundColor(MimiTheme.expenseBlue)
                 }
@@ -226,21 +226,21 @@ public struct AssetsAndAccountDetailView: View {
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(account.name)
-                                .font(.system(size: 15, weight: .semibold))
+                                .mimiFont(15, weight: .semibold)
                                 .foregroundColor(MimiTheme.textPrimary)
                             Text(account.subtitle)
-                                .font(.system(size: 11))
+                                .mimiFont(11)
                                 .foregroundColor(MimiTheme.textMuted)
                         }
 
                         Spacer()
 
                         Text(MimiTheme.formatRM(account.balance))
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .mimiFont(16, weight: .bold, design: .rounded)
                             .foregroundColor(account.balance < -0.0001 ? Color(hex: 0xE53935) : MimiTheme.textPrimary)
 
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 11))
+                            .mimiFont(11)
                             .foregroundColor(MimiTheme.textMuted)
                     }
                     .padding(.vertical, 8)
@@ -254,7 +254,7 @@ public struct AssetsAndAccountDetailView: View {
 
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
+        .background(RoundedRectangle(cornerRadius: 20).fill(MimiTheme.cardBackground))
     }
 
     // MARK: - Account Detail (push，避免 sheet 套 sheet 点了卡住)
@@ -279,15 +279,15 @@ public struct AssetsAndAccountDetailView: View {
                             )
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(liveAccount.name)
-                                    .font(.system(size: 17, weight: .bold))
+                                    .mimiFont(17, weight: .bold)
                                     .foregroundColor(MimiTheme.textPrimary)
                                 Text(liveAccount.subtitle.isEmpty ? "自定义余额" : liveAccount.subtitle)
-                                    .font(.system(size: 12))
+                                    .mimiFont(12)
                                     .foregroundColor(MimiTheme.textSecondary)
                             }
                             Spacer()
                             Image(systemName: "ellipsis")
-                                .font(.system(size: 14, weight: .semibold))
+                                .mimiFont(14, weight: .semibold)
                                 .foregroundColor(Color(hex: 0xB8BCC8))
                         }
 
@@ -303,17 +303,17 @@ public struct AssetsAndAccountDetailView: View {
                         HStack(alignment: .firstTextBaseline) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("余额")
-                                    .font(.system(size: 12))
+                                    .mimiFont(12)
                                     .foregroundColor(MimiTheme.textSecondary)
                                 HStack(spacing: 6) {
                                     Text(MimiTheme.formatRM(liveAccount.balance))
-                                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                                        .mimiFont(28, weight: .bold, design: .rounded)
                                         .foregroundColor(liveAccount.balance < -0.0001 ? Color(hex: 0xE53935) : MimiTheme.textPrimary)
                                     Button {
                                         showBalanceEditSheet.toggle()
                                     } label: {
                                         Image(systemName: "pencil")
-                                            .font(.system(size: 13, weight: .semibold))
+                                            .mimiFont(13, weight: .semibold)
                                             .foregroundColor(Color(hex: 0xB8BCC8))
                                     }
                                     .buttonStyle(.plain)
@@ -332,13 +332,13 @@ public struct AssetsAndAccountDetailView: View {
 
                                 HStack(spacing: 8) {
                                     Text("RM")
-                                        .font(.system(size: 14, weight: .bold))
+                                        .mimiFont(14, weight: .bold)
                                         .foregroundColor(MimiTheme.textSecondary)
 
                                     TextField("输入金额", text: $newBalanceInput)
-                                        .font(.system(size: 14))
+                                        .mimiFont(14)
                                         .padding(8)
-                                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.white))
+                                        .background(RoundedRectangle(cornerRadius: 8).fill(MimiTheme.cardBackground))
 
                                     Button("确定") {
                                         if let val = Double(newBalanceInput) {
@@ -350,7 +350,7 @@ public struct AssetsAndAccountDetailView: View {
                                         }
                                         showBalanceEditSheet = false
                                     }
-                                    .font(.system(size: 13, weight: .bold))
+                                    .mimiFont(13, weight: .bold)
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 8)
@@ -376,7 +376,7 @@ public struct AssetsAndAccountDetailView: View {
 
                     HStack {
                         Text(detailTabMode == "明细" ? "账户明细" : "账户账单")
-                            .font(.system(size: 15, weight: .bold))
+                            .mimiFont(15, weight: .bold)
                             .foregroundColor(MimiTheme.textPrimary)
                         Spacer()
                         HStack(spacing: 0) {
@@ -388,12 +388,12 @@ public struct AssetsAndAccountDetailView: View {
                                     detailTabMode = tab
                                 } label: {
                                     Image(systemName: icon)
-                                        .font(.system(size: 13, weight: .semibold))
+                                        .mimiFont(13, weight: .semibold)
                                         .foregroundColor(detailTabMode == tab ? MimiTheme.expenseBlue : MimiTheme.textMuted)
                                         .frame(width: 36, height: 28)
                                         .background(
                                             RoundedRectangle(cornerRadius: 8)
-                                                .fill(detailTabMode == tab ? Color(hex: 0xE8F0FE) : Color.clear)
+                                                .fill(detailTabMode == tab ? MimiTheme.tintBlueChip : Color.clear)
                                         )
                                 }
                                 .buttonStyle(.plain)
@@ -401,16 +401,16 @@ public struct AssetsAndAccountDetailView: View {
                             }
                         }
                         .padding(3)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xEEF0F6)))
+                        .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.fillSubtle))
                     }
 
                     if detailTabMode == "明细" {
                         HStack {
                             Text("2026年11月")
-                                .font(.system(size: 13, weight: .semibold))
+                                .mimiFont(13, weight: .semibold)
                                 .foregroundColor(MimiTheme.textSecondary)
                             Image(systemName: "chevron.down")
-                                .font(.system(size: 10, weight: .bold))
+                                .mimiFont(10, weight: .bold)
                                 .foregroundColor(MimiTheme.textMuted)
                             Spacer()
                         }
@@ -424,19 +424,19 @@ public struct AssetsAndAccountDetailView: View {
                                 } label: {
                                     HStack(alignment: .top, spacing: 10) {
                                         Text(formattedBillTime(log.loggedAt))
-                                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                                            .mimiFont(12, weight: .medium, design: .rounded)
                                             .foregroundColor(MimiTheme.textMuted)
                                             .frame(width: 36, alignment: .leading)
 
                                         VStack(spacing: 0) {
                                             Text(log.action.rawValue)
-                                                .font(.system(size: 10, weight: .bold))
+                                                .mimiFont(10, weight: .bold)
                                                 .foregroundColor(.white)
                                                 .frame(width: 22, height: 22)
                                                 .background(Circle().fill(badgeColor(for: log.action)))
                                             if idx < auditLogs.count - 1 {
                                                 Rectangle()
-                                                    .fill(Color(hex: 0xE5E7EB))
+                                                    .fill(MimiTheme.divider)
                                                     .frame(width: 1)
                                                     .frame(maxHeight: .infinity)
                                             }
@@ -445,19 +445,19 @@ public struct AssetsAndAccountDetailView: View {
 
                                         VStack(alignment: .leading, spacing: 3) {
                                             Text(auditTypeLabel(log))
-                                                .font(.system(size: 13, weight: .semibold))
+                                                .mimiFont(13, weight: .semibold)
                                                 .foregroundColor(MimiTheme.textPrimary)
                                             if !log.note.isEmpty {
                                                 Text(log.note)
-                                                    .font(.system(size: 12))
+                                                    .mimiFont(12)
                                                     .foregroundColor(MimiTheme.textSecondary)
                                                     .lineLimit(2)
                                             }
                                             HStack(spacing: 4) {
                                                 Image(systemName: "calendar")
-                                                    .font(.system(size: 10))
+                                                    .mimiFont(10)
                                                 Text("账单日期 \(formattedBillDate(log.billDate))")
-                                                    .font(.system(size: 11))
+                                                    .mimiFont(11)
                                             }
                                             .foregroundColor(MimiTheme.textMuted)
                                         }
@@ -466,14 +466,14 @@ public struct AssetsAndAccountDetailView: View {
 
                                         VStack(alignment: .trailing, spacing: 3) {
                                             Text("余额: \(MimiTheme.formatRM(log.balanceAfter))")
-                                                .font(.system(size: 11, design: .rounded))
+                                                .mimiFont(11, design: .rounded)
                                                 .foregroundColor(MimiTheme.textMuted)
                                             Text(
                                                 log.deltaAmount >= 0
                                                     ? MimiTheme.formatRM(log.deltaAmount)
                                                     : "-\(MimiTheme.formatRM(abs(log.deltaAmount)))"
                                             )
-                                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                                            .mimiFont(15, weight: .bold, design: .rounded)
                                             .strikethrough(log.action == .deleted && log.deltaAmount < 0, color: MimiTheme.textMuted)
                                             .foregroundColor(
                                                 log.action == .deleted && log.deltaAmount < 0
@@ -490,7 +490,7 @@ public struct AssetsAndAccountDetailView: View {
                                 .disabled(store.transaction(forAuditLog: log) == nil)
                             }
                         }
-                        .background(RoundedRectangle(cornerRadius: 18).fill(Color.white))
+                        .background(RoundedRectangle(cornerRadius: 18).fill(MimiTheme.cardBackground))
                     } else {
                         accountBillsSection(bills: bills)
                     }
@@ -509,7 +509,7 @@ public struct AssetsAndAccountDetailView: View {
                     selectedAccountID = nil
                 } label: {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 15, weight: .semibold))
+                        .mimiFont(15, weight: .semibold)
                         .foregroundColor(MimiTheme.textPrimary)
                 }
             }
@@ -520,14 +520,14 @@ public struct AssetsAndAccountDetailView: View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Image(systemName: systemName)
-                    .font(.system(size: 12, weight: .semibold))
+                    .mimiFont(12, weight: .semibold)
                 Text(title)
-                    .font(.system(size: 14, weight: .semibold))
+                    .mimiFont(14, weight: .semibold)
             }
             .foregroundColor(MimiTheme.textPrimary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .background(Capsule().fill(Color.white))
+            .background(Capsule().fill(MimiTheme.cardBackground))
         }
         .buttonStyle(.plain)
     }
@@ -567,24 +567,24 @@ public struct AssetsAndAccountDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("2026年11月")
-                    .font(.system(size: 14, weight: .bold))
+                    .mimiFont(14, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
                 Text("流出 \(MimiTheme.formatRM(outflow))")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .mimiFont(12, weight: .semibold, design: .rounded)
                     .foregroundColor(MimiTheme.expenseBlue)
                 Text("流入 \(MimiTheme.formatRM(inflow))")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .mimiFont(12, weight: .semibold, design: .rounded)
                     .foregroundColor(MimiTheme.incomeOrange)
             }
 
             if grouped.isEmpty {
                 Text("暂无账单")
-                    .font(.system(size: 13))
+                    .mimiFont(13)
                     .foregroundColor(MimiTheme.textMuted)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 24)
-                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+                    .background(RoundedRectangle(cornerRadius: 16).fill(MimiTheme.cardBackground))
             } else {
                 ForEach(Array(grouped.enumerated()), id: \.offset) { _, group in
                     let dayDate = cal.date(from: group.key) ?? Date()
@@ -599,7 +599,7 @@ public struct AssetsAndAccountDetailView: View {
 
                     VStack(alignment: .leading, spacing: 0) {
                         Text(dayLabel)
-                            .font(.system(size: 12, weight: .semibold))
+                            .mimiFont(12, weight: .semibold)
                             .foregroundColor(MimiTheme.textSecondary)
                             .padding(.horizontal, 14)
                             .padding(.top, 12)
@@ -618,36 +618,36 @@ public struct AssetsAndAccountDetailView: View {
                                     )
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text(tx.categoryPath.components(separatedBy: "-").last ?? tx.categoryPath)
-                                            .font(.system(size: 14, weight: .semibold))
+                                            .mimiFont(14, weight: .semibold)
                                             .foregroundColor(MimiTheme.textPrimary)
                                         HStack(spacing: 4) {
                                             Text(formattedBillTime(tx.date))
-                                                .font(.system(size: 11))
+                                                .mimiFont(11)
                                                 .foregroundColor(MimiTheme.textMuted)
                                             if !tx.note.isEmpty {
                                                 Text("| \(tx.note)")
-                                                    .font(.system(size: 11))
+                                                    .mimiFont(11)
                                                     .foregroundColor(MimiTheme.textSecondary)
                                                     .lineLimit(1)
                                             }
                                         }
                                         Text(tx.accountName)
-                                            .font(.system(size: 10, weight: .medium))
+                                            .mimiFont(10, weight: .medium)
                                             .foregroundColor(MimiTheme.textSecondary)
                                             .padding(.horizontal, 6)
                                             .padding(.vertical, 2)
-                                            .background(Capsule().fill(Color(hex: 0xF0F2F6)))
+                                            .background(Capsule().fill(MimiTheme.fillSubtle))
                                     }
                                     Spacer()
                                     Text(tx.type == .expense || tx.type == .transfer
                                          ? "-\(MimiTheme.formatRM(tx.amount))"
                                          : MimiTheme.formatRM(tx.amount))
-                                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                                        .mimiFont(15, weight: .bold, design: .rounded)
                                         .foregroundColor(tx.type == .expense || tx.type == .transfer
                                                          ? MimiTheme.expenseBlue
                                                          : MimiTheme.incomeOrange)
                                     Image(systemName: "chevron.right")
-                                        .font(.system(size: 11, weight: .semibold))
+                                        .mimiFont(11, weight: .semibold)
                                         .foregroundColor(Color(hex: 0xC5C8D0))
                                 }
                                 .padding(14)
@@ -659,7 +659,7 @@ public struct AssetsAndAccountDetailView: View {
                             }
                         }
                     }
-                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+                    .background(RoundedRectangle(cornerRadius: 16).fill(MimiTheme.cardBackground))
                 }
             }
         }

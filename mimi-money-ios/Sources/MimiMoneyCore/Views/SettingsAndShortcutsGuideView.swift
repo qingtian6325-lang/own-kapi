@@ -77,7 +77,7 @@ public struct SettingsAndShortcutsGuideView: View {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundColor(MimiTheme.balanceGreen)
                             Text(banner)
-                                .font(.system(size: 13, weight: .semibold))
+                                .mimiFont(13, weight: .semibold)
                                 .foregroundColor(MimiTheme.textPrimary)
                             Spacer()
                         }
@@ -146,13 +146,13 @@ public struct SettingsAndShortcutsGuideView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("账单导入与导出")
-                    .font(.system(size: 15, weight: .bold))
+                    .mimiFont(15, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
             }
 
             Text("导入支持查看标准模版并直接输入或粘贴数据；导出支持灵活选择时间段（全部/本月/上月/本年/自定义）。")
-                .font(.system(size: 12))
+                .mimiFont(12)
                 .foregroundColor(MimiTheme.textSecondary)
 
             HStack(spacing: 12) {
@@ -163,9 +163,9 @@ public struct SettingsAndShortcutsGuideView: View {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "square.and.arrow.down.fill")
-                            .font(.system(size: 15))
+                            .mimiFont(15)
                         Text("📥 导入账单")
-                            .font(.system(size: 14, weight: .bold))
+                            .mimiFont(14, weight: .bold)
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
@@ -180,9 +180,9 @@ public struct SettingsAndShortcutsGuideView: View {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "square.and.arrow.up.fill")
-                            .font(.system(size: 15))
+                            .mimiFont(15)
                         Text("📤 导出账单")
-                            .font(.system(size: 14, weight: .bold))
+                            .mimiFont(14, weight: .bold)
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
@@ -193,7 +193,7 @@ public struct SettingsAndShortcutsGuideView: View {
             }
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
+        .background(RoundedRectangle(cornerRadius: 20).fill(MimiTheme.cardBackground))
     }
 
     // MARK: - Import Modal Sheet
@@ -207,7 +207,7 @@ public struct SettingsAndShortcutsGuideView: View {
                             Image(systemName: "doc.text")
                                 .foregroundColor(MimiTheme.expenseBlue)
                             Text("标准 CSV 格式模版")
-                                .font(.system(size: 14, weight: .bold))
+                                .mimiFont(14, weight: .bold)
                                 .foregroundColor(MimiTheme.textPrimary)
                             Spacer()
                             Button {
@@ -220,21 +220,21 @@ public struct SettingsAndShortcutsGuideView: View {
                                     Image(systemName: "doc.on.doc")
                                     Text("复制模版")
                                 }
-                                .font(.system(size: 11, weight: .bold))
+                                .mimiFont(11, weight: .bold)
                                 .foregroundColor(MimiTheme.expenseBlue)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                                .background(Capsule().fill(MimiTheme.tintBlueChip))
                             }
                             .buttonStyle(.plain)
                         }
 
                         Text("日期,时间,类型,金额,一级分类,二级分类,账户,备注\n2026-11-08,21:59:00,支出,38.78,交通,加油充电,PBBank,加油\n2026-11-08,16:56:34,支出,5.90,餐饮,餐厅,TNG eWallet,买egglab的东西\n2026-11-06,10:00:00,收入,1148.31,职业收入,工资,CIMB,月度薪资")
-                            .font(.system(size: 11, design: .monospaced))
+                            .mimiFont(11, design: .monospaced)
                             .foregroundColor(MimiTheme.textSecondary)
                             .padding(10)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                            .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.background))
                     }
 
                     Divider()
@@ -242,7 +242,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
                             Text("用户输入区域 (粘贴或输入 CSV 数据)：")
-                                .font(.system(size: 13, weight: .bold))
+                                .mimiFont(13, weight: .bold)
                                 .foregroundColor(MimiTheme.textPrimary)
                             Spacer()
                             Button("从剪贴板粘贴") {
@@ -252,12 +252,12 @@ public struct SettingsAndShortcutsGuideView: View {
                                 }
                                 #endif
                             }
-                            .font(.system(size: 12, weight: .semibold))
+                            .mimiFont(12, weight: .semibold)
                             .foregroundColor(MimiTheme.expenseBlue)
                         }
 
                         TextEditor(text: $importInputText)
-                            .font(.system(size: 12, design: .monospaced))
+                            .mimiFont(12, design: .monospaced)
                             .frame(minHeight: 150)
                             .padding(8)
                             .background(RoundedRectangle(cornerRadius: 10).stroke(Color.gray.opacity(0.25), lineWidth: 1))
@@ -270,11 +270,11 @@ public struct SettingsAndShortcutsGuideView: View {
                                     Image(systemName: "folder")
                                     Text("选择 CSV 文件")
                                 }
-                                .font(.system(size: 12, weight: .medium))
+                                .mimiFont(12, weight: .medium)
                                 .foregroundColor(MimiTheme.textPrimary)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 7)
-                                .background(RoundedRectangle(cornerRadius: 8).fill(Color(hex: 0xF0F2F6)))
+                                .background(RoundedRectangle(cornerRadius: 8).fill(MimiTheme.fillSubtle))
                             }
                             .buttonStyle(.plain)
 
@@ -285,7 +285,7 @@ public struct SettingsAndShortcutsGuideView: View {
                                     Image(systemName: "sparkles")
                                     Text("填入 151 笔真实备份样例")
                                 }
-                                .font(.system(size: 12, weight: .medium))
+                                .mimiFont(12, weight: .medium)
                                 .foregroundColor(Color(hex: 0x2E7D32))
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 7)
@@ -295,7 +295,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         }
 
                         Toggle("覆盖清空现有账单（若关闭则追加合并）", isOn: $replaceExistingOnImport)
-                            .font(.system(size: 12))
+                            .mimiFont(12)
                             .foregroundColor(MimiTheme.textSecondary)
                             .padding(.top, 4)
                     }
@@ -308,7 +308,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         statusBannerMessage = "已成功导入 \(count) 笔账单记录"
                     } label: {
                         Text("确认导入")
-                            .font(.system(size: 15, weight: .bold))
+                            .mimiFont(15, weight: .bold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 13)
@@ -345,7 +345,7 @@ public struct SettingsAndShortcutsGuideView: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {
                 Text("选择要导出的时间段：")
-                    .font(.system(size: 14, weight: .bold))
+                    .mimiFont(14, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
 
                 HStack(spacing: 8) {
@@ -354,12 +354,12 @@ public struct SettingsAndShortcutsGuideView: View {
                             exportPeriodOption = opt
                         } label: {
                             Text(opt)
-                                .font(.system(size: 12, weight: exportPeriodOption == opt ? .bold : .medium))
+                                .mimiFont(12, weight: exportPeriodOption == opt ? .bold : .medium)
                                 .foregroundColor(exportPeriodOption == opt ? .white : MimiTheme.textPrimary)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 7)
                                 .background(
-                                    Capsule().fill(exportPeriodOption == opt ? MimiTheme.incomeOrange : Color(hex: 0xF0F2F6))
+                                    Capsule().fill(exportPeriodOption == opt ? MimiTheme.incomeOrange : MimiTheme.fillSubtle)
                                 )
                         }
                         .buttonStyle(.plain)
@@ -370,7 +370,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
                             Text("开始日期")
-                                .font(.system(size: 13, weight: .medium))
+                                .mimiFont(13, weight: .medium)
                                 .foregroundColor(MimiTheme.textSecondary)
                             Spacer()
                             MimiDateFieldButton(
@@ -381,7 +381,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         }
                         HStack {
                             Text("结束日期")
-                                .font(.system(size: 13, weight: .medium))
+                                .mimiFont(13, weight: .medium)
                                 .foregroundColor(MimiTheme.textSecondary)
                             Spacer()
                             MimiDateFieldButton(
@@ -392,7 +392,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         }
                     }
                     .padding(12)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF7F8FA)))
+                    .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.fillSubtle))
                 }
 
                 let filtered = filteredTransactionsForExport()
@@ -401,23 +401,23 @@ public struct SettingsAndShortcutsGuideView: View {
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text("当前所选时间段统计：")
-                        .font(.system(size: 12, weight: .medium))
+                        .mimiFont(12, weight: .medium)
                         .foregroundColor(MimiTheme.textSecondary)
                     HStack(spacing: 12) {
                         Text("共 \(filtered.count) 笔账单")
-                            .font(.system(size: 14, weight: .bold))
+                            .mimiFont(14, weight: .bold)
                             .foregroundColor(MimiTheme.textPrimary)
                         Text("支 \(MimiTheme.formatRM(exp))")
-                            .font(.system(size: 12, weight: .semibold))
+                            .mimiFont(12, weight: .semibold)
                             .foregroundColor(MimiTheme.expenseBlue)
                         Text("收 \(MimiTheme.formatRM(inc))")
-                            .font(.system(size: 12, weight: .semibold))
+                            .mimiFont(12, weight: .semibold)
                             .foregroundColor(MimiTheme.incomeOrange)
                     }
                 }
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF5F6FA)))
+                .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.background))
 
                 Spacer()
 
@@ -430,7 +430,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "square.and.arrow.up.fill")
                         Text("📤 导出并分享 CSV 文件")
-                            .font(.system(size: 15, weight: .bold))
+                            .mimiFont(15, weight: .bold)
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
@@ -549,7 +549,7 @@ public struct SettingsAndShortcutsGuideView: View {
 
     private func guideStepRow(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 12))
+            .mimiFont(12)
             .foregroundColor(MimiTheme.textSecondary)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -564,16 +564,16 @@ public struct SettingsAndShortcutsGuideView: View {
             } label: {
                 HStack(spacing: 10) {
                     Image(systemName: symbol)
-                        .font(.system(size: 15, weight: .semibold))
+                        .mimiFont(15, weight: .semibold)
                         .foregroundColor(MimiTheme.expenseBlue)
                         .frame(width: 30, height: 30)
-                        .background(Circle().fill(Color(hex: 0xE8F0FE)))
+                        .background(Circle().fill(MimiTheme.tintBlueChip))
                     Text(title)
-                        .font(.system(size: 13, weight: .bold))
+                        .mimiFont(13, weight: .bold)
                         .foregroundColor(MimiTheme.textPrimary)
                     Spacer()
                     Image(systemName: expanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 11, weight: .bold))
+                        .mimiFont(11, weight: .bold)
                         .foregroundColor(MimiTheme.textMuted)
                 }
                 .padding(12)
@@ -590,7 +590,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 .padding(.bottom, 12)
             }
         }
-        .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xF7F8FA)))
+        .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.fillSubtle))
     }
 
     /// Gold compact row for secondary trigger methods (②③)
@@ -604,11 +604,11 @@ public struct SettingsAndShortcutsGuideView: View {
             } label: {
                 HStack {
                     Text(title)
-                        .font(.system(size: 13, weight: .semibold))
+                        .mimiFont(13, weight: .semibold)
                         .foregroundColor(MimiTheme.textPrimary)
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 11, weight: .bold))
+                        .mimiFont(11, weight: .bold)
                         .foregroundColor(MimiTheme.textMuted)
                         .rotationEffect(.degrees(expanded ? 90 : 0))
                 }
@@ -627,7 +627,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 .padding(.bottom, 12)
             }
         }
-        .background(RoundedRectangle(cornerRadius: 14).fill(Color.white))
+        .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.cardBackground))
         .overlay(
             RoundedRectangle(cornerRadius: 14)
                 .stroke(Color(hex: 0xECEEF3), lineWidth: 1)
@@ -637,11 +637,11 @@ public struct SettingsAndShortcutsGuideView: View {
     private var shortcutsCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("自动记账 · 截屏识别记账")
-                .font(.system(size: 15, weight: .bold))
+                .mimiFont(15, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
 
             Text("付款完成后触发一次「咪咪记账 · 识别账单」快捷指令：系统自动截屏 → AI 识别金额、商户与扣款账户 → 在当前付款 App 上方弹出卡片。点「修改」跳进 App 编辑；点「确认」原地入账。下方四种触发方式任选一种绑定即可。也可直接用「读取剪贴板截图」。")
-                .font(.system(size: 12))
+                .mimiFont(12)
                 .foregroundColor(MimiTheme.textSecondary)
 
             triggerSection(
@@ -702,14 +702,14 @@ public struct SettingsAndShortcutsGuideView: View {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "play.circle.fill")
-                            .font(.system(size: 15))
+                            .mimiFont(15)
                         Text("教程")
-                            .font(.system(size: 14, weight: .bold))
+                            .mimiFont(14, weight: .bold)
                     }
                     .foregroundColor(MimiTheme.expenseBlue)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                    .background(Capsule().fill(MimiTheme.tintBlueChip))
                 }
                 .buttonStyle(.plain)
 
@@ -724,7 +724,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     }
                 } label: {
                     Text("添加专属指令")
-                        .font(.system(size: 14, weight: .bold))
+                        .mimiFont(14, weight: .bold)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -735,14 +735,14 @@ public struct SettingsAndShortcutsGuideView: View {
 
             if ShortcutActionCoordinator.shortcutInstallURL == nil {
                 Text("首次需按教程手动建一次；建好后在「快捷指令」App 中对该捷徑点「共享 → 拷贝 iCloud 链接」，把链接发给开发者即可开通一键导入。")
-                    .font(.system(size: 11))
+                    .mimiFont(11)
                     .foregroundColor(MimiTheme.textMuted)
             }
 
             if showShortcutTutorial {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("📖 手动搭建教程（只需一次，约 1 分钟）：")
-                        .font(.system(size: 13, weight: .bold))
+                        .mimiFont(13, weight: .bold)
                         .foregroundColor(MimiTheme.textPrimary)
                     guideStepRow("1. 打开自带「快捷指令」App → 点右上角「+」新建，命名为「咪咪记账-识别账单」")
                     guideStepRow("2. 添加动作「隐藏控制中心 (Hide Control Centre)」")
@@ -752,7 +752,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     guideStepRow("6. 添加动作「识别账单 (咪咪记账)」，将「内容 (Content)」设为上一步的「图像 (Images)」，「类型 (Type)」保持 2")
                     Label {
                         Text("点开「识别账单」的展开箭头，确认「运行时显示 (Show When Run)」与「运行时打开 (Open When Run)」两个开关都打开，识别卡片才会直接浮在当前付款 App 上方。")
-                            .font(.system(size: 12, weight: .bold))
+                            .mimiFont(12, weight: .bold)
                             .foregroundColor(MimiTheme.expenseBlue)
                     } icon: {
                         Image(systemName: "exclamationmark.triangle.fill")
@@ -761,7 +761,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     guideStepRow("完成后回到上方四种触发方式，任选一种把这个捷徑绑定上去即可使用。无需下载任何 .shortcut 文件：本 App 安装后系统已内置原生动作「识别账单」。")
                 }
                 .padding(12)
-                .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF5F6FA)))
+                .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.background))
             }
 
             // 快捷入口：直接打开快捷指令 App
@@ -770,9 +770,9 @@ public struct SettingsAndShortcutsGuideView: View {
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "arrow.up.forward.app.fill")
-                        .font(.system(size: 16))
+                        .mimiFont(16)
                     Text("打开「快捷指令」App 开始搭建")
-                        .font(.system(size: 14, weight: .bold))
+                        .mimiFont(14, weight: .bold)
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
@@ -815,9 +815,9 @@ public struct SettingsAndShortcutsGuideView: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "camera.viewfinder")
-                        .font(.system(size: 14))
+                        .mimiFont(14)
                     Text("无需快捷指令 · 读取剪贴板截图（确认后入账）")
-                        .font(.system(size: 13, weight: .bold))
+                        .mimiFont(13, weight: .bold)
                 }
                 .foregroundColor(MimiTheme.incomeOrange)
                 .frame(maxWidth: .infinity)
@@ -828,7 +828,7 @@ public struct SettingsAndShortcutsGuideView: View {
 
             // 识别卡片效果预览
             Text("效果预览（付款 App 上方弹出的卡片长这样）：")
-                .font(.system(size: 12, weight: .bold))
+                .mimiFont(12, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
 
             let previewTx = simulatedSnippetTx ?? TransactionItem(
@@ -860,7 +860,7 @@ public struct SettingsAndShortcutsGuideView: View {
             )
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
+        .background(RoundedRectangle(cornerRadius: 20).fill(MimiTheme.cardBackground))
     }
 
     // MARK: - AI / API（设置页精简版）
@@ -868,18 +868,18 @@ public struct SettingsAndShortcutsGuideView: View {
     private var aiEngineCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("AI / API")
-                .font(.system(size: 13, weight: .semibold))
+                .mimiFont(13, weight: .semibold)
                 .foregroundColor(MimiTheme.textSecondary)
 
             VStack(alignment: .leading, spacing: 10) {
                 Text("Groq API Key")
-                    .font(.system(size: 13, weight: .medium))
+                    .mimiFont(13, weight: .medium)
                     .foregroundColor(MimiTheme.textSecondary)
 
                 SecureField("粘贴 API Key", text: $groqKeyInput)
-                    .font(.system(size: 14))
+                    .mimiFont(14)
                     .padding(12)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                    .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.background))
                     .autocorrectionDisabled(true)
                     #if os(iOS)
                     .textInputAutocapitalization(.never)
@@ -887,9 +887,9 @@ public struct SettingsAndShortcutsGuideView: View {
 
                 HStack(spacing: 10) {
                     TextField("模型", text: $groqModelInput)
-                        .font(.system(size: 14))
+                        .mimiFont(14)
                         .padding(12)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                        .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.background))
                         .autocorrectionDisabled(true)
                         #if os(iOS)
                         .textInputAutocapitalization(.never)
@@ -902,7 +902,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         groqTestStatus = "已保存"
                     } label: {
                         Text("保存")
-                            .font(.system(size: 14, weight: .semibold))
+                            .mimiFont(14, weight: .semibold)
                             .foregroundColor(.white)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
@@ -927,25 +927,25 @@ public struct SettingsAndShortcutsGuideView: View {
                         }
                     } label: {
                         Text(groqIsTesting ? "测试中…" : "测试连接")
-                            .font(.system(size: 14, weight: .semibold))
+                            .mimiFont(14, weight: .semibold)
                             .foregroundColor(MimiTheme.expenseBlue)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 10)
-                            .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                            .background(Capsule().fill(MimiTheme.tintBlueChip))
                     }
                     .buttonStyle(.plain)
                     .disabled(groqIsTesting)
 
                     if let groqTestStatus {
                         Text(groqTestStatus)
-                            .font(.system(size: 12))
+                            .mimiFont(12)
                             .foregroundColor(MimiTheme.textSecondary)
                             .lineLimit(2)
                     }
                 }
             }
             .padding(14)
-            .background(RoundedRectangle(cornerRadius: 14).fill(Color.white))
+            .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.cardBackground))
         }
         .onAppear {
             AIEngineSettings.provider = .groq
@@ -960,7 +960,7 @@ public struct SettingsAndShortcutsGuideView: View {
     private var dataManagementCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("📦 数据管理与账本工具")
-                .font(.system(size: 15, weight: .bold))
+                .mimiFont(15, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
 
             Button {
@@ -968,7 +968,7 @@ public struct SettingsAndShortcutsGuideView: View {
             } label: {
                 HStack {
                     Text("清空全部账单与余额（恢复空白初始状态）")
-                        .font(.system(size: 14, weight: .semibold))
+                        .mimiFont(14, weight: .semibold)
                         .foregroundColor(MimiTheme.dangerRed)
                     Spacer()
                     Image(systemName: "trash")
@@ -985,19 +985,19 @@ public struct SettingsAndShortcutsGuideView: View {
             } label: {
                 HStack {
                     Text("恢复官方演示数据 (用于功能测试)")
-                        .font(.system(size: 14, weight: .semibold))
+                        .mimiFont(14, weight: .semibold)
                         .foregroundColor(MimiTheme.expenseBlue)
                     Spacer()
                     Image(systemName: "arrow.counterclockwise")
                         .foregroundColor(MimiTheme.expenseBlue)
                 }
                 .padding(12)
-                .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xE8F0FE)))
+                .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.tintBlueChip))
             }
             .buttonStyle(.plain)
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
+        .background(RoundedRectangle(cornerRadius: 20).fill(MimiTheme.cardBackground))
     }
 
     // MARK: - 1. 账本管理 (Ledger Management Section)
@@ -1006,7 +1006,7 @@ public struct SettingsAndShortcutsGuideView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("全部账本 (\(store.ledgers.count))")
-                    .font(.system(size: 16, weight: .bold))
+                    .mimiFont(16, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
                 Button {
@@ -1016,7 +1016,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         Image(systemName: "plus.circle.fill")
                         Text("新建账本")
                     }
-                    .font(.system(size: 13, weight: .bold))
+                    .mimiFont(13, weight: .bold)
                     .foregroundColor(MimiTheme.expenseBlue)
                 }
             }
@@ -1025,17 +1025,17 @@ public struct SettingsAndShortcutsGuideView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
                         Image(systemName: "book.closed.fill")
-                            .font(.system(size: 18))
+                            .mimiFont(18)
                             .foregroundColor(MimiTheme.vipGold)
                             .frame(width: 28)
                         VStack(alignment: .leading, spacing: 2) {
                             HStack {
                                 Text(ledger.name)
-                                    .font(.system(size: 15, weight: .bold))
+                                    .mimiFont(15, weight: .bold)
                                     .foregroundColor(MimiTheme.textPrimary)
                                 if ledger.id == store.currentLedgerId {
                                     Text("当前使用")
-                                        .font(.system(size: 10, weight: .semibold))
+                                        .mimiFont(10, weight: .semibold)
                                         .foregroundColor(MimiTheme.balanceGreen)
                                         .padding(.horizontal, 6)
                                         .padding(.vertical, 2)
@@ -1043,7 +1043,7 @@ public struct SettingsAndShortcutsGuideView: View {
                                 }
                             }
                             Text("主币种: \(ledger.currency.rawValue) · 月预算: \(MimiTheme.formatRM(ledger.monthlyBudget))")
-                                .font(.system(size: 11))
+                                .mimiFont(11)
                                 .foregroundColor(MimiTheme.textSecondary)
                         }
                         Spacer()
@@ -1053,11 +1053,11 @@ public struct SettingsAndShortcutsGuideView: View {
                                 store.switchLedger(id: ledger.id)
                                 statusBannerMessage = "已切换到账本: \(ledger.name)"
                             }
-                            .font(.system(size: 12, weight: .semibold))
+                            .mimiFont(12, weight: .semibold)
                             .foregroundColor(MimiTheme.expenseBlue)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
-                            .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                            .background(Capsule().fill(MimiTheme.tintBlueChip))
                         }
                     }
 
@@ -1067,7 +1067,7 @@ public struct SettingsAndShortcutsGuideView: View {
                             editBudgetInput = String(format: "%.0f", ledger.monthlyBudget)
                         } label: {
                             Text("修改月预算")
-                                .font(.system(size: 12, weight: .medium))
+                                .mimiFont(12, weight: .medium)
                                 .foregroundColor(MimiTheme.expenseBlue)
                         }
 
@@ -1079,7 +1079,7 @@ public struct SettingsAndShortcutsGuideView: View {
                                 statusBannerMessage = "已删除账本: \(ledger.name)"
                             } label: {
                                 Text("删除")
-                                    .font(.system(size: 12, weight: .medium))
+                                    .mimiFont(12, weight: .medium)
                                     .foregroundColor(MimiTheme.dangerRed)
                             }
                         }
@@ -1087,21 +1087,21 @@ public struct SettingsAndShortcutsGuideView: View {
                     .padding(.top, 2)
                 }
                 .padding(14)
-                .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+                .background(RoundedRectangle(cornerRadius: 16).fill(MimiTheme.cardBackground))
             }
         }
         .sheet(item: $editingLedgerForBudget) { ledger in
             NavigationStack {
                 VStack(spacing: 16) {
                     Text("调整「\(ledger.name)」的每月预算金额")
-                        .font(.system(size: 13))
+                        .mimiFont(13)
                         .foregroundColor(MimiTheme.textSecondary)
                         .padding(.top, 16)
                     TextField("输入预算金额", text: $editBudgetInput)
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .mimiFont(24, weight: .bold, design: .rounded)
                         .multilineTextAlignment(.center)
                         .padding(12)
-                        .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF5F6FA)))
+                        .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.background))
                         .padding(.horizontal, 32)
                     Button {
                         if let val = Double(editBudgetInput), val >= 0 {
@@ -1111,7 +1111,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         editingLedgerForBudget = nil
                     } label: {
                         Text("保存预算")
-                            .font(.system(size: 15, weight: .bold))
+                            .mimiFont(15, weight: .bold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
@@ -1136,18 +1136,18 @@ public struct SettingsAndShortcutsGuideView: View {
             NavigationStack {
                 VStack(alignment: .leading, spacing: 14) {
                     Text("账本名称")
-                        .font(.system(size: 13, weight: .semibold))
+                        .mimiFont(13, weight: .semibold)
                     TextField("如：生意账本 / 旅行账本 / 装修账本", text: $newLedgerName)
-                        .font(.system(size: 14))
+                        .mimiFont(14)
                         .padding(10)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                        .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.background))
 
                     Text("每月预算 (RM)")
-                        .font(.system(size: 13, weight: .semibold))
+                        .mimiFont(13, weight: .semibold)
                     TextField("3000", text: $newLedgerBudget)
-                        .font(.system(size: 14))
+                        .mimiFont(14)
                         .padding(10)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                        .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.background))
 
                     Button {
                         let trimmed = newLedgerName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1159,7 +1159,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         statusBannerMessage = "已创建并切换到新账本: \(trimmed)"
                     } label: {
                         Text("确认创建账本")
-                            .font(.system(size: 15, weight: .bold))
+                            .mimiFont(15, weight: .bold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
@@ -1189,19 +1189,19 @@ public struct SettingsAndShortcutsGuideView: View {
     private var tagManagementSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("标签管理 (\(store.tags.count))")
-                .font(.system(size: 16, weight: .bold))
+                .mimiFont(16, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
 
             Text("为账单打上标签（如：报销、旅行、人情），可以在此统一统计与筛选。")
-                .font(.system(size: 12))
+                .mimiFont(12)
                 .foregroundColor(MimiTheme.textSecondary)
 
             // Add tag input
             HStack(spacing: 8) {
                 TextField("输入新标签名称 (如：兼职/自驾游)", text: $newTagName)
-                    .font(.system(size: 13))
+                    .mimiFont(13)
                     .padding(9)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(Color.white))
+                    .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.cardBackground))
                 Button("添加") {
                     let trimmed = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !trimmed.isEmpty else { return }
@@ -1209,7 +1209,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     newTagName = ""
                     statusBannerMessage = "已添加新标签: #\(trimmed)"
                 }
-                .font(.system(size: 13, weight: .bold))
+                .mimiFont(13, weight: .bold)
                 .foregroundColor(.white)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 9)
@@ -1219,7 +1219,7 @@ public struct SettingsAndShortcutsGuideView: View {
             // Tag chips
             VStack(alignment: .leading, spacing: 10) {
                 Text("现有标签列表（点击标签可筛选关联账单）：")
-                    .font(.system(size: 12, weight: .medium))
+                    .mimiFont(12, weight: .medium)
                     .foregroundColor(MimiTheme.textSecondary)
 
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 95), spacing: 8)], spacing: 8) {
@@ -1231,7 +1231,7 @@ public struct SettingsAndShortcutsGuideView: View {
                                 selectedFilterTag = (selectedFilterTag == tag) ? nil : tag
                             } label: {
                                 Text("#\(tag) (\(count))")
-                                    .font(.system(size: 11, weight: .semibold))
+                                    .mimiFont(11, weight: .semibold)
                                     .foregroundColor(isSelected ? .white : MimiTheme.textPrimary)
                                     .lineLimit(1)
                             }
@@ -1241,7 +1241,7 @@ public struct SettingsAndShortcutsGuideView: View {
                                 statusBannerMessage = "已删除标签: #\(tag)"
                             } label: {
                                 Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 10))
+                                    .mimiFont(10)
                                     .foregroundColor(isSelected ? .white.opacity(0.8) : MimiTheme.textMuted)
                             }
                         }
@@ -1257,7 +1257,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Label {
                         Text("标签「#\(activeTag)」下的全部账单 (\(taggedBills.count) 笔)：")
-                            .font(.system(size: 13, weight: .bold))
+                            .mimiFont(13, weight: .bold)
                             .foregroundColor(MimiTheme.textPrimary)
                     } icon: {
                         Image(systemName: "tag.fill")
@@ -1266,25 +1266,25 @@ public struct SettingsAndShortcutsGuideView: View {
 
                     if taggedBills.isEmpty {
                         Text("该标签下暂无账单记录")
-                            .font(.system(size: 12))
+                            .mimiFont(12)
                             .foregroundColor(MimiTheme.textMuted)
                             .padding(.vertical, 12)
                     } else {
                         ForEach(taggedBills) { item in
                             HStack {
                                 Text(item.categoryPath)
-                                    .font(.system(size: 13, weight: .semibold))
+                                    .mimiFont(13, weight: .semibold)
                                 Text(item.note)
-                                    .font(.system(size: 11))
+                                    .mimiFont(11)
                                     .foregroundColor(MimiTheme.textMuted)
                                     .lineLimit(1)
                                 Spacer()
                                 Text(item.type == .expense ? "-\(MimiTheme.formatRM(item.amount))" : "+\(MimiTheme.formatRM(item.amount))")
-                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                                    .mimiFont(13, weight: .bold, design: .rounded)
                                     .foregroundColor(item.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange)
                             }
                             .padding(10)
-                            .background(RoundedRectangle(cornerRadius: 10).fill(Color.white))
+                            .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.cardBackground))
                         }
                     }
                 }
@@ -1299,7 +1299,7 @@ public struct SettingsAndShortcutsGuideView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("定时记账与周期固定收支")
-                    .font(.system(size: 16, weight: .bold))
+                    .mimiFont(16, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
                 Button {
@@ -1309,30 +1309,30 @@ public struct SettingsAndShortcutsGuideView: View {
                         Image(systemName: "plus.circle.fill")
                         Text("新增计划")
                     }
-                    .font(.system(size: 13, weight: .bold))
+                    .mimiFont(13, weight: .bold)
                     .foregroundColor(MimiTheme.expenseBlue)
                 }
             }
 
             Text("针对房租、宽带、月薪、订阅会员等固定周期收支，到期自动入账或一键执行，告别重复手工输入。")
-                .font(.system(size: 12))
+                .mimiFont(12)
                 .foregroundColor(MimiTheme.textSecondary)
 
             if store.scheduledTransactions.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "calendar.badge.clock")
-                        .font(.system(size: 28))
+                        .mimiFont(28)
                         .foregroundColor(MimiTheme.textMuted)
                     Text("暂无定时记账计划")
-                        .font(.system(size: 13, weight: .medium))
+                        .mimiFont(13, weight: .medium)
                         .foregroundColor(MimiTheme.textSecondary)
                     Text("点击右上角「+ 新增计划」添加房租、月薪、话费等固定周期账单")
-                        .font(.system(size: 11))
+                        .mimiFont(11)
                         .foregroundColor(MimiTheme.textMuted)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 24)
-                .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xF7F8FA)))
+                .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.fillSubtle))
             }
 
             ForEach(store.scheduledTransactions) { item in
@@ -1347,17 +1347,17 @@ public struct SettingsAndShortcutsGuideView: View {
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.title)
-                                .font(.system(size: 14, weight: .bold))
+                                .mimiFont(14, weight: .bold)
                                 .foregroundColor(MimiTheme.textPrimary)
                             Text("\(item.frequency.rawValue) \(item.dayOfMonth)日 · \(item.accountName) · \(item.categoryPath)")
-                                .font(.system(size: 11))
+                                .mimiFont(11)
                                 .foregroundColor(MimiTheme.textSecondary)
                         }
 
                         Spacer()
 
                         Text(item.type == .expense ? "-\(MimiTheme.formatRM(item.amount))" : "+\(MimiTheme.formatRM(item.amount))")
-                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .mimiFont(15, weight: .bold, design: .rounded)
                             .foregroundColor(item.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange)
                     }
 
@@ -1369,7 +1369,7 @@ public struct SettingsAndShortcutsGuideView: View {
                             set: { _ in store.toggleScheduledTransaction(id: item.id) }
                         )) {
                             Text(item.isEnabled ? "计划启用中" : "已暂停")
-                                .font(.system(size: 12))
+                                .mimiFont(12)
                                 .foregroundColor(item.isEnabled ? MimiTheme.balanceGreen : MimiTheme.textMuted)
                         }
 
@@ -1380,11 +1380,11 @@ public struct SettingsAndShortcutsGuideView: View {
                             statusBannerMessage = "已立即执行并记入账本: \(item.title) \(MimiTheme.formatRM(item.amount))"
                         } label: {
                             Text("立即入账一次")
-                                .font(.system(size: 11, weight: .bold))
+                                .mimiFont(11, weight: .bold)
                                 .foregroundColor(MimiTheme.expenseBlue)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 5)
-                                .background(Capsule().fill(Color(hex: 0xE8F0FE)))
+                                .background(Capsule().fill(MimiTheme.tintBlueChip))
                         }
 
                         Button {
@@ -1392,29 +1392,29 @@ public struct SettingsAndShortcutsGuideView: View {
                             statusBannerMessage = "已删除定时计划: \(item.title)"
                         } label: {
                             Image(systemName: "trash")
-                                .font(.system(size: 12))
+                                .mimiFont(12)
                                 .foregroundColor(MimiTheme.dangerRed)
                         }
                     }
                 }
                 .padding(14)
-                .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+                .background(RoundedRectangle(cornerRadius: 16).fill(MimiTheme.cardBackground))
             }
         }
         .sheet(isPresented: $showCreateScheduledSheet) {
             NavigationStack {
                 VStack(alignment: .leading, spacing: 14) {
                     Text("计划名称")
-                        .font(.system(size: 13, weight: .semibold))
+                        .mimiFont(13, weight: .semibold)
                     TextField("如：每月房贷 / Netflix 会员", text: $newScheduledTitle)
-                        .font(.system(size: 14))
+                        .mimiFont(14)
                         .padding(10)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                        .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.background))
 
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("类型")
-                                .font(.system(size: 13, weight: .semibold))
+                                .mimiFont(13, weight: .semibold)
                             Picker("", selection: $newScheduledType) {
                                 Text("支出").tag(TransactionType.expense)
                                 Text("收入").tag(TransactionType.income)
@@ -1424,18 +1424,18 @@ public struct SettingsAndShortcutsGuideView: View {
 
                         VStack(alignment: .leading, spacing: 6) {
                             Text("金额 (RM)")
-                                .font(.system(size: 13, weight: .semibold))
+                                .mimiFont(13, weight: .semibold)
                             TextField("100.00", text: $newScheduledAmount)
-                                .font(.system(size: 14))
+                                .mimiFont(14)
                                 .padding(7)
-                                .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xF5F6FA)))
+                                .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.background))
                         }
                     }
 
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("扣款/入账账户")
-                                .font(.system(size: 13, weight: .semibold))
+                                .mimiFont(13, weight: .semibold)
                             Picker("", selection: $newScheduledAccount) {
                                 ForEach(store.accounts) { acc in
                                     Text(acc.name).tag(acc.name)
@@ -1446,7 +1446,7 @@ public struct SettingsAndShortcutsGuideView: View {
 
                         VStack(alignment: .leading, spacing: 6) {
                             Text("执行周期")
-                                .font(.system(size: 13, weight: .semibold))
+                                .mimiFont(13, weight: .semibold)
                             Picker("", selection: $newScheduledFreq) {
                                 ForEach(RecurringFrequency.allCases, id: \.self) { freq in
                                     Text(freq.rawValue).tag(freq)
@@ -1477,7 +1477,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         statusBannerMessage = "已创建定时入账计划: \(trimmed)"
                     } label: {
                         Text("保存定时计划")
-                            .font(.system(size: 15, weight: .bold))
+                            .mimiFont(15, weight: .bold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
@@ -1507,23 +1507,23 @@ public struct SettingsAndShortcutsGuideView: View {
     private var widgetsShowcaseSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("iOS 桌面与锁屏小组件")
-                .font(.system(size: 16, weight: .bold))
+                .mimiFont(16, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
 
             Text("在 iPhone 桌面长按进入编辑状态 ➔ 点击左上角「+」➔ 搜索「咪咪记账」，即可添加以下官方设计小组件：")
-                .font(.system(size: 12))
+                .mimiFont(12)
                 .foregroundColor(MimiTheme.textSecondary)
 
             // 1. Small Widget Preview (今日可用)
             VStack(alignment: .leading, spacing: 10) {
                 Text("小号小组件 · 今日动态预算")
-                    .font(.system(size: 13, weight: .bold))
+                    .mimiFont(13, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
 
                 HStack {
                     ZStack {
                         Circle()
-                            .stroke(Color(hex: 0xEEF0F6), lineWidth: 8)
+                            .stroke(MimiTheme.fillSubtle, lineWidth: 8)
                             .frame(width: 80, height: 80)
                         Circle()
                             .trim(from: 0, to: 0.72)
@@ -1532,30 +1532,29 @@ public struct SettingsAndShortcutsGuideView: View {
                             .frame(width: 80, height: 80)
                         VStack(spacing: 2) {
                             Text("今日可用")
-                                .font(.system(size: 9))
+                                .mimiFont(9)
                                 .foregroundColor(MimiTheme.textSecondary)
                             Text(MimiTheme.formatRM(store.monthlyBudgetRemaining(year: 2026, month: 11) / 21.0))
-                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                                .mimiFont(13, weight: .bold, design: .rounded)
                                 .foregroundColor(MimiTheme.textPrimary)
                         }
                     }
                     Spacer()
                     VStack(alignment: .trailing, spacing: 4) {
                         Text("动态结余滚入")
-                            .font(.system(size: 11, weight: .semibold))
+                            .mimiFont(11, weight: .semibold)
                             .foregroundColor(MimiTheme.expenseBlue)
                         Text("今日已花费 \(MimiTheme.formatRM(0))")
-                            .font(.system(size: 10))
+                            .mimiFont(10)
                             .foregroundColor(MimiTheme.textMuted)
                         Text("实时同步当前账本")
-                            .font(.system(size: 10))
+                            .mimiFont(10)
                             .foregroundColor(MimiTheme.textMuted)
                     }
                 }
                 .padding(14)
                 .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color.white)
+                    RoundedRectangle(cornerRadius: 16).fill(MimiTheme.cardBackground)
                         .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
                 )
             }
@@ -1563,16 +1562,16 @@ public struct SettingsAndShortcutsGuideView: View {
             // 2. Medium Widget Preview (7日趋势与本周收支)
             VStack(alignment: .leading, spacing: 10) {
                 Text("中号小组件 · 7日收支趋势")
-                    .font(.system(size: 13, weight: .bold))
+                    .mimiFont(13, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
 
                 HStack(alignment: .bottom, spacing: 8) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("本周结余")
-                            .font(.system(size: 10))
+                            .mimiFont(10)
                             .foregroundColor(MimiTheme.textSecondary)
                         Text(MimiTheme.formatRM(store.netWorth))
-                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                            .mimiFont(18, weight: .bold, design: .rounded)
                             .foregroundColor(MimiTheme.balanceGreen)
                     }
                     Spacer()
@@ -1586,14 +1585,13 @@ public struct SettingsAndShortcutsGuideView: View {
                 }
                 .padding(14)
                 .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color.white)
+                    RoundedRectangle(cornerRadius: 16).fill(MimiTheme.cardBackground)
                         .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
                 )
             }
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color(hex: 0xF7F8FA)))
+        .background(RoundedRectangle(cornerRadius: 20).fill(MimiTheme.fillSubtle))
     }
 
     // MARK: - 设置（资料 / API / 其他）
@@ -1603,28 +1601,28 @@ public struct SettingsAndShortcutsGuideView: View {
             // 资料
             VStack(alignment: .leading, spacing: 8) {
                 Text("资料")
-                    .font(.system(size: 13, weight: .semibold))
+                    .mimiFont(13, weight: .semibold)
                     .foregroundColor(MimiTheme.textSecondary)
 
                 HStack {
                     Text("昵称")
-                        .font(.system(size: 14, weight: .medium))
+                        .mimiFont(14, weight: .medium)
                         .foregroundColor(MimiTheme.textPrimary)
                     TextField("jinghao", text: $editingNickname)
-                        .font(.system(size: 14))
+                        .mimiFont(14)
                         .multilineTextAlignment(.trailing)
                     Button("保存") {
                         store.setNickname(editingNickname)
                         statusBannerMessage = "已更新昵称"
                     }
-                    .font(.system(size: 13, weight: .semibold))
+                    .mimiFont(13, weight: .semibold)
                     .foregroundColor(.white)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .background(Capsule().fill(MimiTheme.expenseBlue))
                 }
                 .padding(14)
-                .background(RoundedRectangle(cornerRadius: 14).fill(Color.white))
+                .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.cardBackground))
             }
             .onAppear {
                 if store.userNickname == "景豪" || store.userNickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -1639,22 +1637,22 @@ public struct SettingsAndShortcutsGuideView: View {
             // 其他
             VStack(alignment: .leading, spacing: 8) {
                 Text("其他")
-                    .font(.system(size: 13, weight: .semibold))
+                    .mimiFont(13, weight: .semibold)
                     .foregroundColor(MimiTheme.textSecondary)
 
                 Toggle(isOn: $store.hapticsEnabled) {
                     Text("触觉反馈")
-                        .font(.system(size: 14, weight: .medium))
+                        .mimiFont(14, weight: .medium)
                 }
                 .padding(14)
-                .background(RoundedRectangle(cornerRadius: 14).fill(Color.white))
+                .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.cardBackground))
 
                 Button {
                     showResetCleanAlert = true
                 } label: {
                     HStack {
                         Text("清空全部数据")
-                            .font(.system(size: 14, weight: .semibold))
+                            .mimiFont(14, weight: .semibold)
                             .foregroundColor(MimiTheme.dangerRed)
                         Spacer()
                         Image(systemName: "trash")

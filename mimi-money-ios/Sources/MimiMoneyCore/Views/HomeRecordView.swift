@@ -111,7 +111,7 @@ public struct HomeRecordView: View {
 
             if showDeleteToast {
                 Text("删除成功")
-                    .font(.system(size: 15, weight: .semibold))
+                    .mimiFont(15, weight: .semibold)
                     .foregroundColor(.white)
                     .padding(.horizontal, 18)
                     .padding(.vertical, 12)
@@ -148,7 +148,7 @@ public struct HomeRecordView: View {
         HStack(spacing: 10) {
             Button(action: onOpenDrawer) {
                 Image(systemName: "line.3.horizontal")
-                    .font(.system(size: 18, weight: .semibold))
+                    .mimiFont(18, weight: .semibold)
                     .foregroundColor(MimiTheme.textPrimary)
                     .mimiMinTouchTarget()
             }
@@ -169,10 +169,10 @@ public struct HomeRecordView: View {
             } label: {
                 HStack(spacing: 4) {
                     Text("记录")
-                        .font(.system(size: 22, weight: .bold))
+                        .mimiFont(22, weight: .bold)
                         .foregroundColor(MimiTheme.textPrimary)
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .bold))
+                        .mimiFont(12, weight: .bold)
                         .foregroundColor(MimiTheme.textSecondary)
                 }
             }
@@ -182,10 +182,10 @@ public struct HomeRecordView: View {
 
             Button(action: onOpenSearchOrCalendar) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 15, weight: .semibold))
+                    .mimiFont(15, weight: .semibold)
                     .foregroundColor(MimiTheme.textPrimary)
                     .frame(width: 36, height: 36)
-                    .background(Circle().fill(Color.white))
+                    .background(Circle().fill(MimiTheme.cardBackground))
                     .mimiMinTouchTarget()
             }
             .mimiPressable()
@@ -196,19 +196,19 @@ public struct HomeRecordView: View {
             } label: {
                 HStack(spacing: 4) {
                     Text(store.currentLedgerName)
-                        .font(.system(size: 14, weight: .semibold))
+                        .mimiFont(14, weight: .semibold)
                         .foregroundColor(MimiTheme.textPrimary)
                         .lineLimit(1)
                         .truncationMode(.tail)
                         .frame(maxWidth: 64, alignment: .leading)
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 10, weight: .bold))
+                        .mimiFont(10, weight: .bold)
                         .foregroundColor(MimiTheme.textSecondary)
                 }
                 .padding(.leading, 12)
                 .padding(.trailing, 10)
                 .padding(.vertical, 8)
-                .background(Capsule().fill(Color.white))
+                .background(Capsule().fill(MimiTheme.cardBackground))
             }
             .buttonStyle(.plain)
         }
@@ -222,9 +222,9 @@ public struct HomeRecordView: View {
                 Button(action: onOpenSearchOrCalendar) {
                     HStack(spacing: 4) {
                         Text("\(currentYear)年\(currentMonth)月")
-                            .font(.system(size: 15, weight: .semibold))
+                            .mimiFont(15, weight: .semibold)
                         Image(systemName: "chevron.down")
-                            .font(.system(size: 11, weight: .bold))
+                            .mimiFont(11, weight: .bold)
                     }
                     .foregroundColor(MimiTheme.textPrimary)
                 }
@@ -233,9 +233,9 @@ public struct HomeRecordView: View {
                 Button(action: onSwitchToStats) {
                     HStack(spacing: 2) {
                         Text("统计")
-                            .font(.system(size: 15, weight: .semibold))
+                            .mimiFont(15, weight: .semibold)
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .bold))
+                            .mimiFont(12, weight: .bold)
                     }
                     .foregroundColor(MimiTheme.expenseBlue)
                 }
@@ -251,14 +251,14 @@ public struct HomeRecordView: View {
                             .fill(MimiTheme.expenseBlue)
                             .frame(width: 3, height: 12)
                         Text("月预算剩余")
-                            .font(.system(size: 13, weight: .medium))
+                            .mimiFont(13, weight: .medium)
                             .foregroundColor(MimiTheme.textSecondary)
                     }
 
                     HStack(alignment: .center, spacing: 6) {
                         Button(action: onOpenBudgetManager) {
                             Text(isAmountsHidden ? "RM****" : MimiTheme.formatRM(monthlyRemaining))
-                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .mimiFont(28, weight: .bold, design: .rounded)
                                 .foregroundColor(MimiTheme.textPrimary)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.7)
@@ -269,7 +269,7 @@ public struct HomeRecordView: View {
                             isAmountsHidden.toggle()
                         } label: {
                             Image(systemName: isAmountsHidden ? "eye.slash" : "eye")
-                                .font(.system(size: 14, weight: .regular))
+                                .mimiFont(14, weight: .regular)
                                 .foregroundColor(MimiTheme.textMuted)
                         }
                         .buttonStyle(.plain)
@@ -279,12 +279,12 @@ public struct HomeRecordView: View {
 
                     HStack(spacing: 8) {
                         Text(isAmountsHidden ? "已用****" : "已用\(MimiTheme.formatRM(monthlySpent))")
-                            .font(.system(size: 12))
+                            .mimiFont(12)
                             .foregroundColor(MimiTheme.textSecondary)
                             .lineLimit(1)
                         Spacer(minLength: 8)
                         Text(isAmountsHidden ? "RM****" : MimiTheme.formatRM(store.monthlyBudgetTotal))
-                            .font(.system(size: 12))
+                            .mimiFont(12)
                             .foregroundColor(MimiTheme.textSecondary)
                             .lineLimit(1)
                     }
@@ -297,7 +297,7 @@ public struct HomeRecordView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
-        .background(Color.white)
+        .background(MimiTheme.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius, style: .continuous))
         .shadow(
             color: MimiTheme.homeCardShadow,
@@ -318,15 +318,15 @@ public struct HomeRecordView: View {
         Button(action: onOpenSearchOrCalendar) {
             HStack(spacing: 3) {
                 Image(systemName: "arrow.left.arrow.right")
-                    .font(.system(size: 11, weight: .semibold))
+                    .mimiFont(11, weight: .semibold)
                 Text("收支")
-                    .font(.system(size: 13, weight: .medium))
+                    .mimiFont(13, weight: .medium)
             }
             .foregroundColor(MimiTheme.textSecondary)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(Capsule().fill(Color.white))
-            .overlay(Capsule().stroke(Color(hex: 0xE5E7EB), lineWidth: 1))
+            .background(Capsule().fill(MimiTheme.cardBackground))
+            .overlay(Capsule().stroke(MimiTheme.divider, lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
@@ -351,10 +351,10 @@ public struct HomeRecordView: View {
                     }
                 }
                 Text("\(spentPercentInt)%")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .mimiFont(10, weight: .bold, design: .rounded)
                     .foregroundColor(MimiTheme.expenseBlue)
                     .frame(width: badgeWidth, height: 16)
-                    .background(Capsule().fill(Color(hex: 0xE8EEFF)))
+                    .background(Capsule().fill(MimiTheme.tintBlueSoft))
                     .offset(x: badgeX, y: 0)
             }
         }
@@ -365,7 +365,7 @@ public struct HomeRecordView: View {
         Button(action: onOpenBudgetManager) {
             ZStack {
                 Circle()
-                    .stroke(Color(hex: 0xEEF0F6), lineWidth: 8)
+                    .stroke(MimiTheme.fillSubtle, lineWidth: 8)
                     .frame(width: MimiTheme.dailyRingSize, height: MimiTheme.dailyRingSize)
 
                 Circle()
@@ -389,10 +389,10 @@ public struct HomeRecordView: View {
 
                 VStack(spacing: 1) {
                     Text("今日可用")
-                        .font(.system(size: 9, weight: .medium))
+                        .mimiFont(9, weight: .medium)
                         .foregroundColor(MimiTheme.textSecondary)
                     Text(isAmountsHidden ? "****" : String(format: "%.2f", dailyAvailable))
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .mimiFont(13, weight: .bold, design: .rounded)
                         .foregroundColor(MimiTheme.textPrimary)
                         .minimumScaleFactor(0.6)
                         .lineLimit(1)
@@ -425,18 +425,18 @@ public struct HomeRecordView: View {
                     .frame(width: 22, height: 22)
                     HStack(spacing: 6) {
                         Text("分类预算")
-                            .font(.system(size: 14, weight: .semibold))
+                            .mimiFont(14, weight: .semibold)
                             .foregroundColor(MimiTheme.textPrimary)
                         Text("共\(store.categoryBudgets.count)项")
-                            .font(.system(size: 13))
+                            .mimiFont(13)
                             .foregroundColor(MimiTheme.textMuted)
                     }
                     Spacer(minLength: 8)
                     HStack(spacing: 2) {
                         Text(isCategoryBudgetExpanded ? "收起" : "展开")
-                            .font(.system(size: 13, weight: .medium))
+                            .mimiFont(13, weight: .medium)
                         Image(systemName: isCategoryBudgetExpanded ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 11, weight: .semibold))
+                            .mimiFont(11, weight: .semibold)
                     }
                     .foregroundColor(MimiTheme.expenseBlue)
                 }
@@ -468,17 +468,17 @@ public struct HomeRecordView: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
                                     Text(item.categoryName)
-                                        .font(.system(size: 13, weight: .medium))
+                                        .mimiFont(13, weight: .medium)
                                         .foregroundColor(MimiTheme.textPrimary)
                                     Spacer()
                                     Text(remLabel)
-                                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                        .mimiFont(12, weight: .semibold, design: .rounded)
                                         .foregroundColor(rem >= 0 ? MimiTheme.textSecondary : MimiTheme.dangerRed)
                                 }
                                 GeometryReader { barGeo in
                                     ZStack(alignment: .leading) {
                                         Capsule()
-                                            .fill(Color(hex: 0xF0F2F7))
+                                            .fill(MimiTheme.fillSubtle)
                                             .frame(height: 6)
                                         Capsule()
                                             .fill(rem >= 0 ? MimiTheme.expenseBlue : MimiTheme.dangerRed)
@@ -503,10 +503,10 @@ public struct HomeRecordView: View {
                 Button(action: onOpenAssetsManager) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("净资产")
-                            .font(.system(size: 13, weight: .medium))
+                            .mimiFont(13, weight: .medium)
                             .foregroundColor(MimiTheme.textSecondary)
                         Text(isAmountsHidden ? "RM****" : MimiTheme.formatRM(store.netWorth))
-                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .mimiFont(22, weight: .bold, design: .rounded)
                             .foregroundColor(MimiTheme.textPrimary)
                     }
                 }
@@ -520,7 +520,7 @@ public struct HomeRecordView: View {
                     } label: {
                         VStack(alignment: .trailing, spacing: 2) {
                             Text("30天趋势")
-                                .font(.system(size: 10, weight: .medium))
+                                .mimiFont(10, weight: .medium)
                                 .foregroundColor(MimiTheme.expenseBlue)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 3)
@@ -538,7 +538,7 @@ public struct HomeRecordView: View {
                 toggleNetWorthExpanded()
             } label: {
                 Image(systemName: isNetWorthExpanded ? "chevron.up" : "chevron.down")
-                    .font(.system(size: 11, weight: .bold))
+                    .mimiFont(11, weight: .bold)
                     .foregroundColor(MimiTheme.textMuted.opacity(0.85))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 2)
@@ -569,9 +569,9 @@ public struct HomeRecordView: View {
                 Button(action: onOpenSearchOrCalendar) {
                     HStack(spacing: 2) {
                         Text("记录明细")
-                            .font(.system(size: 16, weight: .bold))
+                            .mimiFont(16, weight: .bold)
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .bold))
+                            .mimiFont(12, weight: .bold)
                             .padding(.top, 1)
                     }
                     .foregroundColor(MimiTheme.textPrimary)
@@ -589,11 +589,11 @@ public struct HomeRecordView: View {
             if groups.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "pawprint.fill")
-                        .font(.system(size: 34))
+                        .mimiFont(34)
                         .foregroundColor(MimiTheme.incomeOrange)
                         .accessibilityHidden(true)
                     Text("还没有账单记录，点击下方 + 或发送一句话记账吧")
-                        .font(.system(size: 13))
+                        .mimiFont(13)
                         .foregroundColor(MimiTheme.textMuted)
                         .multilineTextAlignment(.center)
                 }
@@ -658,18 +658,18 @@ public struct HomeRecordView: View {
 
         return HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(formatDayHeader(date))
-                .font(.system(size: 14, weight: .semibold))
+                .mimiFont(14, weight: .semibold)
                 .foregroundColor(MimiTheme.textPrimary)
             Spacer(minLength: 8)
             Text("支 \(MimiTheme.formatRM(dayExpense)) | 收 \(MimiTheme.formatRM(dayIncome))")
-                .font(.system(size: 12, weight: .medium))
+                .mimiFont(12, weight: .medium)
                 .foregroundColor(MimiTheme.textSecondary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .background(Color(hex: 0xF8F9FC))
+        .background(MimiTheme.fillSubtle)
     }
 
     private func feedRowButton(_ item: TransactionItem, showsDivider: Bool) -> some View {
@@ -698,25 +698,25 @@ public struct HomeRecordView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text(transactionTitle(item))
-                            .font(.system(size: 16, weight: .semibold))
+                            .mimiFont(16, weight: .semibold)
                             .foregroundColor(MimiTheme.textPrimary)
                             .lineLimit(1)
                         Spacer(minLength: 8)
                         Text(signedAmountText(item))
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .mimiFont(16, weight: .bold, design: .rounded)
                             .foregroundColor(item.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange)
                             .lineLimit(1)
                             .layoutPriority(1)
                     }
 
                     Text(transactionMetaLine(item))
-                        .font(.system(size: 12))
+                        .mimiFont(12)
                         .foregroundColor(MimiTheme.textMuted)
                         .lineLimit(1)
 
                     if !item.accountName.isEmpty {
                         Text(item.accountName)
-                            .font(.system(size: 11, weight: .medium))
+                            .mimiFont(11, weight: .medium)
                             .foregroundColor(MimiTheme.textSecondary)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
@@ -760,7 +760,7 @@ public struct HomeRecordView: View {
             showDeleteConfirm = true
         } label: {
             Image(systemName: "trash.fill")
-                .font(.system(size: 16, weight: .semibold))
+                .mimiFont(16, weight: .semibold)
                 .foregroundColor(.white)
                 .frame(width: FeedDeleteChrome.side, height: FeedDeleteChrome.side)
                 .background(Circle().fill(MimiTheme.dangerRed))
@@ -883,7 +883,7 @@ public struct HomeRecordView: View {
                     }
                 } label: {
                     Image(systemName: "chevron.compact.up")
-                        .font(.system(size: 18, weight: .semibold))
+                        .mimiFont(18, weight: .semibold)
                         .foregroundColor(Color(hex: 0xC5C8D0))
                         .frame(maxWidth: .infinity)
                         .frame(height: 18)
@@ -908,7 +908,7 @@ public struct HomeRecordView: View {
                     HStack(spacing: 8) {
                         MimiAskMascotView(size: 32)
                         Text("任何事情都能问我")
-                            .font(.system(size: 15, weight: .medium))
+                            .mimiFont(15, weight: .medium)
                             .foregroundColor(MimiTheme.textSecondary)
                         Spacer(minLength: 0)
                     }
@@ -926,12 +926,12 @@ public struct HomeRecordView: View {
                     }
                 } label: {
                     Image(systemName: isAskPanelExpanded ? "xmark" : "plus")
-                        .font(.system(size: isAskPanelExpanded ? 16 : 20, weight: .bold))
+                        .mimiFont(isAskPanelExpanded ? 16 : 20, weight: .bold)
                         .foregroundColor(isAskPanelExpanded ? MimiTheme.textSecondary : .white)
                         .frame(width: 44, height: 44)
                         .background(
                             Circle()
-                                .fill(isAskPanelExpanded ? Color(hex: 0xEEF0F6) : MimiTheme.expenseBlue)
+                                .fill(isAskPanelExpanded ? MimiTheme.fillSubtle : MimiTheme.expenseBlue)
                                 .shadow(
                                     color: isAskPanelExpanded ? Color.clear : MimiTheme.expenseBlue.opacity(0.35),
                                     radius: 8,
@@ -947,8 +947,7 @@ public struct HomeRecordView: View {
             .padding(.trailing, 8)
             .frame(height: MimiTheme.askBarHeight)
             .background(
-                RoundedRectangle(cornerRadius: MimiTheme.askBarCornerRadius, style: .continuous)
-                    .fill(Color.white)
+                RoundedRectangle(cornerRadius: MimiTheme.askBarCornerRadius, style: .continuous).fill(MimiTheme.cardBackground)
                     .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 4)
             )
 
@@ -982,7 +981,7 @@ public struct HomeRecordView: View {
     private var ledgerPickerSheet: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("切换账本")
-                .font(.system(size: 17, weight: .bold))
+                .mimiFont(17, weight: .bold)
                 .padding(.top, 16)
 
             ForEach(store.ledgers) { ledger in
@@ -995,11 +994,11 @@ public struct HomeRecordView: View {
                             .foregroundColor(MimiTheme.expenseBlue)
                             .accessibilityHidden(true)
                         Text(ledger.name)
-                            .font(.system(size: 15, weight: .semibold))
+                            .mimiFont(15, weight: .semibold)
                             .foregroundColor(MimiTheme.textPrimary)
                         Spacer()
                         Text(ledger.currency.rawValue)
-                            .font(.system(size: 12))
+                            .mimiFont(12)
                             .foregroundColor(MimiTheme.textMuted)
                         if store.currentLedgerName == ledger.name {
                             Image(systemName: "checkmark.circle.fill")
@@ -1007,7 +1006,7 @@ public struct HomeRecordView: View {
                         }
                     }
                     .padding(14)
-                    .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xF5F6FA)))
+                    .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.background))
                 }
                 .buttonStyle(.plain)
             }
@@ -1030,8 +1029,7 @@ private struct FeedBillMarkButton: View {
     var body: some View {
         Button(action: action) {
             ZStack {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color.white)
+                RoundedRectangle(cornerRadius: 8, style: .continuous).fill(MimiTheme.cardBackground)
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(Color.black.opacity(0.08), lineWidth: 1)
                 ZStack {
@@ -1042,7 +1040,7 @@ private struct FeedBillMarkButton: View {
                         .stroke(MimiTheme.expenseBlue, lineWidth: 1)
                         .frame(width: 8, height: 8)
                     Image(systemName: "yensign")
-                        .font(.system(size: 6, weight: .bold))
+                        .mimiFont(6, weight: .bold)
                         .foregroundColor(MimiTheme.expenseBlue)
                 }
             }
@@ -1078,7 +1076,7 @@ private struct HomeNetWorthSparkline: View {
 
                 if let last = points.last {
                     Circle()
-                        .fill(Color.white)
+                        .fill(MimiTheme.cardBackground)
                         .overlay(Circle().stroke(MimiTheme.expenseBlue, lineWidth: 2))
                         .frame(width: 8, height: 8)
                         .position(last)

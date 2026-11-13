@@ -33,25 +33,25 @@ public struct CategoryManagementView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
                                 Text("标准分类")
-                                    .font(.system(size: 16, weight: .bold))
+                                    .mimiFont(16, weight: .bold)
                                     .foregroundColor(MimiTheme.textPrimary)
                                 Spacer()
                                 Image(systemName: "ellipsis")
                                     .foregroundColor(MimiTheme.textMuted)
                             }
                             Text("支出 \(store.expenseCategories.count) 类 | 收入 \(store.incomeCategories.count) 类")
-                                .font(.system(size: 12))
+                                .mimiFont(12)
                                 .foregroundColor(MimiTheme.textSecondary)
                         }
                         .padding(16)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+                        .background(RoundedRectangle(cornerRadius: 16).fill(MimiTheme.cardBackground))
 
                         // Pill tabs: 支出 | 收入
                         HStack(spacing: 0) {
                             Button { selectedTab = .expense } label: {
                                 Text("支出")
-                                    .font(.system(size: 13, weight: selectedTab == .expense ? .bold : .medium))
+                                    .mimiFont(13, weight: selectedTab == .expense ? .bold : .medium)
                                     .foregroundColor(selectedTab == .expense ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 8)
@@ -60,7 +60,7 @@ public struct CategoryManagementView: View {
                             .buttonStyle(.plain)
                             Button { selectedTab = .income } label: {
                                 Text("收入")
-                                    .font(.system(size: 13, weight: selectedTab == .income ? .bold : .medium))
+                                    .mimiFont(13, weight: selectedTab == .income ? .bold : .medium)
                                     .foregroundColor(selectedTab == .income ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 8)
@@ -69,7 +69,7 @@ public struct CategoryManagementView: View {
                             .buttonStyle(.plain)
                         }
                         .padding(4)
-                        .background(Capsule().fill(Color(hex: 0xEEF0F6)))
+                        .background(Capsule().fill(MimiTheme.fillSubtle))
 
                         // 4-column category grid (gold 标准分类 modal)
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 16) {
@@ -88,7 +88,7 @@ public struct CategoryManagementView: View {
                                             )
                                             if !group.subcategories.isEmpty {
                                                 Text("\(group.subcategories.count)")
-                                                    .font(.system(size: 9, weight: .bold))
+                                                    .mimiFont(9, weight: .bold)
                                                     .foregroundColor(.white)
                                                     .padding(.horizontal, 4)
                                                     .padding(.vertical, 1)
@@ -97,7 +97,7 @@ public struct CategoryManagementView: View {
                                             }
                                         }
                                         Text(group.name)
-                                            .font(.system(size: 11, weight: .medium))
+                                            .mimiFont(11, weight: .medium)
                                             .foregroundColor(MimiTheme.textPrimary)
                                             .lineLimit(1)
                                             .minimumScaleFactor(0.8)
@@ -116,14 +116,14 @@ public struct CategoryManagementView: View {
                                 VStack(spacing: 6) {
                                     ZStack {
                                         Circle()
-                                            .fill(Color(hex: 0xF3F4F6))
+                                            .fill(MimiTheme.pillGray)
                                             .frame(width: 48, height: 48)
                                         Image(systemName: "plus")
-                                            .font(.system(size: 18, weight: .semibold))
+                                            .mimiFont(18, weight: .semibold)
                                             .foregroundColor(MimiTheme.textSecondary)
                                     }
                                     Text("添加")
-                                        .font(.system(size: 11, weight: .medium))
+                                        .mimiFont(11, weight: .medium)
                                         .foregroundColor(MimiTheme.textSecondary)
                                 }
                                 .frame(maxWidth: .infinity)
@@ -131,10 +131,10 @@ public struct CategoryManagementView: View {
                             .buttonStyle(.plain)
                         }
                         .padding(16)
-                        .background(RoundedRectangle(cornerRadius: 18).fill(Color.white))
+                        .background(RoundedRectangle(cornerRadius: 18).fill(MimiTheme.cardBackground))
 
                         Text("点击编辑，长按排序")
-                            .font(.system(size: 12))
+                            .mimiFont(12)
                             .foregroundColor(MimiTheme.textMuted)
                             .frame(maxWidth: .infinity)
                     }
@@ -152,7 +152,7 @@ public struct CategoryManagementView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(action: onDismiss) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 15, weight: .semibold))
+                            .mimiFont(15, weight: .semibold)
                             .foregroundColor(MimiTheme.textPrimary)
                     }
                 }
@@ -164,7 +164,7 @@ public struct CategoryManagementView: View {
                         showAddPrimarySheet = true
                     } label: {
                         Image(systemName: "plus")
-                            .font(.system(size: 16, weight: .semibold))
+                            .mimiFont(16, weight: .semibold)
                             .foregroundColor(MimiTheme.textPrimary)
                     }
                 }
@@ -200,11 +200,11 @@ public struct CategoryManagementView: View {
                     size: 42
                 )
                 Text(group.name)
-                    .font(.system(size: 18, weight: .bold))
+                    .mimiFont(18, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
                 Image(systemName: "ellipsis")
-                    .font(.system(size: 14, weight: .semibold))
+                    .mimiFont(14, weight: .semibold)
                     .foregroundColor(Color(hex: 0xC0C4CE))
             }
             .padding(.horizontal, 20)
@@ -221,38 +221,38 @@ public struct CategoryManagementView: View {
                                 size: 34
                             )
                             Text(sub.name)
-                                .font(.system(size: 15, weight: .medium))
+                                .mimiFont(15, weight: .medium)
                                 .foregroundColor(MimiTheme.textPrimary)
                             Image(systemName: "pencil")
-                                .font(.system(size: 11, weight: .medium))
+                                .mimiFont(11, weight: .medium)
                                 .foregroundColor(Color(hex: 0xC0C4CE))
                             Spacer(minLength: 8)
                             Image(systemName: "line.3.horizontal")
-                                .font(.system(size: 13, weight: .semibold))
+                                .mimiFont(13, weight: .semibold)
                                 .foregroundColor(Color(hex: 0xC0C4CE))
                             Image(systemName: "ellipsis")
-                                .font(.system(size: 13, weight: .semibold))
+                                .mimiFont(13, weight: .semibold)
                                 .foregroundColor(Color(hex: 0xC0C4CE))
                         }
                         .padding(.horizontal, 14)
                         .padding(.vertical, 12)
-                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: 0xF5F6FA)))
+                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(MimiTheme.background))
                     }
 
                     if isAddingSubcategory {
                         HStack(spacing: 10) {
                             TextField("输入二级分类名称", text: $newSubcategoryName)
-                                .font(.system(size: 14))
+                                .mimiFont(14)
                             Button("添加") {
                                 commitNewSubcategory(to: group)
                             }
-                            .font(.system(size: 14, weight: .semibold))
+                            .mimiFont(14, weight: .semibold)
                             .foregroundColor(MimiTheme.expenseBlue)
                             .disabled(newSubcategoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         }
                         .padding(.horizontal, 14)
                         .padding(.vertical, 12)
-                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: 0xF5F6FA)))
+                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(MimiTheme.background))
                     }
 
                     Button {
@@ -265,15 +265,15 @@ public struct CategoryManagementView: View {
                     } label: {
                         HStack(spacing: 8) {
                             Image(systemName: "plus")
-                                .font(.system(size: 14, weight: .semibold))
+                                .mimiFont(14, weight: .semibold)
                             Text("添加二级分类")
-                                .font(.system(size: 14, weight: .medium))
+                                .mimiFont(14, weight: .medium)
                             Spacer(minLength: 0)
                         }
                         .foregroundColor(MimiTheme.textSecondary)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 14)
-                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: 0xF5F6FA)))
+                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(MimiTheme.background))
                     }
                     .buttonStyle(.plain)
                 }
@@ -281,7 +281,7 @@ public struct CategoryManagementView: View {
                 .padding(.bottom, 28)
             }
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(MimiTheme.cardBackground.ignoresSafeArea())
         .onDisappear {
             isAddingSubcategory = false
             newSubcategoryName = ""
@@ -326,7 +326,7 @@ public struct CategoryManagementView: View {
                 .padding(.bottom, 12)
 
             Text(selectedTab == .income ? "添加1级收入分类" : "添加1级支出分类")
-                .font(.system(size: 16, weight: .bold))
+                .mimiFont(16, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
                 .padding(.bottom, 16)
 
@@ -350,7 +350,7 @@ public struct CategoryManagementView: View {
                         )
                     } else {
                         Circle()
-                            .strokeBorder(Color(hex: 0xE5E7EB), lineWidth: 1.5)
+                            .strokeBorder(MimiTheme.divider, lineWidth: 1.5)
                             .background(Circle().fill(Color(hex: 0xFAFBFC)))
                             .frame(width: 52, height: 52)
                     }
@@ -358,10 +358,10 @@ public struct CategoryManagementView: View {
 
                 HStack(spacing: 8) {
                     TextField("请输入分类名称 (必填)", text: $newCategoryName)
-                        .font(.system(size: 16, weight: .medium))
+                        .mimiFont(16, weight: .medium)
                         .foregroundColor(MimiTheme.textPrimary)
                     Image(systemName: "pencil")
-                        .font(.system(size: 13, weight: .medium))
+                        .mimiFont(13, weight: .medium)
                         .foregroundColor(Color(hex: 0xC0C4CE))
                 }
                 .padding(.bottom, 8)
@@ -376,19 +376,19 @@ public struct CategoryManagementView: View {
 
             Toggle(isOn: $useFirstCharAsIcon) {
                 Text("首字作为图标")
-                    .font(.system(size: 14, weight: .medium))
+                    .mimiFont(14, weight: .medium)
                     .foregroundColor(MimiTheme.textPrimary)
             }
             .tint(MimiTheme.expenseBlue)
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
-            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: 0xF5F6FA)))
+            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(MimiTheme.background))
             .padding(.horizontal, 20)
             .padding(.bottom, 16)
 
             HStack {
                 Text("分类图标")
-                    .font(.system(size: 12, weight: .medium))
+                    .mimiFont(12, weight: .medium)
                     .foregroundColor(MimiTheme.textMuted)
                 Spacer()
             }
@@ -402,11 +402,11 @@ public struct CategoryManagementView: View {
                     } label: {
                         ZStack {
                             Circle()
-                                .strokeBorder(Color(hex: 0xE5E7EB), lineWidth: 1)
-                                .background(Circle().fill(Color.white))
+                                .strokeBorder(MimiTheme.divider, lineWidth: 1)
+                                .background(Circle().fill(MimiTheme.cardBackground))
                                 .frame(width: 52, height: 52)
                             Image(systemName: "plus")
-                                .font(.system(size: 18, weight: .semibold))
+                                .mimiFont(18, weight: .semibold)
                                 .foregroundColor(MimiTheme.textSecondary)
                         }
                     }
@@ -445,7 +445,7 @@ public struct CategoryManagementView: View {
                 showAddPrimarySheet = false
             } label: {
                 Text("确认")
-                    .font(.system(size: 16, weight: .semibold))
+                    .mimiFont(16, weight: .semibold)
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
@@ -463,7 +463,7 @@ public struct CategoryManagementView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(MimiTheme.cardBackground.ignoresSafeArea())
         .onAppear {
             newCategoryName = ""
             useFirstCharAsIcon = true

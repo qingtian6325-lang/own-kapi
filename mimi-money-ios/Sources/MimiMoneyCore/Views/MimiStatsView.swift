@@ -237,14 +237,14 @@ public struct MimiStatsView: View {
             Button(action: onSwitchToHome) {
                 HStack(spacing: 4) {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 15, weight: .bold))
+                        .mimiFont(15, weight: .bold)
                     Text("记录")
-                        .font(.system(size: 14, weight: .semibold))
+                        .mimiFont(14, weight: .semibold)
                 }
                 .foregroundColor(MimiTheme.textPrimary)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Capsule().fill(Color.white))
+                .background(Capsule().fill(MimiTheme.cardBackground))
             }
             .buttonStyle(.plain)
 
@@ -255,10 +255,10 @@ public struct MimiStatsView: View {
             } label: {
                 HStack(spacing: 4) {
                     Text("统计")
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .mimiFont(20, weight: .bold, design: .rounded)
                         .foregroundColor(MimiTheme.textPrimary)
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 11, weight: .bold))
+                        .mimiFont(11, weight: .bold)
                         .foregroundColor(MimiTheme.textSecondary)
                 }
             }
@@ -275,15 +275,15 @@ public struct MimiStatsView: View {
             } label: {
                 HStack(spacing: 4) {
                     Text(selectedLedgerFilterId == "all" ? "全部账本" : (store.ledgers.first(where: { $0.id == selectedLedgerFilterId })?.name ?? store.currentLedgerName))
-                        .font(.system(size: 11, weight: .semibold))
+                        .mimiFont(11, weight: .semibold)
                         .foregroundColor(MimiTheme.textPrimary)
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 9, weight: .bold))
+                        .mimiFont(9, weight: .bold)
                         .foregroundColor(MimiTheme.textSecondary)
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 5)
-                .background(Capsule().fill(Color.white))
+                .background(Capsule().fill(MimiTheme.cardBackground))
             }
 
             Menu {
@@ -293,15 +293,15 @@ public struct MimiStatsView: View {
             } label: {
                 HStack(spacing: 3) {
                     Text(selectedFilterType == "全部" ? "筛选" : selectedFilterType)
-                        .font(.system(size: 11, weight: .semibold))
+                        .mimiFont(11, weight: .semibold)
                         .foregroundColor(MimiTheme.textPrimary)
                     Image(systemName: "line.3.horizontal.decrease.circle")
-                        .font(.system(size: 11))
+                        .mimiFont(11)
                         .foregroundColor(MimiTheme.expenseBlue)
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 5)
-                .background(Capsule().fill(Color.white))
+                .background(Capsule().fill(MimiTheme.cardBackground))
             }
         }
     }
@@ -316,7 +316,7 @@ public struct MimiStatsView: View {
                         selectedPeriod = period
                     } label: {
                         Text(period)
-                            .font(.system(size: 13, weight: selectedPeriod == period ? .bold : .medium))
+                            .mimiFont(13, weight: selectedPeriod == period ? .bold : .medium)
                             .foregroundColor(selectedPeriod == period ? MimiTheme.textPrimary : MimiTheme.textSecondary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 7)
@@ -335,7 +335,7 @@ public struct MimiStatsView: View {
             HStack {
                 Button { navigatePeriod(forward: false) } label: {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 13, weight: .bold))
+                        .mimiFont(13, weight: .bold)
                         .foregroundColor(MimiTheme.textSecondary)
                         .mimiMinTouchTarget()
                 }
@@ -345,7 +345,7 @@ public struct MimiStatsView: View {
                 Spacer()
 
                 Text(periodLabelText)
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .mimiFont(15, weight: .bold, design: .rounded)
                     .foregroundColor(MimiTheme.textPrimary)
                     .minimumScaleFactor(0.8)
                     .lineLimit(1)
@@ -354,7 +354,7 @@ public struct MimiStatsView: View {
 
                 Button { navigatePeriod(forward: true) } label: {
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .bold))
+                        .mimiFont(13, weight: .bold)
                         .foregroundColor(MimiTheme.textSecondary)
                         .mimiMinTouchTarget()
                 }
@@ -378,7 +378,7 @@ public struct MimiStatsView: View {
                     )
                 }
                 .padding(8)
-                .background(RoundedRectangle(cornerRadius: 10).fill(Color.white))
+                .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.cardBackground))
             }
         }
     }
@@ -389,10 +389,10 @@ public struct MimiStatsView: View {
         HStack(spacing: 0) {
             VStack(spacing: 6) {
                 Text("支出")
-                    .font(.system(size: 12, weight: .medium))
+                    .mimiFont(12, weight: .medium)
                     .foregroundColor(MimiTheme.textSecondary)
                 Text(MimiTheme.formatRM(totalExpense))
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .mimiFont(17, weight: .bold, design: .rounded)
                     .foregroundColor(MimiTheme.expenseBlue)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
@@ -403,10 +403,10 @@ public struct MimiStatsView: View {
 
             VStack(spacing: 6) {
                 Text("收入")
-                    .font(.system(size: 12, weight: .medium))
+                    .mimiFont(12, weight: .medium)
                     .foregroundColor(MimiTheme.textSecondary)
                 Text(MimiTheme.formatRM(totalIncome))
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .mimiFont(17, weight: .bold, design: .rounded)
                     .foregroundColor(MimiTheme.incomeOrange)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
@@ -417,10 +417,10 @@ public struct MimiStatsView: View {
 
             VStack(spacing: 6) {
                 Text("结余")
-                    .font(.system(size: 12, weight: .medium))
+                    .mimiFont(12, weight: .medium)
                     .foregroundColor(MimiTheme.textSecondary)
                 Text(netBalance >= 0 ? MimiTheme.formatRM(netBalance) : "-\(MimiTheme.formatRM(abs(netBalance)))")
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .mimiFont(17, weight: .bold, design: .rounded)
                     .foregroundColor(MimiTheme.balanceGreen)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
@@ -429,7 +429,7 @@ public struct MimiStatsView: View {
         }
         .padding(.vertical, 16)
         .padding(.horizontal, 8)
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
+        .background(RoundedRectangle(cornerRadius: 20).fill(MimiTheme.cardBackground))
     }
 
     // MARK: - Donut Chart: 支出分类构成 (IMG_2254)
@@ -438,13 +438,13 @@ public struct MimiStatsView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text(selectedChartType == .expense ? "支出分类构成" : "收入分类构成")
-                    .font(.system(size: 15, weight: .bold))
+                    .mimiFont(15, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
                 HStack(spacing: 0) {
                     Button { selectedChartType = .expense } label: {
                         Text("支出")
-                            .font(.system(size: 12, weight: selectedChartType == .expense ? .bold : .medium))
+                            .mimiFont(12, weight: selectedChartType == .expense ? .bold : .medium)
                             .foregroundColor(selectedChartType == .expense ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 5)
@@ -453,7 +453,7 @@ public struct MimiStatsView: View {
                     .buttonStyle(.plain)
                     Button { selectedChartType = .income } label: {
                         Text("收入")
-                            .font(.system(size: 12, weight: selectedChartType == .income ? .bold : .medium))
+                            .mimiFont(12, weight: selectedChartType == .income ? .bold : .medium)
                             .foregroundColor(selectedChartType == .income ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 5)
@@ -462,7 +462,7 @@ public struct MimiStatsView: View {
                     .buttonStyle(.plain)
                 }
                 .padding(3)
-                .background(Capsule().fill(Color(hex: 0xEEF0F6)))
+                .background(Capsule().fill(MimiTheme.fillSubtle))
             }
 
             HStack {
@@ -470,7 +470,7 @@ public struct MimiStatsView: View {
                 let slices = categoryBreakdown
                 ZStack {
                     Circle()
-                        .stroke(Color(hex: 0xEEF0F6), lineWidth: 22)
+                        .stroke(MimiTheme.fillSubtle, lineWidth: 22)
                         .frame(width: 150, height: 150)
 
                     ForEach(Array(donutTrimRanges(for: slices).enumerated()), id: \.offset) { idx, range in
@@ -486,10 +486,10 @@ public struct MimiStatsView: View {
 
                     VStack(spacing: 4) {
                         Text(chartCenterLabel)
-                            .font(.system(size: 11))
+                            .mimiFont(11)
                             .foregroundColor(MimiTheme.textMuted)
                         Text(MimiTheme.formatRM(chartCenterTotal))
-                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .mimiFont(15, weight: .bold, design: .rounded)
                             .foregroundColor(MimiTheme.textPrimary)
                     }
                 }
@@ -498,7 +498,7 @@ public struct MimiStatsView: View {
 
             if categoryBreakdown.isEmpty {
                 Text(selectedChartType == .expense ? "暂无支出分类数据" : "暂无收入分类数据")
-                    .font(.system(size: 13))
+                    .mimiFont(13)
                     .foregroundColor(MimiTheme.textMuted)
             } else {
                 VStack(spacing: 12) {
@@ -517,15 +517,15 @@ public struct MimiStatsView: View {
                                     VStack(alignment: .leading, spacing: 2) {
                                         HStack(spacing: 6) {
                                             Text(row.name)
-                                                .font(.system(size: 14, weight: .semibold))
+                                                .mimiFont(14, weight: .semibold)
                                                 .foregroundColor(MimiTheme.textPrimary)
                                             Text(String(format: "%.2f%%", row.percent * 100))
-                                                .font(.system(size: 12, design: .rounded))
+                                                .mimiFont(12, design: .rounded)
                                                 .foregroundColor(MimiTheme.textMuted)
                                         }
                                         GeometryReader { geo in
                                             ZStack(alignment: .leading) {
-                                                Capsule().fill(Color(hex: 0xEEF0F6)).frame(height: 6)
+                                                Capsule().fill(MimiTheme.fillSubtle).frame(height: 6)
                                                 Capsule()
                                                     .fill(row.color.opacity(0.85))
                                                     .frame(width: max(4, geo.size.width * CGFloat(row.percent)), height: 6)
@@ -536,14 +536,14 @@ public struct MimiStatsView: View {
                                     Spacer(minLength: 8)
                                     VStack(alignment: .trailing, spacing: 2) {
                                         Text(MimiTheme.formatRM(row.amount))
-                                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                                            .mimiFont(14, weight: .bold, design: .rounded)
                                             .foregroundColor(MimiTheme.textPrimary)
                                         Text("\(row.count)笔")
-                                            .font(.system(size: 11))
+                                            .mimiFont(11)
                                             .foregroundColor(MimiTheme.textMuted)
                                     }
                                     Image(systemName: "chevron.right")
-                                        .font(.system(size: 11, weight: .semibold))
+                                        .mimiFont(11, weight: .semibold)
                                         .foregroundColor(MimiTheme.textMuted)
                                 }
                             }
@@ -555,7 +555,7 @@ public struct MimiStatsView: View {
             }
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
+        .background(RoundedRectangle(cornerRadius: 20).fill(MimiTheme.cardBackground))
     }
 
     private func donutTrimRanges(
@@ -607,14 +607,14 @@ public struct MimiStatsView: View {
         return VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text(trendMode == "支出" ? "每日支出趋势" : (trendMode == "收入" ? "每日收入趋势" : "每日结余趋势"))
-                    .font(.system(size: 15, weight: .bold))
+                    .mimiFont(15, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
                 HStack(spacing: 0) {
                     ForEach(["支出", "收入", "结余"], id: \.self) { mode in
                         Button { trendMode = mode } label: {
                             Text(mode)
-                                .font(.system(size: 11, weight: trendMode == mode ? .bold : .medium))
+                                .mimiFont(11, weight: trendMode == mode ? .bold : .medium)
                                 .foregroundColor(trendMode == mode ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
@@ -624,11 +624,11 @@ public struct MimiStatsView: View {
                     }
                 }
                 .padding(3)
-                .background(Capsule().fill(Color(hex: 0xEEF0F6)))
+                .background(Capsule().fill(MimiTheme.fillSubtle))
             }
 
             Text("日均 \(MimiTheme.formatRM(avgBase))")
-                .font(.system(size: 11))
+                .mimiFont(11)
                 .foregroundColor(MimiTheme.textMuted)
 
             HStack(alignment: .bottom, spacing: 12) {
@@ -636,14 +636,14 @@ public struct MimiStatsView: View {
                     VStack(spacing: 6) {
                         if abs(bar.value) > 0.009 {
                             Text(String(format: "%.0f", bar.value))
-                                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                                .mimiFont(9, weight: .semibold, design: .rounded)
                                 .foregroundColor(barColor)
                         }
                         RoundedRectangle(cornerRadius: 6)
-                            .fill(abs(bar.value) > 0.009 ? barColor : Color(hex: 0xEEF0F6))
+                            .fill(abs(bar.value) > 0.009 ? barColor : MimiTheme.fillSubtle)
                             .frame(height: max(8, CGFloat(abs(bar.value) / maxVal) * 110))
                         Text(bar.label)
-                            .font(.system(size: 10))
+                            .mimiFont(10)
                             .foregroundColor(MimiTheme.textSecondary)
                     }
                     .frame(maxWidth: .infinity)
@@ -652,7 +652,7 @@ public struct MimiStatsView: View {
             .frame(height: 145, alignment: .bottom)
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
+        .background(RoundedRectangle(cornerRadius: 20).fill(MimiTheme.cardBackground))
     }
 
     // MARK: - Top 10 List: 单笔支出排行 (IMG_2256)
@@ -667,14 +667,14 @@ public struct MimiStatsView: View {
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(rankingMode == "收入" ? "单笔收入排行" : "单笔支出排行")
-                    .font(.system(size: 15, weight: .bold))
+                    .mimiFont(15, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
                 HStack(spacing: 0) {
                     ForEach(["支出", "收入"], id: \.self) { mode in
                         Button { rankingMode = mode } label: {
                             Text(mode)
-                                .font(.system(size: 11, weight: rankingMode == mode ? .bold : .medium))
+                                .mimiFont(11, weight: rankingMode == mode ? .bold : .medium)
                                 .foregroundColor(rankingMode == mode ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
@@ -684,19 +684,19 @@ public struct MimiStatsView: View {
                     }
                 }
                 .padding(3)
-                .background(Capsule().fill(Color(hex: 0xEEF0F6)))
+                .background(Capsule().fill(MimiTheme.fillSubtle))
             }
 
             if ranked.isEmpty {
                 Text(rankingMode == "收入" ? "暂无单笔收入记录" : "暂无单笔支出记录")
-                    .font(.system(size: 13))
+                    .mimiFont(13)
                     .foregroundColor(MimiTheme.textMuted)
                     .padding(.vertical, 8)
             } else {
                 ForEach(Array(visible.enumerated()), id: \.element.id) { idx, item in
                     HStack(spacing: 10) {
                         Text("\(idx + 1)")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .mimiFont(12, weight: .bold, design: .rounded)
                             .foregroundColor(idx < 3 ? MimiTheme.expenseBlue : MimiTheme.textMuted)
                             .frame(width: 18)
 
@@ -709,11 +709,11 @@ public struct MimiStatsView: View {
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.categoryPath)
-                                .font(.system(size: 13, weight: .semibold))
+                                .mimiFont(13, weight: .semibold)
                                 .foregroundColor(MimiTheme.textPrimary)
                             if !item.note.isEmpty {
                                 Text(item.note)
-                                    .font(.system(size: 11))
+                                    .mimiFont(11)
                                     .foregroundColor(MimiTheme.textMuted)
                                     .lineLimit(1)
                             }
@@ -724,11 +724,11 @@ public struct MimiStatsView: View {
                         Text(rankingMode == "收入"
                              ? MimiTheme.formatRM(item.amount)
                              : MimiTheme.formatRM(item.amount))
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .mimiFont(14, weight: .bold, design: .rounded)
                             .foregroundColor(rankingMode == "收入" ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
 
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 11, weight: .semibold))
+                            .mimiFont(11, weight: .semibold)
                             .foregroundColor(Color(hex: 0xC5C8D0))
                     }
                     .padding(.horizontal, 8)
@@ -747,9 +747,9 @@ public struct MimiStatsView: View {
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: isRankingExpanded ? "chevron.up" : "chevron.down")
-                                .font(.system(size: 11, weight: .semibold))
+                                .mimiFont(11, weight: .semibold)
                             Text(isRankingExpanded ? "收起" : "展开全部")
-                                .font(.system(size: 12, weight: .medium))
+                                .mimiFont(12, weight: .medium)
                         }
                         .foregroundColor(MimiTheme.textMuted)
                         .frame(maxWidth: .infinity)
@@ -760,7 +760,7 @@ public struct MimiStatsView: View {
             }
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
+        .background(RoundedRectangle(cornerRadius: 20).fill(MimiTheme.cardBackground))
     }
 
     // MARK: - Tabular Summary: 账单汇总 (IMG_2257)
@@ -788,7 +788,7 @@ public struct MimiStatsView: View {
 
         return VStack(alignment: .leading, spacing: 12) {
             Text("账单汇总")
-                .font(.system(size: 15, weight: .bold))
+                .mimiFont(15, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
 
             VStack(spacing: 0) {
@@ -798,7 +798,7 @@ public struct MimiStatsView: View {
                     Text("收入").frame(maxWidth: .infinity).foregroundColor(MimiTheme.incomeOrange)
                     Text("结余").frame(maxWidth: .infinity).foregroundColor(MimiTheme.balanceGreen)
                 }
-                .font(.system(size: 11, weight: .bold))
+                .mimiFont(11, weight: .bold)
                 .padding(10)
                 .background(Color(hex: 0xEEF1FA))
 
@@ -807,14 +807,14 @@ public struct MimiStatsView: View {
 
                 if dayRows.isEmpty {
                     Text("暂无账单")
-                        .font(.system(size: 12))
+                        .mimiFont(12)
                         .foregroundColor(MimiTheme.textMuted)
                         .frame(maxWidth: .infinity)
                         .padding(12)
                 } else {
                     ForEach(Array(dayRows.enumerated()), id: \.offset) { idx, row in
                         summaryTableRow(label: row.label, exp: row.exp, inc: row.inc, net: row.net, emphasize: false)
-                            .background(idx % 2 == 0 ? Color.white : Color(hex: 0xF8F9FC))
+                            .background(idx % 2 == 0 ? Color.white : MimiTheme.fillSubtle)
                     }
                 }
             }
@@ -822,24 +822,24 @@ public struct MimiStatsView: View {
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(MimiTheme.divider, lineWidth: 1))
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
+        .background(RoundedRectangle(cornerRadius: 20).fill(MimiTheme.cardBackground))
     }
 
     private func summaryTableRow(label: String, exp: Double, inc: Double, net: Double, emphasize: Bool) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 12, weight: emphasize ? .bold : .regular, design: .rounded))
+                .mimiFont(12, weight: emphasize ? .bold : .regular, design: .rounded)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Text(MimiTheme.formatRM(exp))
-                .font(.system(size: 12, weight: emphasize ? .semibold : .regular, design: .rounded))
+                .mimiFont(12, weight: emphasize ? .semibold : .regular, design: .rounded)
                 .foregroundColor(MimiTheme.expenseBlue)
                 .frame(maxWidth: .infinity)
             Text(MimiTheme.formatRM(inc))
-                .font(.system(size: 12, weight: emphasize ? .semibold : .regular, design: .rounded))
+                .mimiFont(12, weight: emphasize ? .semibold : .regular, design: .rounded)
                 .foregroundColor(MimiTheme.incomeOrange)
                 .frame(maxWidth: .infinity)
             Text(net >= 0 ? MimiTheme.formatRM(net) : "-\(MimiTheme.formatRM(abs(net)))")
-                .font(.system(size: 12, weight: emphasize ? .semibold : .regular, design: .rounded))
+                .mimiFont(12, weight: emphasize ? .semibold : .regular, design: .rounded)
                 .foregroundColor(MimiTheme.balanceGreen)
                 .frame(maxWidth: .infinity)
         }

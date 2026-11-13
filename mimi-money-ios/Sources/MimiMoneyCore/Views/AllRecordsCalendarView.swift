@@ -111,10 +111,10 @@ public struct AllRecordsCalendarView: View {
                                 Image(systemName: "magnifyingglass")
                                     .foregroundColor(MimiTheme.textMuted)
                                 TextField("搜索当日分类、备注、账户...", text: $searchQuery)
-                                    .font(.system(size: 14))
+                                    .mimiFont(14)
                             }
                             .padding(10)
-                            .background(RoundedRectangle(cornerRadius: 12).fill(Color.white))
+                            .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.cardBackground))
                         }
 
                         calendarCard
@@ -138,7 +138,7 @@ public struct AllRecordsCalendarView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(action: onDismiss) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
+                            .mimiFont(16, weight: .semibold)
                             .foregroundColor(MimiTheme.textPrimary)
                     }
                 }
@@ -147,7 +147,7 @@ public struct AllRecordsCalendarView: View {
                         withAnimation { showSearchField.toggle() }
                     } label: {
                         Image(systemName: "magnifyingglass")
-                            .font(.system(size: 14, weight: .semibold))
+                            .mimiFont(14, weight: .semibold)
                             .foregroundColor(MimiTheme.textPrimary)
                     }
                 }
@@ -170,10 +170,10 @@ public struct AllRecordsCalendarView: View {
             } label: {
                 HStack(spacing: 4) {
                     Text(String(format: "%d年%d月", selectedYear, selectedMonth))
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .mimiFont(17, weight: .bold, design: .rounded)
                         .foregroundColor(MimiTheme.textPrimary)
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 11, weight: .bold))
+                        .mimiFont(11, weight: .bold)
                         .foregroundColor(MimiTheme.textMuted)
                 }
             }
@@ -184,7 +184,7 @@ public struct AllRecordsCalendarView: View {
                 selectedDay = 8
             } label: {
                 Text("回今天")
-                    .font(.system(size: 11, weight: .semibold))
+                    .mimiFont(11, weight: .semibold)
                     .foregroundColor(MimiTheme.textSecondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
@@ -200,16 +200,16 @@ public struct AllRecordsCalendarView: View {
             } label: {
                 HStack(spacing: 4) {
                     Image(systemName: "creditcard")
-                        .font(.system(size: 11))
+                        .mimiFont(11)
                     Text(filterMode)
-                        .font(.system(size: 12, weight: .semibold))
+                        .mimiFont(12, weight: .semibold)
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 9, weight: .bold))
+                        .mimiFont(9, weight: .bold)
                 }
                 .foregroundColor(MimiTheme.textPrimary)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
-                .background(Capsule().fill(Color.white))
+                .background(Capsule().fill(MimiTheme.cardBackground))
             }
         }
         .padding(.vertical, 4)
@@ -221,29 +221,29 @@ public struct AllRecordsCalendarView: View {
         HStack {
             HStack(spacing: 8) {
                 Text("月支出")
-                    .font(.system(size: 11))
+                    .mimiFont(11)
                     .foregroundColor(MimiTheme.textSecondary)
                 Text(MimiTheme.formatRM(monthlyExpenseTotal))
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .mimiFont(13, weight: .bold, design: .rounded)
                     .foregroundColor(MimiTheme.expenseBlue)
 
                 Text("|")
-                    .font(.system(size: 11))
+                    .mimiFont(11)
                     .foregroundColor(Color.gray.opacity(0.3))
 
                 if filterMode == "支出" {
                     Text("日均支出")
-                        .font(.system(size: 11))
+                        .mimiFont(11)
                         .foregroundColor(MimiTheme.textSecondary)
                     Text(MimiTheme.formatRM(dailyAverageExpense))
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .mimiFont(13, weight: .bold, design: .rounded)
                         .foregroundColor(MimiTheme.expenseBlue)
                 } else {
                     Text("月收入")
-                        .font(.system(size: 11))
+                        .mimiFont(11)
                         .foregroundColor(MimiTheme.textSecondary)
                     Text(MimiTheme.formatRM(monthlyIncomeTotal))
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .mimiFont(13, weight: .bold, design: .rounded)
                         .foregroundColor(MimiTheme.incomeOrange)
                 }
             }
@@ -255,9 +255,9 @@ public struct AllRecordsCalendarView: View {
             } label: {
                 HStack(spacing: 2) {
                     Text(filterMode == "支出" ? "支出分析" : "收支分析")
-                        .font(.system(size: 11, weight: .medium))
+                        .mimiFont(11, weight: .medium)
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 9, weight: .bold))
+                        .mimiFont(9, weight: .bold)
                 }
                 .foregroundColor(MimiTheme.textMuted)
             }
@@ -273,7 +273,7 @@ public struct AllRecordsCalendarView: View {
             HStack(spacing: 0) {
                 ForEach(["日", "一", "二", "三", "四", "五", "六"], id: \.self) { day in
                     Text(day)
-                        .font(.system(size: 12, weight: .medium))
+                        .mimiFont(12, weight: .medium)
                         .foregroundColor(MimiTheme.textMuted)
                         .frame(maxWidth: .infinity)
                 }
@@ -303,40 +303,40 @@ public struct AllRecordsCalendarView: View {
             // Heatmap Legend: 收入多 🟧 🟨 ⬜ 🟦 🟦 支出多
             HStack(spacing: 6) {
                 Text("收入多")
-                    .font(.system(size: 10))
+                    .mimiFont(10)
                     .foregroundColor(MimiTheme.textMuted)
 
                 RoundedRectangle(cornerRadius: 2).fill(Color(hex: 0xFFD8B5)).frame(width: 12, height: 10)
                 RoundedRectangle(cornerRadius: 2).fill(Color(hex: 0xFFEBD9)).frame(width: 12, height: 10)
-                RoundedRectangle(cornerRadius: 2).fill(Color(hex: 0xF0F2F6)).frame(width: 12, height: 10)
+                RoundedRectangle(cornerRadius: 2).fill(MimiTheme.fillSubtle).frame(width: 12, height: 10)
                 RoundedRectangle(cornerRadius: 2).fill(Color(hex: 0xDDE9FD)).frame(width: 12, height: 10)
                 RoundedRectangle(cornerRadius: 2).fill(Color(hex: 0xC3D7FD)).frame(width: 12, height: 10)
 
                 Text("支出多")
-                    .font(.system(size: 10))
+                    .mimiFont(10)
                     .foregroundColor(MimiTheme.textMuted)
             }
             .padding(.top, 6)
             .padding(.bottom, 2)
         }
         .padding(14)
-        .background(RoundedRectangle(cornerRadius: MimiTheme.calendarCardCorner, style: .continuous).fill(Color.white))
+        .background(RoundedRectangle(cornerRadius: MimiTheme.calendarCardCorner, style: .continuous).fill(MimiTheme.cardBackground))
     }
 
     private func dayCellView(for cell: CalendarDaySummary, isSelected: Bool) -> some View {
         VStack(spacing: 1) {
             HStack(spacing: 2) {
                 Text(cell.isToday ? "今" : "\(cell.day)")
-                    .font(.system(size: 12, weight: cell.isToday || isSelected ? .bold : .semibold, design: .rounded))
+                    .mimiFont(12, weight: cell.isToday || isSelected ? .bold : .semibold, design: .rounded)
                     .foregroundColor(MimiTheme.textPrimary)
 
                 if cell.isHighestExpenseDay {
                     Image(systemName: "circle.fill")
-                        .font(.system(size: 7))
+                        .mimiFont(7)
                         .foregroundColor(MimiTheme.vipGold)
                         .overlay(
                             Text("¥")
-                                .font(.system(size: 5, weight: .bold))
+                                .mimiFont(5, weight: .bold)
                                 .foregroundColor(.white)
                         )
                 }
@@ -348,7 +348,7 @@ public struct AllRecordsCalendarView: View {
 
             if cell.expense > 0 && filterMode != "收入" {
                 Text(String(format: "-%.2f", cell.expense))
-                    .font(.system(size: 8, weight: .bold, design: .rounded))
+                    .mimiFont(8, weight: .bold, design: .rounded)
                     .foregroundColor(Color(hex: 0x2A4E9E))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
@@ -356,7 +356,7 @@ public struct AllRecordsCalendarView: View {
 
             if cell.income > 0 && filterMode != "支出" {
                 Text(String(format: "+%.2f", cell.income))
-                    .font(.system(size: 8, weight: .bold, design: .rounded))
+                    .mimiFont(8, weight: .bold, design: .rounded)
                     .foregroundColor(Color(hex: 0xB55716))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
@@ -408,19 +408,19 @@ public struct AllRecordsCalendarView: View {
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text(String(format: "%d月%d日 (%@)", selectedMonth, selectedDay, selectedDayWeekdayString))
-                    .font(.system(size: 13, weight: .bold))
+                    .mimiFont(13, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
 
                 Spacer()
 
                 HStack(spacing: 8) {
                     Text("支 \(MimiTheme.formatRM(dayExpense))")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .mimiFont(12, weight: .bold, design: .rounded)
                         .foregroundColor(MimiTheme.textPrimary)
                     Text("|")
                         .foregroundColor(Color.gray.opacity(0.3))
                     Text("收 \(MimiTheme.formatRM(dayIncome))")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .mimiFont(12, weight: .bold, design: .rounded)
                         .foregroundColor(MimiTheme.textSecondary)
                 }
             }
@@ -429,15 +429,15 @@ public struct AllRecordsCalendarView: View {
             if selectedDateTransactions.isEmpty {
                 VStack(spacing: 6) {
                     Text("当日暂无记账记录")
-                        .font(.system(size: 13))
+                        .mimiFont(13)
                         .foregroundColor(MimiTheme.textMuted)
                     Text("点击右下角「+」快速补记一笔")
-                        .font(.system(size: 11))
+                        .mimiFont(11)
                         .foregroundColor(MimiTheme.textMuted)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 28)
-                .background(RoundedRectangle(cornerRadius: 16).fill(Color.white))
+                .background(RoundedRectangle(cornerRadius: 16).fill(MimiTheme.cardBackground))
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(selectedDateTransactions.enumerated()), id: \.element.id) { index, item in
@@ -450,39 +450,39 @@ public struct AllRecordsCalendarView: View {
                                         .fill(Color(hex: 0xEDF2FA))
                                         .frame(width: 40, height: 40)
                                     Text(item.iconName.isEmpty ? "📝" : item.iconName)
-                                        .font(.system(size: 20))
+                                        .mimiFont(20)
                                 }
 
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(item.categoryPath.components(separatedBy: "-").last ?? item.categoryPath)
-                                        .font(.system(size: 14, weight: .semibold))
+                                        .mimiFont(14, weight: .semibold)
                                         .foregroundColor(MimiTheme.textPrimary)
 
                                     HStack(spacing: 6) {
                                         Text(formattedTime(item.date))
-                                            .font(.system(size: 11))
+                                            .mimiFont(11)
                                             .foregroundColor(MimiTheme.textMuted)
 
                                         if !item.note.isEmpty {
                                             Text("| \(item.note)")
-                                                .font(.system(size: 11))
+                                                .mimiFont(11)
                                                 .foregroundColor(MimiTheme.textSecondary)
                                                 .lineLimit(1)
                                         }
 
                                         Text(item.accountName)
-                                            .font(.system(size: 10, weight: .medium))
+                                            .mimiFont(10, weight: .medium)
                                             .foregroundColor(MimiTheme.textSecondary)
                                             .padding(.horizontal, 6)
                                             .padding(.vertical, 2)
-                                            .background(Capsule().fill(Color(hex: 0xF0F2F6)))
+                                            .background(Capsule().fill(MimiTheme.fillSubtle))
                                     }
                                 }
 
                                 Spacer()
 
                                 Text(item.type == .expense ? "-\(MimiTheme.formatRM(item.amount))" : "+\(MimiTheme.formatRM(item.amount))")
-                                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                                    .mimiFont(15, weight: .bold, design: .rounded)
                                     .foregroundColor(item.type == .expense ? Color(hex: 0x2A4E9E) : MimiTheme.incomeOrange)
                             }
                             .padding(14)
@@ -494,7 +494,7 @@ public struct AllRecordsCalendarView: View {
                         }
                     }
                 }
-                .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.white))
+                .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(MimiTheme.cardBackground))
             }
         }
     }
@@ -515,14 +515,14 @@ public struct AllRecordsCalendarView: View {
                 HStack(spacing: 8) {
                     MimiAskMascotView(size: 32)
                     Text("任何事都能问我")
-                        .font(.system(size: 13, weight: .medium))
+                        .mimiFont(13, weight: .medium)
                         .foregroundColor(MimiTheme.textMuted)
                     Spacer()
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .frame(minHeight: MimiHIG.minTouch)
-                .background(Capsule().fill(Color.white))
+                .background(Capsule().fill(MimiTheme.cardBackground))
                 .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
             }
             .mimiPressable()
@@ -533,10 +533,10 @@ public struct AllRecordsCalendarView: View {
                 onDismiss()
             } label: {
                 Image(systemName: "plus")
-                    .font(.system(size: 16, weight: .bold))
+                    .mimiFont(16, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                     .frame(width: 44, height: 44)
-                    .background(Circle().fill(Color.white))
+                    .background(Circle().fill(MimiTheme.cardBackground))
                     .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
             }
             .mimiPressable()

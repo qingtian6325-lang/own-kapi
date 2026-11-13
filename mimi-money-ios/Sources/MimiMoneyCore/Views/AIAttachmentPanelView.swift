@@ -30,10 +30,10 @@ public struct AIAttachmentPanelView: View {
         Button(action: action) {
             VStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.system(size: 24, weight: .regular))
+                    .mimiFont(24, weight: .regular)
                     .foregroundColor(Color(hex: 0x6B7285))
                 Text(title)
-                    .font(.system(size: 13, weight: .medium))
+                    .mimiFont(13, weight: .medium)
                     .foregroundColor(MimiTheme.textSecondary)
             }
             .frame(maxWidth: .infinity)
