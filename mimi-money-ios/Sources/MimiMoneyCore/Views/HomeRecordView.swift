@@ -95,8 +95,8 @@ public struct HomeRecordView: View {
             .safeAreaInset(edge: .top, spacing: 0) {
                 topNavigationBar
                     .padding(.horizontal, MimiTheme.homeHorizontalPadding)
-                    .padding(.top, MimiTheme.topChromeExtraPadding)
-                    .padding(.bottom, 12)
+                    .padding(.top, 6)
+                    .padding(.bottom, 10)
                     .frame(maxWidth: .infinity)
                     .background(MimiTheme.background)
             }
@@ -314,9 +314,9 @@ public struct HomeRecordView: View {
         .overlay(alignment: .topTrailing) {
             incomeExpensePill
                 .padding(.trailing, 12)
-                .offset(y: -8)
+                .offset(y: -12)
         }
-        .padding(.top, 18)
+        .padding(.top, 14)
     }
 
     /// Sits on the card's top-right corner, matching gold A. Opens the same calendar/search surface as the month chip.
