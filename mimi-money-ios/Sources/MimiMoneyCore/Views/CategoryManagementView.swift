@@ -57,7 +57,7 @@ public struct CategoryManagementView: View {
                                     .padding(.vertical, 8)
                                     .background(Capsule().fill(selectedTab == .expense ? Color.white : Color.clear))
                             }
-                            .buttonStyle(.plain)
+                            .mimiPressable()
                             Button { selectedTab = .income } label: {
                                 Text("收入")
                                     .mimiFont(13, weight: selectedTab == .income ? .bold : .medium)
@@ -66,7 +66,7 @@ public struct CategoryManagementView: View {
                                     .padding(.vertical, 8)
                                     .background(Capsule().fill(selectedTab == .income ? Color.white : Color.clear))
                             }
-                            .buttonStyle(.plain)
+                            .mimiPressable()
                         }
                         .padding(4)
                         .background(Capsule().fill(MimiTheme.fillSubtle))
@@ -92,7 +92,7 @@ public struct CategoryManagementView: View {
                                                     .foregroundColor(.white)
                                                     .padding(.horizontal, 4)
                                                     .padding(.vertical, 1)
-                                                    .background(Capsule().fill(Color(hex: 0x9CA3AF)))
+                                                    .background(Capsule().fill(MimiTheme.textMuted))
                                                     .offset(x: 4, y: 4)
                                             }
                                         }
@@ -104,7 +104,7 @@ public struct CategoryManagementView: View {
                                     }
                                     .frame(maxWidth: .infinity)
                                 }
-                                .buttonStyle(.plain)
+                                .mimiPressable()
                             }
 
                             Button {
@@ -128,7 +128,7 @@ public struct CategoryManagementView: View {
                                 }
                                 .frame(maxWidth: .infinity)
                             }
-                            .buttonStyle(.plain)
+                            .mimiPressable()
                         }
                         .padding(16)
                         .background(RoundedRectangle(cornerRadius: 18).fill(MimiTheme.cardBackground))
@@ -187,7 +187,7 @@ public struct CategoryManagementView: View {
     private func subcategoryManagerSheet(for group: CategoryGroup) -> some View {
         VStack(spacing: 14) {
             Capsule()
-                .fill(Color(hex: 0xD8DCE6))
+                .fill(MimiTheme.strokeSubtle)
                 .frame(width: 36, height: 4)
                 .padding(.top, 10)
 
@@ -205,7 +205,7 @@ public struct CategoryManagementView: View {
                 Spacer()
                 Image(systemName: "ellipsis")
                     .mimiFont(14, weight: .semibold)
-                    .foregroundColor(Color(hex: 0xC0C4CE))
+                    .foregroundColor(MimiTheme.iconInactive)
             }
             .padding(.horizontal, 20)
 
@@ -225,14 +225,14 @@ public struct CategoryManagementView: View {
                                 .foregroundColor(MimiTheme.textPrimary)
                             Image(systemName: "pencil")
                                 .mimiFont(11, weight: .medium)
-                                .foregroundColor(Color(hex: 0xC0C4CE))
+                                .foregroundColor(MimiTheme.iconInactive)
                             Spacer(minLength: 8)
                             Image(systemName: "line.3.horizontal")
                                 .mimiFont(13, weight: .semibold)
-                                .foregroundColor(Color(hex: 0xC0C4CE))
+                                .foregroundColor(MimiTheme.iconInactive)
                             Image(systemName: "ellipsis")
                                 .mimiFont(13, weight: .semibold)
-                                .foregroundColor(Color(hex: 0xC0C4CE))
+                                .foregroundColor(MimiTheme.iconInactive)
                         }
                         .padding(.horizontal, 14)
                         .padding(.vertical, 12)
@@ -275,7 +275,7 @@ public struct CategoryManagementView: View {
                         .padding(.vertical, 14)
                         .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(MimiTheme.background))
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 28)
@@ -320,7 +320,7 @@ public struct CategoryManagementView: View {
     private var addPrimaryCategorySheet: some View {
         VStack(spacing: 0) {
             Capsule()
-                .fill(Color(hex: 0xD8DCE6))
+                .fill(MimiTheme.strokeSubtle)
                 .frame(width: 36, height: 4)
                 .padding(.top, 10)
                 .padding(.bottom, 12)
@@ -351,7 +351,7 @@ public struct CategoryManagementView: View {
                     } else {
                         Circle()
                             .strokeBorder(MimiTheme.divider, lineWidth: 1.5)
-                            .background(Circle().fill(Color(hex: 0xFAFBFC)))
+                            .background(Circle().fill(MimiTheme.cardBackground))
                             .frame(width: 52, height: 52)
                     }
                 }
@@ -362,12 +362,12 @@ public struct CategoryManagementView: View {
                         .foregroundColor(MimiTheme.textPrimary)
                     Image(systemName: "pencil")
                         .mimiFont(13, weight: .medium)
-                        .foregroundColor(Color(hex: 0xC0C4CE))
+                        .foregroundColor(MimiTheme.iconInactive)
                 }
                 .padding(.bottom, 8)
                 .overlay(alignment: .bottom) {
                     Rectangle()
-                        .fill(Color(hex: 0xECEEF3))
+                        .fill(MimiTheme.divider)
                         .frame(height: 1)
                 }
             }
@@ -410,7 +410,7 @@ public struct CategoryManagementView: View {
                                 .foregroundColor(MimiTheme.textSecondary)
                         }
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
 
                     ForEach(flatStickerIcons.prefix(59), id: \.self) { emoji in
                         Button {
@@ -426,7 +426,7 @@ public struct CategoryManagementView: View {
                                 isSelected: selectedStickerEmoji == emoji && !useFirstCharAsIcon
                             )
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
                     }
                 }
                 .padding(.horizontal, 20)
@@ -453,12 +453,12 @@ public struct CategoryManagementView: View {
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .fill(
                                 newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                    ? Color(hex: 0xB8C7F5)
+                                    ? MimiTheme.ringProgress
                                     : MimiTheme.expenseBlue
                             )
                     )
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
             .disabled(newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             .padding(.horizontal, 20)
             .padding(.bottom, 20)

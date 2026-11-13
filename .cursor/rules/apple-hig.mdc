@@ -37,3 +37,4 @@ When changing UI or interaction in this iOS app, follow Apple Human Interface Gu
 ## Scope
 - Gold-reference layout can stay custom, but interactions must feel native (targets, labels, dismiss, alternatives to gestures).
 - Do not invent a second design system; extend `MimiTheme` tokens instead of one-off hex sprawl.
+- Product design source of truth: `design-system/mimi-money/MASTER.md` (brand + HIG + AI composer rules).

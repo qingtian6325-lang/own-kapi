@@ -3,6 +3,7 @@ import SwiftUI
 public struct MimiRootContainerView: View {
     @ObservedObject public var store: MimiStore
     @StateObject private var aiEngine = MimiAIEngine()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var currentMainPage: String = "记录"
     @State private var isDrawerOpen: Bool = false
@@ -33,7 +34,7 @@ public struct MimiRootContainerView: View {
             HomeRecordView(
                 store: store,
                 onOpenDrawer: {
-                    withAnimation(.easeOut(duration: 0.22)) {
+                    withAnimation(MimiMotion.drawer(reduceMotion: reduceMotion)) {
                         isDrawerOpen = true
                     }
                 },
@@ -46,7 +47,7 @@ public struct MimiRootContainerView: View {
                 onOpenRecordSheet: { aiMode in
                     if aiMode {
                         aiOverlayAttachments = []
-                        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                        withAnimation(MimiMotion.sheet(reduceMotion: reduceMotion)) {
                             showAIAskOverlay = true
                         }
                     } else {
@@ -82,7 +83,7 @@ public struct MimiRootContainerView: View {
                     Color.black.opacity(0.18)
                         .ignoresSafeArea()
                         .onTapGesture {
-                            withAnimation(.easeOut(duration: 0.2)) {
+                            withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                                 store.pendingShortcutSnippetBill = nil
                             }
                         }
@@ -90,18 +91,22 @@ public struct MimiRootContainerView: View {
                     ScreenshotResultSnippetView(
                         transaction: snippetBill,
                         onModifyTapped: {
-                            withAnimation(.easeOut(duration: 0.2)) {
+                            withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                                 store.pendingShortcutSnippetBill = nil
                             }
-                            pushOpen { activeBillForEdit = snippetBill }
+                            DispatchQueue.main.asyncAfter(
+                                deadline: .now() + MimiMotion.handoffDelay(.sheet, reduceMotion: reduceMotion)
+                            ) {
+                                pushOpen { activeBillForEdit = snippetBill }
+                            }
                         },
                         onConfirmTapped: {
-                            withAnimation(.easeOut(duration: 0.2)) {
+                            withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                                 store.pendingShortcutSnippetBill = nil
                             }
                         },
                         onCloseTapped: {
-                            withAnimation(.easeOut(duration: 0.2)) {
+                            withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                                 store.pendingShortcutSnippetBill = nil
                             }
                         }
@@ -112,20 +117,20 @@ public struct MimiRootContainerView: View {
                         DragGesture(minimumDistance: 20)
                             .onEnded { value in
                                 if value.translation.height < -15 {
-                                    withAnimation(.easeOut(duration: 0.2)) {
+                                    withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                                         store.pendingShortcutSnippetBill = nil
                                     }
                                 }
                             }
                     )
                 }
-                .transition(.opacity)
+                .transition(MimiMotion.snippetTransition)
                 .zIndex(20)
                 .onAppear {
                     // Auto-dismiss after 5 seconds so it never blocks the user screen indefinitely
                     DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
                         if store.pendingShortcutSnippetBill?.id == snippetBill.id {
-                            withAnimation(.easeOut(duration: 0.25)) {
+                            withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                                 store.pendingShortcutSnippetBill = nil
                             }
                         }
@@ -169,7 +174,7 @@ public struct MimiRootContainerView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 12)
                 }
-                .transition(.opacity)
+                .transition(MimiMotion.snippetTransition)
                 .zIndex(25)
             }
 
@@ -178,36 +183,35 @@ public struct MimiRootContainerView: View {
                     store: store,
                     aiEngine: aiEngine,
                     initialAttachments: aiOverlayAttachments,
-                    startExpanded: false,
                     onDismiss: {
-                        withAnimation(.easeOut(duration: 0.22)) {
+                        withAnimation(MimiMotion.sheet(reduceMotion: reduceMotion)) {
                             showAIAskOverlay = false
                             aiOverlayAttachments = []
                         }
                     },
                     onOpenManual: {
                         BookkeepingEntryPreference.rememberManual()
-                        withAnimation(.easeOut(duration: 0.18)) {
+                        withAnimation(MimiMotion.sheet(reduceMotion: reduceMotion)) {
                             showAIAskOverlay = false
                             aiOverlayAttachments = []
                         }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + pageHandoffDelay) {
                             openRecordSheetInAIMode = false
                             showRecordSheet = true
                         }
                     },
                     onOpenImportExport: {
-                        withAnimation(.easeOut(duration: 0.18)) {
+                        withAnimation(MimiMotion.sheet(reduceMotion: reduceMotion)) {
                             showAIAskOverlay = false
                             aiOverlayAttachments = []
                         }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + pageHandoffDelay) {
                             pushOpen { activeSettingsTitle = DrawerDestination.importExport.rawValue }
                         }
                     }
                 )
-                .id(aiOverlayAttachments.map(\.id.uuidString).joined(separator: "-"))
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
+                // 小窗从底部升起（非整页大块）
+                .transition(MimiMotion.sheetTransition)
                 .zIndex(55)
             }
 
@@ -215,21 +219,14 @@ public struct MimiRootContainerView: View {
                 SideDrawerMenuView(
                     store: store,
                     onClose: {
-                        withAnimation(.easeIn(duration: 0.2)) {
-                            isDrawerOpen = false
-                        }
+                        // 面板已自行滑出，这里只卸视图
+                        isDrawerOpen = false
                     },
                     onSelectDestination: { dest in
-                        withAnimation(.easeIn(duration: 0.2)) {
-                            isDrawerOpen = false
-                        }
-                        // 等抽屉先收完再从右侧推进页面
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
-                            handleDrawerSelection(dest)
-                        }
+                        isDrawerOpen = false
+                        handleDrawerSelection(dest)
                     }
                 )
-                .transition(.opacity)
                 .zIndex(30)
             }
 
@@ -239,10 +236,8 @@ public struct MimiRootContainerView: View {
                     store: store,
                     onOpenDrawer: {
                         pushClose { showStatsView = false }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
-                            withAnimation(.easeOut(duration: 0.22)) {
-                                isDrawerOpen = true
-                            }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + pageHandoffDelay) {
+                            isDrawerOpen = true
                         }
                     },
                     onSwitchToHome: {
@@ -250,12 +245,12 @@ public struct MimiRootContainerView: View {
                     },
                     onOpenAssets: {
                         pushClose { showStatsView = false }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + pageHandoffDelay) {
                             pushOpen { showAssetsManager = true }
                         }
                     }
                 )
-                .transition(Self.pagePushTransition)
+                .transition(MimiMotion.pageTransition(reduceMotion: reduceMotion))
                 .zIndex(40)
             }
 
@@ -265,12 +260,12 @@ public struct MimiRootContainerView: View {
                     onDismiss: { pushClose { showAllRecordsCalendar = false } },
                     onSelectTransaction: { tx in
                         pushClose { showAllRecordsCalendar = false }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + pageHandoffDelay) {
                             pushOpen { activeBillForEdit = tx }
                         }
                     }
                 )
-                .transition(Self.pagePushTransition)
+                .transition(MimiMotion.pageTransition(reduceMotion: reduceMotion))
                 .zIndex(41)
             }
 
@@ -279,7 +274,7 @@ public struct MimiRootContainerView: View {
                     store: store,
                     onDismiss: { pushClose { showAssetsManager = false } }
                 )
-                .transition(Self.pagePushTransition)
+                .transition(MimiMotion.pageTransition(reduceMotion: reduceMotion))
                 .zIndex(42)
             }
 
@@ -288,7 +283,7 @@ public struct MimiRootContainerView: View {
                     store: store,
                     onDismiss: { pushClose { showBudgetManager = false } }
                 )
-                .transition(Self.pagePushTransition)
+                .transition(MimiMotion.pageTransition(reduceMotion: reduceMotion))
                 .zIndex(43)
             }
 
@@ -297,7 +292,7 @@ public struct MimiRootContainerView: View {
                     store: store,
                     onDismiss: { pushClose { showCategoryManager = false } }
                 )
-                .transition(Self.pagePushTransition)
+                .transition(MimiMotion.pageTransition(reduceMotion: reduceMotion))
                 .zIndex(44)
             }
 
@@ -309,12 +304,12 @@ public struct MimiRootContainerView: View {
                     onDismiss: { pushClose { activeSettingsTitle = nil } },
                     onModifyTransactionFromPopup: { tx in
                         pushClose { activeSettingsTitle = nil }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + pageHandoffDelay) {
                             pushOpen { activeBillForEdit = tx }
                         }
                     }
                 )
-                .transition(Self.pagePushTransition)
+                .transition(MimiMotion.pageTransition(reduceMotion: reduceMotion))
                 .zIndex(45)
             }
 
@@ -329,18 +324,12 @@ public struct MimiRootContainerView: View {
                         }
                     }
                 )
-                .transition(Self.pagePushTransition)
+                .transition(MimiMotion.pageTransition(reduceMotion: reduceMotion))
                 .zIndex(50)
             }
         }
-        .animation(.spring(response: 0.32, dampingFraction: 0.86), value: showAIAskOverlay)
-        .animation(Self.pagePushAnimation, value: showStatsView)
-        .animation(Self.pagePushAnimation, value: showAllRecordsCalendar)
-        .animation(Self.pagePushAnimation, value: showAssetsManager)
-        .animation(Self.pagePushAnimation, value: showBudgetManager)
-        .animation(Self.pagePushAnimation, value: showCategoryManager)
-        .animation(Self.pagePushAnimation, value: activeSettingsTitle)
-        .animation(Self.pagePushAnimation, value: activeBillForEdit?.id)
+        // 不用整棵 ZStack 挂 .animation(value:)——会连带首页一起重绘，又卡又糊。
+        // 过场只靠 pushOpen / pushClose / sheet 的 withAnimation。
         .sheet(isPresented: $showRecordSheet) {
             RecordAndAISheetView(
                 store: store,
@@ -349,19 +338,19 @@ public struct MimiRootContainerView: View {
                 onDismiss: { showRecordSheet = false },
                 onOpenCategorySettings: {
                     showRecordSheet = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + sheetHandoffDelay) {
                         pushOpen { showCategoryManager = true }
                     }
                 },
                 onEditRecognizedTransaction: { savedTx in
                     showRecordSheet = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + sheetHandoffDelay) {
                         pushOpen { activeBillForEdit = savedTx }
                     }
                 },
                 onOpenImportExport: {
                     showRecordSheet = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + sheetHandoffDelay) {
                         pushOpen { activeSettingsTitle = DrawerDestination.importExport.rawValue }
                     }
                 },
@@ -369,8 +358,8 @@ public struct MimiRootContainerView: View {
                     BookkeepingEntryPreference.rememberAI()
                     showRecordSheet = false
                     aiOverlayAttachments = []
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
-                        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + sheetHandoffDelay) {
+                        withAnimation(MimiMotion.sheet(reduceMotion: reduceMotion)) {
                             showAIAskOverlay = true
                         }
                     }
@@ -421,31 +410,27 @@ public struct MimiRootContainerView: View {
         }
     }
 
-    /// 打开：从右往左；关闭：从左往右（同一 trailing edge）
-    private static var pagePushTransition: AnyTransition {
-        .asymmetric(
-            insertion: .move(edge: .trailing).combined(with: .opacity),
-            removal: .move(edge: .trailing).combined(with: .opacity)
-        )
+    private var pageHandoffDelay: TimeInterval {
+        MimiMotion.handoffDelay(.page, reduceMotion: reduceMotion)
     }
 
-    private static var pagePushAnimation: Animation {
-        .easeInOut(duration: 0.32)
+    private var sheetHandoffDelay: TimeInterval {
+        MimiMotion.handoffDelay(.sheet, reduceMotion: reduceMotion)
     }
 
     private func pushOpen(_ updates: @escaping () -> Void) {
-        withAnimation(Self.pagePushAnimation, updates)
+        withAnimation(MimiMotion.page(reduceMotion: reduceMotion), updates)
     }
 
     private func pushClose(_ updates: @escaping () -> Void) {
-        withAnimation(Self.pagePushAnimation, updates)
+        withAnimation(MimiMotion.pageDismiss(reduceMotion: reduceMotion), updates)
     }
 
     /// 首页 ＋ 面板选图/拍照：先进入 AI 小窗，带上照片，用户可再打字后一次发送。
     private func openAIComposer(withImageData imageData: Data, label: String) {
         BookkeepingEntryPreference.rememberAI()
         aiOverlayAttachments = [AIPendingAttachment(imageData: imageData, label: label)]
-        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+        withAnimation(MimiMotion.sheet(reduceMotion: reduceMotion)) {
             showAIAskOverlay = true
         }
     }

@@ -63,6 +63,49 @@ public enum MimiTheme {
     public static var tintBlueChip: Color { Color(lightHex: 0xE8F0FE, darkHex: tintBlueSoftDarkHex) }
     public static var scrim: Color { Color(light: Color.black.opacity(0.28), dark: Color.black.opacity(0.55)) }
 
+    // MARK: - Semantic soft surfaces (HIG Light/Dark — prefer these over one-off hex)
+    public static var successSoft: Color { Color(lightHex: 0xE8F5E9, darkHex: 0x1B3A28) }
+    public static var successSoftText: Color { Color(lightHex: 0x2E7D32, darkHex: 0x81C784) }
+    public static var warningSoft: Color { Color(lightHex: 0xFFF3E0, darkHex: 0x3A2E18) }
+    public static var dangerSoft: Color { Color(lightHex: 0xFFEBEE, darkHex: 0x3A1F24) }
+    public static var vipSoft: Color { Color(lightHex: 0xFFE8CC, darkHex: 0x3A2E18) }
+    public static var vipText: Color { Color(lightHex: 0xC47A2C, darkHex: 0xF0C56C) }
+    /// Disabled send / inactive control fill.
+    public static var controlDisabled: Color { Color(lightHex: 0xC5CCD8, darkHex: 0x4A5160) }
+    /// Placeholder / chevron grey.
+    public static var iconInactive: Color { Color(lightHex: 0xC0C4CE, darkHex: 0x6B7384) }
+    public static var progressTrack: Color { Color(lightHex: 0xE7EAF2, darkHex: 0x2A303C) }
+    public static var ringTrack: Color { Color(lightHex: 0xD9E2FF, darkHex: 0x2A3550) }
+    public static var ringProgress: Color { Color(lightHex: 0x7B93F7, darkHex: 0x8BA4FF) }
+    public static var chipFill: Color { Color(lightHex: 0xEAF1FF, darkHex: tintBlueSoftDarkHex) }
+    /// Heatmap empty / light cells (calendar + drawer).
+    public static var heatmapEmpty: Color { Color(lightHex: 0xF5F7FA, darkHex: 0x1E2430) }
+    public static var heatmapExpense1: Color { Color(lightHex: 0xDDE9FD, darkHex: 0x243556) }
+    public static var heatmapExpense2: Color { Color(lightHex: 0xC3D7FD, darkHex: 0x2E4570) }
+    public static var heatmapExpense3: Color { Color(lightHex: 0x90B8F8, darkHex: 0x3D5F9E) }
+    public static var heatmapIncome1: Color { Color(lightHex: 0xFFEBD9, darkHex: 0x3A2E18) }
+    public static var heatmapIncome2: Color { Color(lightHex: 0xFFD8B5, darkHex: 0x4A3820) }
+    /// Stats / chart series (fixed brand hues; readable in both appearances).
+    public static let chartBlue = Color(hex: 0x5B86F7)
+    public static let chartBlueMid = Color(hex: 0x90B8F8)
+    public static let chartBlueSoft = Color(hex: 0xC3D7FD)
+    public static let chartPurple = Color(hex: 0x9B6EF3)
+    public static let chartPink = Color(hex: 0xE85AD8)
+    public static let chartTeal = Color(hex: 0x3DDC97)
+    public static let chartIndigo = Color(hex: 0x7A6CFF)
+    public static let chartBlueBright = Color(hex: 0x4C6FFF)
+    public static let chartOrangeBright = Color(hex: 0xF0A04B)
+    /// Selected day / chip highlight fills.
+    public static var selectionSoft: Color { Color(lightHex: 0xF0F5FF, darkHex: 0x243056) }
+    public static var selectionSoftAlt: Color { Color(lightHex: 0xEDF3FE, darkHex: 0x1F2A40) }
+    public static var surfaceMuted: Color { Color(lightHex: 0xF0F1F5, darkHex: 0x222734) }
+    public static var surfaceQuiet: Color { Color(lightHex: 0xF8F9FB, darkHex: 0x1A1F2B) }
+    public static var rowHoverSoft: Color { Color(lightHex: 0xF0F4FF, darkHex: 0x243056) }
+    public static var expenseDeep: Color { Color(lightHex: 0x2A4E9E, darkHex: 0x8BA4FF) }
+    public static var incomeDeep: Color { Color(lightHex: 0xB55716, darkHex: 0xF0A04A) }
+    public static var assetAccent: Color { Color(lightHex: 0xD9C9AE, darkHex: 0xA89878) }
+    public static var dangerEmphasis: Color { Color(lightHex: 0xE53935, darkHex: 0xF87171) }
+
     // MARK: - Home layout tokens (gold screenshot A)
     public static let homeHorizontalPadding: CGFloat = 16
     public static let homeCardSpacing: CGFloat = 14

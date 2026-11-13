@@ -12,6 +12,8 @@ public struct UIKitImagePicker: UIViewControllerRepresentable {
     public let onImagePicked: (UIImage) -> Void
     @Environment(\.dismiss) private var dismiss
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     public init(sourceType: SourceType, onImagePicked: @escaping (UIImage) -> Void) {
         self.sourceType = sourceType
         self.onImagePicked = onImagePicked
@@ -157,7 +159,7 @@ public struct FullscreenReceiptViewer: View {
                             .onEnded { _ in
                                 lastScale = 1.0
                                 if scale < 1.0 {
-                                    withAnimation(.spring()) {
+                                    withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                                         scale = 1.0
                                         offset = .zero
                                     }
@@ -179,7 +181,7 @@ public struct FullscreenReceiptViewer: View {
                         : nil
                     )
                     .onTapGesture(count: 2) {
-                        withAnimation(.spring()) {
+                        withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                             if scale > 1.0 {
                                 scale = 1.0
                                 offset = .zero

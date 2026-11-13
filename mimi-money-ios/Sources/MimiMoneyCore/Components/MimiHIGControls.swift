@@ -5,17 +5,21 @@ public enum MimiHIG {
     public static let minTouch: CGFloat = 44
 }
 
+/// Native-feeling press: opacity + slight scale within ~100ms (HIG feedback).
 public struct MimiPressableButtonStyle: ButtonStyle {
     public var pressedOpacity: Double
+    public var pressedScale: CGFloat
 
-    public init(pressedOpacity: Double = 0.55) {
+    public init(pressedOpacity: Double = 0.55, pressedScale: CGFloat = 0.97) {
         self.pressedOpacity = pressedOpacity
+        self.pressedScale = pressedScale
     }
 
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .opacity(configuration.isPressed ? pressedOpacity : 1)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed ? pressedScale : 1)
+            .animation(.easeOut(duration: 0.08), value: configuration.isPressed)
     }
 }
 
@@ -26,7 +30,14 @@ public extension View {
             .contentShape(Rectangle())
     }
 
+    /// Prefer this over `.buttonStyle(.plain)` for interactive controls.
     func mimiPressable() -> some View {
         buttonStyle(MimiPressableButtonStyle())
+    }
+
+    /// Amounts that must stay readable under Dynamic Type / narrow layouts.
+    func mimiAmountFit(lines: Int = 1) -> some View {
+        lineLimit(lines)
+            .minimumScaleFactor(0.7)
     }
 }

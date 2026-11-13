@@ -51,7 +51,7 @@ public struct MimiDatePickerSheet: View {
                         .padding(.vertical, 7)
                         .background(Capsule().fill(MimiTheme.expenseBlue))
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 12)
@@ -98,7 +98,7 @@ public struct MimiDatePickerSheet: View {
                     .frame(width: 36, height: 36)
                     .background(Circle().fill(MimiTheme.fillSubtle))
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
 
             Spacer()
 
@@ -117,7 +117,7 @@ public struct MimiDatePickerSheet: View {
                     .frame(width: 36, height: 36)
                     .background(Circle().fill(MimiTheme.fillSubtle))
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
         }
     }
 
@@ -159,7 +159,7 @@ public struct MimiDatePickerSheet: View {
                                     .stroke(isToday && !selected ? MimiTheme.expenseBlue.opacity(0.45) : Color.clear, lineWidth: 1.2)
                             )
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
                 } else {
                     Color.clear.frame(height: 36)
                 }
@@ -196,7 +196,7 @@ public struct MimiDatePickerSheet: View {
                     .frame(width: 28, height: 28)
                     .background(Circle().fill(MimiTheme.cardBackground))
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
 
             Text(String(format: "%02d%@", value.wrappedValue, suffix))
                 .mimiFont(15, weight: .bold, design: .rounded)
@@ -212,7 +212,7 @@ public struct MimiDatePickerSheet: View {
                     .frame(width: 28, height: 28)
                     .background(Circle().fill(MimiTheme.cardBackground))
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
         }
     }
 
@@ -345,7 +345,7 @@ public struct MimiDateFieldButton: View {
                     .fill(MimiTheme.fillSubtle)
             )
         }
-        .buttonStyle(.plain)
+        .mimiPressable()
         .sheet(isPresented: $showSheet) {
             MimiDatePickerSheet(
                 selection: $date,

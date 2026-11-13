@@ -56,7 +56,7 @@ public struct MimiChoiceSheet: View {
                         HStack(spacing: 14) {
                             Image(systemName: item.icon)
                                 .mimiFont(20, weight: .regular)
-                                .foregroundColor(Color(hex: 0x6B7285))
+                                .foregroundColor(MimiTheme.textSecondary)
                                 .frame(width: 40, height: 40)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -86,7 +86,7 @@ public struct MimiChoiceSheet: View {
                                 .fill(MimiTheme.fillSubtle)
                         )
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
                 }
             }
             .padding(.horizontal, 16)
@@ -102,7 +102,7 @@ public struct MimiChoiceSheet: View {
                             .fill(MimiTheme.fillSubtle)
                     )
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
             .padding(.horizontal, 16)
             .padding(.top, 12)
             .padding(.bottom, 18)

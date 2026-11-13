@@ -13,14 +13,14 @@ public struct AIPendingAttachment: Identifiable, Equatable {
     }
 }
 
-/// 金标 AI 记账浮层：
-/// - 小窗：贴在首页下方，可附照片 + 打字 + 三条快捷句 + 切手动；可上滑变大
-/// - 发送后：全屏展开，思考中 → 回复 →「回答完毕」
+/// AI 记账浮层（重做）：
+/// - **一律先小窗**：首页问账 / 手动切 AI / 选图后，都是底部小窗 + 三快捷气泡
+/// - **上滑或发送** → **真整页**聊天（铺满屏幕，不是 90% 浮卡）
+/// - **整页下滑** → 直接关闭
 public struct MimiAIAskOverlayView: View {
     @ObservedObject public var store: MimiStore
     @ObservedObject public var aiEngine: MimiAIEngine
     public var initialAttachments: [AIPendingAttachment]
-    public var startExpanded: Bool
     public var onDismiss: () -> Void
     public var onOpenManual: () -> Void
     public var onOpenImportExport: () -> Void
@@ -42,7 +42,6 @@ public struct MimiAIAskOverlayView: View {
         store: MimiStore,
         aiEngine: MimiAIEngine,
         initialAttachments: [AIPendingAttachment] = [],
-        startExpanded: Bool = false,
         onDismiss: @escaping () -> Void,
         onOpenManual: @escaping () -> Void,
         onOpenImportExport: @escaping () -> Void = {}
@@ -50,46 +49,30 @@ public struct MimiAIAskOverlayView: View {
         self.store = store
         self.aiEngine = aiEngine
         self.initialAttachments = initialAttachments
-        self.startExpanded = startExpanded
         self.onDismiss = onDismiss
         self.onOpenManual = onOpenManual
         self.onOpenImportExport = onOpenImportExport
+        // 任意入口都先小窗；只有上滑 / 发送后才进整页
         _pendingAttachments = State(initialValue: initialAttachments)
-        _isExpanded = State(initialValue: startExpanded)
+        _isExpanded = State(initialValue: false)
     }
 
     public var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .bottom) {
-                Color.black.opacity(isExpanded ? 0.45 : 0.22)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        if !isExpanded {
-                            inputFocused = false
-                            onDismiss()
-                        }
-                    }
-
-                VStack(spacing: 0) {
-                    // 小窗固定带三条快捷气泡；放大后不显示
-                    if !isExpanded {
-                        suggestionBubbles
-                            .padding(.horizontal, 18)
-                            .padding(.bottom, 10)
-                    }
-
-                    card(maxHeight: isExpanded ? geo.size.height * 0.92 : nil)
-                        .offset(y: cardDragOffset)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                .padding(.horizontal, isExpanded ? 0 : 10)
-                .padding(.bottom, isExpanded ? 0 : 8)
+        ZStack {
+            if isExpanded {
+                fullPage
+                    .offset(y: max(0, dragOffset))
+                    .transition(.opacity)
+            } else {
+                compactChrome
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
+        .animation(MimiMotion.sheet(reduceMotion: reduceMotion), value: isExpanded)
+        .animation(MimiMotion.interactive(reduceMotion: reduceMotion), value: dragOffset)
         .onAppear {
             BookkeepingEntryPreference.rememberAI()
-            // 点开一律先小窗；只有用户上滑（或发送后）才变大
-            isExpanded = startExpanded
+            isExpanded = false
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
                 inputFocused = true
             }
@@ -104,96 +87,55 @@ public struct MimiAIAskOverlayView: View {
         #if canImport(UIKit)
         .sheet(isPresented: $showAlbumPicker) {
             PHPickerImageView { imageData in
-                pendingAttachments.append(
-                    AIPendingAttachment(imageData: imageData, label: "照片")
-                )
+                pendingAttachments.append(AIPendingAttachment(imageData: imageData, label: "照片"))
             }
         }
         .sheet(isPresented: $showCameraPicker) {
             UIKitImagePicker(sourceType: .camera) { image in
                 if let data = image.jpegData(compressionQuality: 0.85) {
-                    pendingAttachments.append(
-                        AIPendingAttachment(imageData: data, label: "拍照")
-                    )
+                    pendingAttachments.append(AIPendingAttachment(imageData: data, label: "拍照"))
                 }
             }
         }
         #endif
     }
 
-    // MARK: - Suggestions
+    // MARK: - Compact（底部小窗）
 
-    private var suggestionBubbles: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ForEach(MimiAIEngine.exampleQuestions, id: \.self) { question in
-                Button {
-                    inputText = question
-                    sendComposed()
-                } label: {
-                    Text(question)
-                        .mimiFont(14)
-                        .foregroundColor(MimiTheme.textPrimary)
-                        .multilineTextAlignment(.leading)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 11)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous).fill(MimiTheme.cardBackground)
-                                .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 3)
-                        )
+    private var compactChrome: some View {
+        ZStack(alignment: .bottom) {
+            MimiTheme.scrim
+                .ignoresSafeArea()
+                .onTapGesture {
+                    inputFocused = false
+                    onDismiss()
                 }
-                .buttonStyle(.plain)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
+                .accessibilityLabel("关闭问账")
+                .accessibilityAddTraits(.isButton)
 
-    // MARK: - Card
-
-    private func card(maxHeight: CGFloat?) -> some View {
-        VStack(spacing: 0) {
-            // 把手 + 顶栏：上滑放大 / 放大后下滑关闭（不跟聊天列表抢手势）
             VStack(spacing: 0) {
-                Capsule()
-                    .fill(MimiTheme.strokeSubtle)
-                    .frame(width: 36, height: 4)
-                    .padding(.top, 8)
-                    .padding(.bottom, 6)
+                suggestionBubbles
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 10)
 
-                headerRow
-                    .padding(.horizontal, 14)
+                compactCard
+                    .padding(.horizontal, 10)
                     .padding(.bottom, 8)
             }
-            .contentShape(Rectangle())
-            .highPriorityGesture(expandDragGesture)
+            .offset(y: min(0, dragOffset))
+        }
+    }
+
+    private var compactCard: some View {
+        VStack(spacing: 0) {
+            expandChromeControl
+
+            headerRow(title: "记账查账，问问题")
+                .padding(.horizontal, 14)
+                .padding(.bottom, 8)
 
             if !pendingAttachments.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(pendingAttachmentSummary)
-                        .mimiFont(12, weight: .medium)
-                        .foregroundColor(MimiTheme.textSecondary)
-                        .padding(.horizontal, 4)
-                    pendingAttachmentStrip
-                }
-                .padding(.horizontal, 12)
-                .padding(.bottom, 8)
-            }
-
-            if isExpanded {
-                Divider().opacity(0.4)
-                messageList
-                    .frame(maxHeight: .infinity)
-
-                if aiEngine.answerJustCompleted {
-                    HStack(spacing: 6) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(MimiTheme.balanceGreen)
-                        Text("回答完毕")
-                            .mimiFont(13, weight: .semibold)
-                            .foregroundColor(MimiTheme.balanceGreen)
-                    }
-                    .padding(.vertical, 8)
-                    .transition(.opacity)
-                }
+                attachmentBlock
             }
 
             if showAttachmentPanel {
@@ -209,34 +151,138 @@ public struct MimiAIAskOverlayView: View {
                 .padding(.bottom, 8)
             }
 
-            #if canImport(Speech) && canImport(AVFoundation)
-            if speechTranscriber.isRecording {
-                Text("正在聆听：\(speechTranscriber.partialText)")
-                    .mimiFont(12)
-                    .foregroundColor(MimiTheme.expenseBlue)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 14)
-                    .padding(.bottom, 4)
-            }
-            #endif
-
+            listeningHint
             inputRow
                 .padding(.horizontal, 12)
                 .padding(.top, 6)
-                .padding(.bottom, isExpanded ? 16 : 12)
+                .padding(.bottom, 12)
         }
-        .frame(maxWidth: .infinity)
-        .frame(maxHeight: maxHeight)
         .background(
-            RoundedRectangle(cornerRadius: isExpanded ? 20 : 22, style: .continuous).fill(MimiTheme.cardBackground)
-                .shadow(color: Color.black.opacity(0.14), radius: 18, x: 0, y: 6)
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(MimiTheme.cardBackground)
+                .shadow(color: Color.black.opacity(0.14), radius: 16, x: 0, y: 6)
         )
     }
 
-    private var headerRow: some View {
+    // MARK: - Full page（真整页）
+
+    private var fullPage: some View {
+        VStack(spacing: 0) {
+            dismissChromeControl
+                .padding(.top, 4)
+
+            headerRow(title: "来记笔账吧")
+                .padding(.horizontal, 16)
+                .padding(.bottom, 10)
+
+            Divider().opacity(0.45)
+
+            messageList
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            if aiEngine.answerJustCompleted {
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(MimiTheme.balanceGreen)
+                    Text("回答完毕")
+                        .mimiFont(13, weight: .semibold)
+                        .foregroundColor(MimiTheme.balanceGreen)
+                }
+                .padding(.vertical, 8)
+            }
+
+            if !pendingAttachments.isEmpty {
+                attachmentBlock
+            }
+
+            if showAttachmentPanel {
+                AIAttachmentPanelView(
+                    onPickFromAlbum: { showAlbumPicker = true },
+                    onTakePhoto: { showCameraPicker = true },
+                    onOpenImportExport: {
+                        showAttachmentPanel = false
+                        onOpenImportExport()
+                    }
+                )
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
+            }
+
+            listeningHint
+            inputRow
+                .padding(.horizontal, 14)
+                .padding(.top, 8)
+                .padding(.bottom, 12)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(MimiTheme.background.ignoresSafeArea())
+    }
+
+    // MARK: - Shared pieces
+
+    /// Compact: handle + explicit expand (HIG — swipe must not be the only path).
+    private var expandChromeControl: some View {
+        VStack(spacing: 2) {
+            Capsule()
+                .fill(MimiTheme.strokeSubtle)
+                .frame(width: 36, height: 4)
+                .padding(.top, 8)
+            Button {
+                withAnimation(MimiMotion.sheet(reduceMotion: reduceMotion)) {
+                    isExpanded = true
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "chevron.up")
+                        .mimiFont(11, weight: .bold)
+                    Text("展开")
+                        .mimiFont(12, weight: .semibold)
+                }
+                .foregroundColor(MimiTheme.textSecondary)
+                .frame(minHeight: MimiHIG.minTouch)
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+            }
+            .mimiPressable()
+            .accessibilityLabel("展开为全屏问账")
+            .accessibilityHint("也可上滑手柄展开")
+        }
+        .highPriorityGesture(expandDragGesture)
+    }
+
+    /// Full page: handle + explicit close via swipe-down alternative already in header X.
+    private var dismissChromeControl: some View {
+        VStack(spacing: 2) {
+            Capsule()
+                .fill(MimiTheme.strokeSubtle)
+                .frame(width: 36, height: 4)
+                .padding(.top, 8)
+            Button {
+                inputFocused = false
+                onDismiss()
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "chevron.down")
+                        .mimiFont(11, weight: .bold)
+                    Text("关闭")
+                        .mimiFont(12, weight: .semibold)
+                }
+                .foregroundColor(MimiTheme.textSecondary)
+                .frame(minHeight: MimiHIG.minTouch)
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+            }
+            .mimiPressable()
+            .accessibilityLabel("关闭全屏问账")
+            .accessibilityHint("也可下滑关闭")
+        }
+        .highPriorityGesture(expandDragGesture)
+    }
+
+    private func headerRow(title: String) -> some View {
         HStack(spacing: 10) {
             MimiAskMascotView(size: 30)
-            Text(isExpanded ? "来记笔账吧" : "记账查账，问问题")
+            Text(title)
                 .mimiFont(16, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
                 .lineLimit(1)
@@ -279,6 +325,43 @@ public struct MimiAIAskOverlayView: View {
         }
     }
 
+    private var suggestionBubbles: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(MimiAIEngine.exampleQuestions, id: \.self) { question in
+                Button {
+                    inputText = question
+                    sendComposed()
+                } label: {
+                    Text(question)
+                        .mimiFont(14)
+                        .foregroundColor(MimiTheme.textPrimary)
+                        .multilineTextAlignment(.leading)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 11)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(MimiTheme.cardBackground)
+                                .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 3)
+                        )
+                }
+                .mimiPressable()
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var attachmentBlock: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(pendingAttachmentSummary)
+                .mimiFont(12, weight: .medium)
+                .foregroundColor(MimiTheme.textSecondary)
+                .padding(.horizontal, 4)
+            pendingAttachmentStrip
+        }
+        .padding(.horizontal, 12)
+        .padding(.bottom, 8)
+    }
+
     private var pendingAttachmentSummary: String {
         let labels = pendingAttachments.map(\.label)
         if labels.isEmpty { return "" }
@@ -315,6 +398,7 @@ public struct MimiAIAskOverlayView: View {
                                 .foregroundStyle(.white, Color.black.opacity(0.55))
                         }
                         .offset(x: 6, y: -6)
+                        .accessibilityLabel("移除附件")
                     }
                 }
             }
@@ -334,6 +418,20 @@ public struct MimiAIAskOverlayView: View {
         .background(MimiTheme.fillSubtle)
     }
 
+    @ViewBuilder
+    private var listeningHint: some View {
+        #if canImport(Speech) && canImport(AVFoundation)
+        if speechTranscriber.isRecording {
+            Text("正在聆听：\(speechTranscriber.partialText)")
+                .mimiFont(12)
+                .foregroundColor(MimiTheme.expenseBlue)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 14)
+                .padding(.bottom, 4)
+        }
+        #endif
+    }
+
     private var messageList: some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: false) {
@@ -347,15 +445,11 @@ public struct MimiAIAskOverlayView: View {
                             .id("thinking")
                     }
                 }
-                .padding(.horizontal, 14)
+                .padding(.horizontal, 16)
                 .padding(.vertical, 12)
             }
-            .onChange(of: aiEngine.messages.count) { _, _ in
-                scrollToBottom(proxy)
-            }
-            .onChange(of: aiEngine.isAnswering) { _, _ in
-                scrollToBottom(proxy)
-            }
+            .onChange(of: aiEngine.messages.count) { _, _ in scrollToBottom(proxy) }
+            .onChange(of: aiEngine.isAnswering) { _, _ in scrollToBottom(proxy) }
         }
     }
 
@@ -429,7 +523,7 @@ public struct MimiAIAskOverlayView: View {
                 #endif
 
                 Button {
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                    withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                         showAttachmentPanel.toggle()
                     }
                 } label: {
@@ -444,16 +538,14 @@ public struct MimiAIAskOverlayView: View {
             .padding(.leading, 14)
             .padding(.trailing, 8)
             .padding(.vertical, 4)
-            .background(Capsule().fill(MimiTheme.background))
+            .background(Capsule().fill(MimiTheme.fillSubtle))
 
             Button(action: sendComposed) {
                 Image(systemName: "arrow.up")
                     .mimiFont(14, weight: .bold)
                     .foregroundColor(.white)
                     .frame(width: 36, height: 36)
-                    .background(
-                        Circle().fill(canSend ? MimiTheme.expenseBlue : Color(hex: 0xC5CCD8))
-                    )
+                    .background(Circle().fill(canSend ? MimiTheme.expenseBlue : MimiTheme.controlDisabled))
                     .mimiMinTouchTarget()
             }
             .mimiPressable()
@@ -595,7 +687,7 @@ public struct MimiAIAskOverlayView: View {
                         .padding(.vertical, 9)
                         .background(Capsule().fill(MimiTheme.fillSubtle))
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
                 Button { aiEngine.confirmDrafts(messageId: messageId, in: store) } label: {
                     Text("确认记账")
                         .mimiFont(13, weight: .semibold)
@@ -604,7 +696,7 @@ public struct MimiAIAskOverlayView: View {
                         .padding(.vertical, 9)
                         .background(Capsule().fill(MimiTheme.expenseBlue))
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
             }
         }
         .padding(12)
@@ -613,21 +705,12 @@ public struct MimiAIAskOverlayView: View {
 
     // MARK: - Gestures / Actions
 
-    private var cardDragOffset: CGFloat {
-        if isExpanded {
-            return max(0, dragOffset)
-        }
-        return min(0, dragOffset)
-    }
-
     private var expandDragGesture: some Gesture {
         DragGesture(minimumDistance: 12)
             .onChanged { value in
                 if isExpanded {
-                    // 放大后只能往下拖，准备关掉
                     dragOffset = max(0, value.translation.height)
                 } else if value.translation.height < -24 {
-                    // 小窗往上拖，准备变大
                     dragOffset = value.translation.height
                 } else {
                     dragOffset = 0
@@ -635,17 +718,16 @@ public struct MimiAIAskOverlayView: View {
             }
             .onEnded { value in
                 if !isExpanded && value.translation.height < -80 {
-                    withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                    withAnimation(MimiMotion.sheet(reduceMotion: reduceMotion)) {
                         isExpanded = true
                     }
                     dragOffset = 0
                 } else if isExpanded && value.translation.height > 120 {
-                    // 放大后往下划 → 直接关掉，不退回小窗
                     dragOffset = 0
                     inputFocused = false
                     onDismiss()
                 } else {
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                    withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                         dragOffset = 0
                     }
                 }
@@ -660,7 +742,7 @@ public struct MimiAIAskOverlayView: View {
         inputText = ""
         pendingAttachments = []
         showAttachmentPanel = false
-        withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+        withAnimation(MimiMotion.sheet(reduceMotion: reduceMotion)) {
             isExpanded = true
         }
         aiEngine.sendComposed(text: text, imageDataList: images, store: store)
@@ -668,7 +750,7 @@ public struct MimiAIAskOverlayView: View {
 
     private func scrollToBottom(_ proxy: ScrollViewProxy) {
         DispatchQueue.main.async {
-            withAnimation(.easeOut(duration: 0.2)) {
+            withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                 if aiEngine.isAnswering {
                     proxy.scrollTo("thinking", anchor: .bottom)
                 } else if let last = aiEngine.messages.last {

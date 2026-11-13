@@ -240,7 +240,7 @@ public struct CategoryBillsListView: View {
                     }
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
             }
         }
         .padding(16)
@@ -328,7 +328,7 @@ public struct CategoryBillsListView: View {
                     .padding(.vertical, 12)
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
 
                 if idx < items.count - 1 {
                     Divider().padding(.leading, 62)

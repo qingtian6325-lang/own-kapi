@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.7] - 2026-11-13
+
+### 🎯 Highlights
+- **AI 记账重做**：任意入口一律先底部小窗；「展开」/上滑/发送后才进真整页；下滑或「关闭」退出。
+- **设计语言**：Views 语义色统一进 `MimiTheme`；`mimiPressable` / 44pt / VoiceOver；`design-system/mimi-money/MASTER.md`。
+- **动效**：新增 `MimiMotion`（page/sheet/drawer/quick/interactive + handoffDelay），全 App 交互弹簧化。
+- **发版**：`VERSION` / Intent 默认版本升至 1.3.7。
+
 ## [v1.3.6] - 2026-11-13
 
 ### 🎯 Highlights

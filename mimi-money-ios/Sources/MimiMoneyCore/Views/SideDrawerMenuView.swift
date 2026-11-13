@@ -21,6 +21,8 @@ public struct SideDrawerMenuView: View {
     @ObservedObject public var store: MimiStore
     public var onClose: () -> Void
     public var onSelectDestination: (DrawerDestination) -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var panelVisible: Bool = false
 
     public init(
         store: MimiStore,
@@ -48,10 +50,11 @@ public struct SideDrawerMenuView: View {
         GeometryReader { geo in
             let panelWidth = geo.size.width * MimiTheme.drawerWidthFraction
             ZStack(alignment: .leading) {
-                Color.black.opacity(0.32)
+                MimiTheme.scrim
+                    .opacity(panelVisible ? 1 : 0)
                     .ignoresSafeArea()
                     .onTapGesture {
-                        onClose()
+                        dismissDrawer()
                     }
 
                 ScrollView(.vertical, showsIndicators: false) {
@@ -66,10 +69,37 @@ public struct SideDrawerMenuView: View {
                 }
                 .frame(width: panelWidth, height: geo.size.height, alignment: .top)
                 .background(MimiTheme.background.ignoresSafeArea())
+                .offset(x: panelVisible ? 0 : -panelWidth)
             }
             .frame(width: geo.size.width, height: geo.size.height)
         }
         .ignoresSafeArea()
+        .onAppear {
+            withAnimation(MimiMotion.drawer(reduceMotion: reduceMotion)) {
+                panelVisible = true
+            }
+        }
+    }
+
+    private func dismissDrawer(then action: (() -> Void)? = nil) {
+        withAnimation(MimiMotion.drawer(reduceMotion: reduceMotion)) {
+            panelVisible = false
+        }
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + MimiMotion.handoffDelay(.drawer, reduceMotion: reduceMotion)
+        ) {
+            if let action {
+                action()
+            } else {
+                onClose()
+            }
+        }
+    }
+
+    private func openDestination(_ dest: DrawerDestination) {
+        dismissDrawer {
+            onSelectDestination(dest)
+        }
     }
 
     // MARK: - Profile + 设置图标（去掉底部设置/问卷行）
@@ -78,11 +108,11 @@ public struct SideDrawerMenuView: View {
         HStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(Color(hex: 0xFFE8CC))
+                    .fill(MimiTheme.vipSoft)
                     .frame(width: MimiTheme.drawerAvatarSize, height: MimiTheme.drawerAvatarSize)
                 Text(String(store.userNickname.prefix(1)).uppercased())
                     .mimiFont(20, weight: .bold, design: .rounded)
-                    .foregroundColor(Color(hex: 0xC47A2C))
+                    .foregroundColor(MimiTheme.vipText)
             }
 
             VStack(alignment: .leading, spacing: 4) {
@@ -110,7 +140,7 @@ public struct SideDrawerMenuView: View {
             Spacer()
 
             Button {
-                onSelectDestination(.settings)
+                openDestination(.settings)
             } label: {
                 Image(systemName: "gearshape")
                     .mimiFont(18, weight: .medium)
@@ -132,7 +162,7 @@ public struct SideDrawerMenuView: View {
 
     private var heatmapCard: some View {
         Button {
-            onSelectDestination(.calendar)
+            openDestination(.calendar)
         } label: {
             VStack(alignment: .leading, spacing: 12) {
                 Text("November 2026")
@@ -170,13 +200,13 @@ public struct SideDrawerMenuView: View {
                     .shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 2)
             )
         }
-        .buttonStyle(.plain)
+        .mimiPressable()
     }
 
     private func heatmapCell(_ cell: CalendarDaySummary) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .fill(cell.isToday ? Color(hex: 0xDDE9FD) : heatmapMiniColor(for: cell))
+                .fill(cell.isToday ? MimiTheme.heatmapExpense1 : heatmapMiniColor(for: cell))
                 .frame(height: MimiTheme.drawerHeatmapCellHeight)
 
             if cell.isToday {
@@ -278,15 +308,15 @@ public struct SideDrawerMenuView: View {
 
     private func heatmapMiniColor(for cell: CalendarDaySummary) -> Color {
         if cell.income > 0 && cell.expense == 0 {
-            if cell.income > 500 { return Color(hex: 0xFFD8B5) }
-            return Color(hex: 0xFFEBD9)
+            if cell.income > 500 { return MimiTheme.heatmapIncome2 }
+            return MimiTheme.heatmapIncome1
         }
         if cell.expense > 0 {
-            if cell.expense > 200 { return Color(hex: 0x90B8F8) }
-            if cell.expense > 30 { return Color(hex: 0xC3D7FD) }
-            return Color(hex: 0xDDE9FD)
+            if cell.expense > 200 { return MimiTheme.heatmapExpense3 }
+            if cell.expense > 30 { return MimiTheme.heatmapExpense2 }
+            return MimiTheme.heatmapExpense1
         }
-        return Color(hex: 0xF5F7FA)
+        return MimiTheme.heatmapEmpty
     }
 
     private func drawerDocGlyph(_ letter: String) -> some View {
@@ -304,16 +334,16 @@ public struct SideDrawerMenuView: View {
         @ViewBuilder icon: () -> Icon
     ) -> some View {
         Button {
-            onSelectDestination(dest)
+            openDestination(dest)
         } label: {
             VStack(spacing: 8) {
                 ZStack {
                     RoundedRectangle(cornerRadius: MimiTheme.drawerGridIconCorner, style: .continuous)
-                        .fill(Color(hex: 0xF3F4F8))
+                        .fill(MimiTheme.fillSubtle)
                         .frame(width: MimiTheme.drawerGridIconSize, height: MimiTheme.drawerGridIconSize)
                     icon()
                         .mimiFont(21, weight: .light)
-                        .foregroundColor(Color(hex: 0x2C2F36))
+                        .foregroundColor(MimiTheme.textPrimary)
                 }
                 Text(title)
                     .mimiFont(12, weight: .medium)
@@ -322,7 +352,7 @@ public struct SideDrawerMenuView: View {
                     .minimumScaleFactor(0.8)
             }
         }
-        .buttonStyle(.plain)
+        .mimiPressable()
     }
 
 }

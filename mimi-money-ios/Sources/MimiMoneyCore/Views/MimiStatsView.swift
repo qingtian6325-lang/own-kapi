@@ -23,6 +23,8 @@ public struct MimiStatsView: View {
     @State private var drillCategoryName: String? = nil
     @State private var billForDetail: TransactionItem? = nil
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     public init(
         store: MimiStore,
         onOpenDrawer: @escaping () -> Void,
@@ -150,12 +152,12 @@ public struct MimiStatsView: View {
         }
         let palette: [Color] = [
             MimiTheme.expenseBlue,
-            Color(hex: 0x5B86F7),
-            Color(hex: 0x90B8F8),
-            Color(hex: 0xC3D7FD),
+            MimiTheme.chartBlue,
+            MimiTheme.heatmapExpense3,
+            MimiTheme.heatmapExpense2,
             MimiTheme.incomeOrange,
             MimiTheme.balanceGreen,
-            Color(hex: 0x9B6EF3)
+            MimiTheme.chartPurple
         ]
         return grouped
             .map { (key, val) in (name: key, icon: val.icon, amount: val.sum, percent: val.sum / total, count: val.count) }
@@ -246,7 +248,7 @@ public struct MimiStatsView: View {
                 .padding(.vertical, 6)
                 .background(Capsule().fill(MimiTheme.cardBackground))
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
 
             Menu {
                 Button("记录 (首页)") { onSwitchToHome() }
@@ -325,11 +327,11 @@ public struct MimiStatsView: View {
                                     .fill(selectedPeriod == period ? Color.white : Color.clear)
                             )
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
                 }
             }
             .padding(4)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xE9ECF4)))
+            .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.progressTrack))
 
             // Period navigator: < 2026年11月 >
             HStack {
@@ -450,7 +452,7 @@ public struct MimiStatsView: View {
                             .padding(.vertical, 5)
                             .background(Capsule().fill(selectedChartType == .expense ? Color.white : Color.clear))
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
                     Button { selectedChartType = .income } label: {
                         Text("收入")
                             .mimiFont(12, weight: selectedChartType == .income ? .bold : .medium)
@@ -459,7 +461,7 @@ public struct MimiStatsView: View {
                             .padding(.vertical, 5)
                             .background(Capsule().fill(selectedChartType == .income ? Color.white : Color.clear))
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
                 }
                 .padding(3)
                 .background(Capsule().fill(MimiTheme.fillSubtle))
@@ -549,7 +551,7 @@ public struct MimiStatsView: View {
                             }
                             .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
                     }
                 }
             }
@@ -620,7 +622,7 @@ public struct MimiStatsView: View {
                                 .padding(.vertical, 4)
                                 .background(Capsule().fill(trendMode == mode ? Color.white : Color.clear))
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
                     }
                 }
                 .padding(3)
@@ -680,7 +682,7 @@ public struct MimiStatsView: View {
                                 .padding(.vertical, 4)
                                 .background(Capsule().fill(rankingMode == mode ? Color.white : Color.clear))
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
                     }
                 }
                 .padding(3)
@@ -729,19 +731,19 @@ public struct MimiStatsView: View {
 
                         Image(systemName: "chevron.right")
                             .mimiFont(11, weight: .semibold)
-                            .foregroundColor(Color(hex: 0xC5C8D0))
+                            .foregroundColor(MimiTheme.controlDisabled)
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 8)
                     .background(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(idx < 3 ? Color(hex: 0xF0F4FF) : Color.clear)
+                            .fill(idx < 3 ? MimiTheme.rowHoverSoft : Color.clear)
                     )
                 }
 
                 if ranked.count > 5 {
                     Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
+                        withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                             isRankingExpanded.toggle()
                         }
                     } label: {
@@ -755,7 +757,7 @@ public struct MimiStatsView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.top, 4)
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
                 }
             }
         }
@@ -800,7 +802,7 @@ public struct MimiStatsView: View {
                 }
                 .mimiFont(11, weight: .bold)
                 .padding(10)
-                .background(Color(hex: 0xEEF1FA))
+                .background(MimiTheme.surfaceMuted)
 
                 summaryTableRow(label: "总计", exp: totalExpense, inc: totalIncome, net: netBalance, emphasize: true)
                 summaryTableRow(label: "日均", exp: avgExp, inc: avgInc, net: avgNet, emphasize: true)

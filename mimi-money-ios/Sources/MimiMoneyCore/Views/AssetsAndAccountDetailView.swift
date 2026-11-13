@@ -118,7 +118,7 @@ public struct AssetsAndAccountDetailView: View {
                                 .padding(.vertical, 12)
                                 .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.expenseBlue))
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
 
                         Spacer()
                     }
@@ -147,12 +147,12 @@ public struct AssetsAndAccountDetailView: View {
 
             Text(MimiTheme.formatRM(store.netWorth))
                 .mimiFont(28, weight: .bold, design: .rounded)
-                .foregroundColor(store.netWorth < -0.0001 ? Color(hex: 0xE53935) : MimiTheme.textPrimary)
+                .foregroundColor(store.netWorth < -0.0001 ? MimiTheme.dangerEmphasis : MimiTheme.textPrimary)
 
             HStack(spacing: 24) {
                 Text("资产 \(MimiTheme.formatRM(store.totalAssets))")
                     .mimiFont(12)
-                    .foregroundColor(store.totalAssets < -0.0001 ? Color(hex: 0xE53935) : MimiTheme.textSecondary)
+                    .foregroundColor(store.totalAssets < -0.0001 ? MimiTheme.dangerEmphasis : MimiTheme.textSecondary)
                 Text("负债 \(MimiTheme.formatRM(store.totalLiabilities))")
                     .mimiFont(12)
                     .foregroundColor(MimiTheme.textSecondary)
@@ -183,7 +183,7 @@ public struct AssetsAndAccountDetailView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
-        .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xF0F1F5)))
+        .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.surfaceMuted))
     }
 
     // MARK: - Account List Card (现金, CIMB, TNGewallet, PBBank)
@@ -206,7 +206,7 @@ public struct AssetsAndAccountDetailView: View {
                     }
                     .foregroundColor(MimiTheme.expenseBlue)
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
             }
 
             ForEach(store.accounts) { account in
@@ -237,7 +237,7 @@ public struct AssetsAndAccountDetailView: View {
 
                         Text(MimiTheme.formatRM(account.balance))
                             .mimiFont(16, weight: .bold, design: .rounded)
-                            .foregroundColor(account.balance < -0.0001 ? Color(hex: 0xE53935) : MimiTheme.textPrimary)
+                            .foregroundColor(account.balance < -0.0001 ? MimiTheme.dangerEmphasis : MimiTheme.textPrimary)
 
                         Image(systemName: "chevron.right")
                             .mimiFont(11)
@@ -245,7 +245,7 @@ public struct AssetsAndAccountDetailView: View {
                     }
                     .padding(.vertical, 8)
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
 
                 if account.id != store.accounts.last?.id {
                     Divider()
@@ -288,7 +288,7 @@ public struct AssetsAndAccountDetailView: View {
                             Spacer()
                             Image(systemName: "ellipsis")
                                 .mimiFont(14, weight: .semibold)
-                                .foregroundColor(Color(hex: 0xB8BCC8))
+                                .foregroundColor(MimiTheme.iconInactive)
                         }
 
                         Path { path in
@@ -296,7 +296,7 @@ public struct AssetsAndAccountDetailView: View {
                             path.addLine(to: CGPoint(x: 2000, y: 0.5))
                         }
                         .stroke(style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                        .foregroundColor(Color(hex: 0xD9C9AE))
+                        .foregroundColor(MimiTheme.assetAccent)
                         .frame(height: 1)
                         .clipped()
 
@@ -308,15 +308,15 @@ public struct AssetsAndAccountDetailView: View {
                                 HStack(spacing: 6) {
                                     Text(MimiTheme.formatRM(liveAccount.balance))
                                         .mimiFont(28, weight: .bold, design: .rounded)
-                                        .foregroundColor(liveAccount.balance < -0.0001 ? Color(hex: 0xE53935) : MimiTheme.textPrimary)
+                                        .foregroundColor(liveAccount.balance < -0.0001 ? MimiTheme.dangerEmphasis : MimiTheme.textPrimary)
                                     Button {
                                         showBalanceEditSheet.toggle()
                                     } label: {
                                         Image(systemName: "pencil")
                                             .mimiFont(13, weight: .semibold)
-                                            .foregroundColor(Color(hex: 0xB8BCC8))
+                                            .foregroundColor(MimiTheme.iconInactive)
                                     }
-                                    .buttonStyle(.plain)
+                                    .mimiPressable()
                                 }
                             }
                             Spacer()
@@ -396,7 +396,7 @@ public struct AssetsAndAccountDetailView: View {
                                                 .fill(detailTabMode == tab ? MimiTheme.tintBlueChip : Color.clear)
                                         )
                                 }
-                                .buttonStyle(.plain)
+                                .mimiPressable()
                                 .accessibilityLabel(tab)
                             }
                         }
@@ -486,7 +486,7 @@ public struct AssetsAndAccountDetailView: View {
                                     .padding(.vertical, 12)
                                     .contentShape(Rectangle())
                                 }
-                                .buttonStyle(.plain)
+                                .mimiPressable()
                                 .disabled(store.transaction(forAuditLog: log) == nil)
                             }
                         }
@@ -529,7 +529,7 @@ public struct AssetsAndAccountDetailView: View {
             .padding(.vertical, 10)
             .background(Capsule().fill(MimiTheme.cardBackground))
         }
-        .buttonStyle(.plain)
+        .mimiPressable()
     }
 
     private func auditTypeLabel(_ log: AccountAuditLog) -> String {
@@ -648,12 +648,12 @@ public struct AssetsAndAccountDetailView: View {
                                                          : MimiTheme.incomeOrange)
                                     Image(systemName: "chevron.right")
                                         .mimiFont(11, weight: .semibold)
-                                        .foregroundColor(Color(hex: 0xC5C8D0))
+                                        .foregroundColor(MimiTheme.controlDisabled)
                                 }
                                 .padding(14)
                                 .contentShape(Rectangle())
                             }
-                            .buttonStyle(.plain)
+                            .mimiPressable()
                             if idx < group.items.count - 1 {
                                 Divider().padding(.leading, 60)
                             }

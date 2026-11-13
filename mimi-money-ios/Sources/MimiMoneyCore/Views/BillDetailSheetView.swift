@@ -18,6 +18,7 @@ public struct BillDetailSheetView: View {
     @State private var pickerSourceType: UIKitImagePicker.SourceType = .photoLibrary
     #endif
     @State private var activeViewerItem: ReceiptViewerItem? = nil
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
         store: MimiStore,
@@ -60,7 +61,7 @@ public struct BillDetailSheetView: View {
                                 }
                             }
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
 
                         Divider().padding(.leading, 16)
 
@@ -170,7 +171,7 @@ public struct BillDetailSheetView: View {
                                                     .foregroundColor(MimiTheme.textMuted)
                                             )
                                     }
-                                    .buttonStyle(.plain)
+                                    .mimiPressable()
                                 }
                                 .padding(.vertical, 4)
                             }
@@ -272,7 +273,7 @@ public struct BillDetailSheetView: View {
                             .padding(.vertical, 14)
                             .background(Capsule().fill(MimiTheme.expenseBlue))
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
                     .padding(.top, 6)
                 }
                 .padding(16)
@@ -323,7 +324,9 @@ public struct BillDetailSheetView: View {
                     onSelect: { item in
                         showingActionSheet = false
                         #if canImport(UIKit)
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
+                        DispatchQueue.main.asyncAfter(
+                            deadline: .now() + MimiMotion.handoffDelay(.sheet, reduceMotion: reduceMotion)
+                        ) {
                             switch item.id {
                             case "camera":
                                 pickerSourceType = .camera
@@ -389,7 +392,7 @@ public struct BillDetailSheetView: View {
 
         return VStack(spacing: 16) {
             Capsule()
-                .fill(Color(hex: 0xD8DCE6))
+                .fill(MimiTheme.strokeSubtle)
                 .frame(width: 36, height: 4)
                 .padding(.top, 10)
 
@@ -420,7 +423,7 @@ public struct BillDetailSheetView: View {
                                             .fill(key == "完成" ? accent : Color.white)
                                     )
                             }
-                            .buttonStyle(.plain)
+                            .mimiPressable()
                         }
                     }
                 }
@@ -454,7 +457,7 @@ public struct BillDetailSheetView: View {
 
     private func fallbackDocIcon(label: String) -> some View {
         RoundedRectangle(cornerRadius: 10)
-            .fill(Color(hex: 0xEAF1FF))
+            .fill(MimiTheme.chipFill)
             .frame(width: 58, height: 58)
             .overlay(
                 VStack(spacing: 2) {

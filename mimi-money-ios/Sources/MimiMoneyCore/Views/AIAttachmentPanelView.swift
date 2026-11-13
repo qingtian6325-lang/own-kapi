@@ -1,8 +1,6 @@
 import SwiftUI
 
 /// 问账条 / 聊天输入行的 ＋ 展开面板：相册 / 拍照 / 导入导出 三格大瓷砖。
-/// 行为与 Kapi 一致：选图或拍照后走 AI 识别生成账单草稿，确认后才入账；
-/// 导入导出接 App 已有的 CSV 导入导出功能（设置页「导入导出」区）。
 public struct AIAttachmentPanelView: View {
     public var onPickFromAlbum: () -> Void
     public var onTakePhoto: () -> Void
@@ -31,23 +29,25 @@ public struct AIAttachmentPanelView: View {
             VStack(spacing: 8) {
                 Image(systemName: icon)
                     .mimiFont(24, weight: .regular)
-                    .foregroundColor(Color(hex: 0x6B7285))
+                    .foregroundColor(MimiTheme.textSecondary)
+                    .accessibilityHidden(true)
                 Text(title)
                     .mimiFont(13, weight: .medium)
                     .foregroundColor(MimiTheme.textSecondary)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 84)
+            .frame(minHeight: 84)
             .background(
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(Color.white.opacity(0.92))
-                    .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 3)
+                    .fill(MimiTheme.fillSubtle)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .stroke(Color.white.opacity(0.8), lineWidth: 0.5)
+                    .stroke(MimiTheme.strokeSubtle, lineWidth: 1)
             )
+            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .mimiPressable()
+        .accessibilityLabel(title)
     }
 }

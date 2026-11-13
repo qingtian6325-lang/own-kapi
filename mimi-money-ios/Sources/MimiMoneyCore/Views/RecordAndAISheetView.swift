@@ -40,6 +40,7 @@ public struct RecordAndAISheetView: View {
     @State private var showChatAlbumPicker: Bool = false
     @State private var showChatCameraPicker: Bool = false
     @State private var recognitionFailureText: String?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     #if canImport(Speech) && canImport(AVFoundation)
     @StateObject private var speechTranscriber = SpeechTranscriber()
     #endif
@@ -136,7 +137,9 @@ public struct RecordAndAISheetView: View {
                 onSelect: { item in
                     showImageSourceDialog = false
                     #if canImport(UIKit)
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
+                    DispatchQueue.main.asyncAfter(
+                        deadline: .now() + MimiMotion.handoffDelay(.sheet, reduceMotion: reduceMotion)
+                    ) {
                         switch item.id {
                         case "camera":
                             pickerSourceType = .camera
@@ -232,7 +235,7 @@ public struct RecordAndAISheetView: View {
             Spacer(minLength: 8)
 
             Button {
-                withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                     isAIMode = false
                 }
             } label: {
@@ -251,7 +254,7 @@ public struct RecordAndAISheetView: View {
                         .background(Capsule().fill(MimiTheme.cardBackground))
                 )
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
 
             Button(action: onDismiss) {
                 Image(systemName: "xmark")
@@ -308,7 +311,7 @@ public struct RecordAndAISheetView: View {
                 .mimiPressable()
                 .accessibilityLabel("关闭")
                 Button {
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                    withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                         isAIMode = false
                     }
                 } label: {
@@ -365,7 +368,7 @@ public struct RecordAndAISheetView: View {
                                     .frame(width: 18, height: 3)
                             }
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
                     }
                 }
 
@@ -433,7 +436,7 @@ public struct RecordAndAISheetView: View {
                                             .minimumScaleFactor(0.85)
                                     }
                                 }
-                                .buttonStyle(.plain)
+                                .mimiPressable()
                             }
                         }
                         .padding(.top, 6)
@@ -467,7 +470,7 @@ public struct RecordAndAISheetView: View {
                                                     .minimumScaleFactor(0.85)
                                             }
                                         }
-                                        .buttonStyle(.plain)
+                                        .mimiPressable()
                                     }
                                 }
                             }
@@ -495,7 +498,7 @@ public struct RecordAndAISheetView: View {
                         let _ = { f.dateFormat = "M月d日" }()
                         pillLabel(icon: "calendar", text: f.string(from: selectedDate))
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
 
                     if selectedTab != .transfer {
                         Menu {
@@ -526,7 +529,7 @@ public struct RecordAndAISheetView: View {
                         } label: {
                             pillLabel(icon: "tag", text: discountAmountText.isEmpty ? "优惠" : "优惠 RM\(discountAmountText)")
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
 
                         Button {
                             markPendingReimbursement.toggle()
@@ -536,7 +539,7 @@ public struct RecordAndAISheetView: View {
                                 text: "待报销"
                             )
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
 
                         Button {
                             includeInStats.toggle()
@@ -546,7 +549,7 @@ public struct RecordAndAISheetView: View {
                                 text: includeInStats ? "计入收支" : "不计入收支"
                             )
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
 
                         Button {
                             includeInBudget.toggle()
@@ -556,7 +559,7 @@ public struct RecordAndAISheetView: View {
                                 text: includeInBudget ? "计入预算" : "不计入预算"
                             )
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
 
                         Menu {
                             ForEach(store.tags, id: \.self) { tag in
@@ -618,18 +621,18 @@ public struct RecordAndAISheetView: View {
                     } label: {
                         Image(systemName: "photo.on.rectangle")
                             .mimiFont(15)
-                            .foregroundColor(Color(hex: 0x9AA0B0))
+                            .foregroundColor(MimiTheme.textMuted)
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
 
                     Button {
                         showImageSourceDialog = true
                     } label: {
                         Image(systemName: "camera")
                             .mimiFont(15)
-                            .foregroundColor(Color(hex: 0x9AA0B0))
+                            .foregroundColor(MimiTheme.textMuted)
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
@@ -652,12 +655,12 @@ public struct RecordAndAISheetView: View {
                                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                                         } else {
                                             RoundedRectangle(cornerRadius: 8)
-                                                .fill(Color(hex: 0xEAF1FF))
+                                                .fill(MimiTheme.chipFill)
                                                 .frame(width: 48, height: 48)
                                         }
                                         #else
                                         RoundedRectangle(cornerRadius: 8)
-                                            .fill(Color(hex: 0xEAF1FF))
+                                            .fill(MimiTheme.chipFill)
                                             .frame(width: 48, height: 48)
                                         #endif
                                     }
@@ -720,7 +723,7 @@ public struct RecordAndAISheetView: View {
                     .frame(width: 36, height: 36)
                     .background(Circle().fill(MimiTheme.tintBlueChip))
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
 
             Menu {
                 ForEach(store.accounts) { acc in
@@ -795,7 +798,7 @@ public struct RecordAndAISheetView: View {
                                         )
                                 )
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
                     }
                 }
             }
@@ -923,16 +926,16 @@ public struct RecordAndAISheetView: View {
                                     } label: {
                                         Text(question)
                                             .mimiFont(14)
-                                            .foregroundColor(Color(hex: 0x6B7280))
+                                            .foregroundColor(MimiTheme.textSecondary)
                                             .multilineTextAlignment(.leading)
                                             .padding(.horizontal, 14)
                                             .padding(.vertical, 11)
                                             .background(
                                                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                                    .fill(Color(hex: 0xF3F4F8))
+                                                    .fill(MimiTheme.fillSubtle)
                                             )
                                     }
-                                    .buttonStyle(.plain)
+                                    .mimiPressable()
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -951,7 +954,7 @@ public struct RecordAndAISheetView: View {
                 .background(MimiTheme.cardBackground)
                 .onChange(of: aiEngine.messages.count) { _, _ in
                     if let last = aiEngine.messages.last {
-                        withAnimation(.easeOut(duration: 0.22)) {
+                        withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                             proxy.scrollTo(last.id, anchor: .bottom)
                         }
                     }
@@ -1028,7 +1031,7 @@ public struct RecordAndAISheetView: View {
                     #endif
 
                     Button {
-                        withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                        withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                             showChatAttachmentPanel.toggle()
                         }
                     } label: {
@@ -1037,7 +1040,7 @@ public struct RecordAndAISheetView: View {
                             .foregroundColor(MimiTheme.textMuted)
                             .frame(width: 28, height: 28)
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
                 }
                 .padding(.leading, 14)
                 .padding(.trailing, 8)
@@ -1060,12 +1063,12 @@ public struct RecordAndAISheetView: View {
                         .background(
                             Circle().fill(
                                 aiInputText.trimmingCharacters(in: .whitespaces).isEmpty
-                                    ? Color(hex: 0xC5CCD8)
+                                    ? MimiTheme.controlDisabled
                                     : MimiTheme.expenseBlue
                             )
                         )
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
                 .disabled(aiInputText.trimmingCharacters(in: .whitespaces).isEmpty)
             }
             .padding(.horizontal, 14)
@@ -1113,7 +1116,7 @@ public struct RecordAndAISheetView: View {
                         .padding(.vertical, 9)
                         .background(Capsule().fill(MimiTheme.fillSubtle))
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
 
                 Button {
                     aiEngine.confirmDrafts(messageId: message.id, in: store)
@@ -1125,7 +1128,7 @@ public struct RecordAndAISheetView: View {
                         .padding(.vertical, 9)
                         .background(Capsule().fill(MimiTheme.expenseBlue))
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
             }
         }
         .padding(14)
@@ -1270,7 +1273,7 @@ public struct RecordAndAISheetView: View {
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(Color(hex: 0xE6E8F0), lineWidth: 1)
+                .stroke(MimiTheme.divider, lineWidth: 1)
         )
     }
 }

@@ -267,7 +267,7 @@ public struct ScreenshotResultSnippetView: View {
                                 .mimiFont(16)
                                 .foregroundColor(MimiTheme.textMuted.opacity(0.7))
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
                     }
                 }
 
@@ -278,7 +278,7 @@ public struct ScreenshotResultSnippetView: View {
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
                         .background(
-                            Capsule().fill(Color(hex: 0xF2F4F8))
+                            Capsule().fill(MimiTheme.fillSubtle)
                         )
 
                     if !transaction.note.isEmpty {
@@ -289,7 +289,7 @@ public struct ScreenshotResultSnippetView: View {
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
                             .background(
-                                Capsule().fill(Color(hex: 0xF2F4F8))
+                                Capsule().fill(MimiTheme.fillSubtle)
                             )
                     }
 
@@ -328,10 +328,10 @@ public struct ScreenshotResultSnippetView: View {
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 11)
                             .background(
-                                Capsule().fill(Color(hex: 0xEDEFF5))
+                                Capsule().fill(MimiTheme.fillSubtle)
                             )
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
 
                     Button(intent: ConfirmBillIntent(transactionId: transaction.id)) {
                         Text("确认 (Got it)")
@@ -343,7 +343,7 @@ public struct ScreenshotResultSnippetView: View {
                                 Capsule().fill(MimiTheme.expenseBlue)
                             )
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
                 }
             } else {
                 fallbackTwoButtons
@@ -355,7 +355,7 @@ public struct ScreenshotResultSnippetView: View {
         .padding(16)
         .background(
             LinearGradient(
-                colors: [Color(hex: 0xDEF0FE), Color(hex: 0xF6F9FE)],
+                colors: [MimiTheme.tintBlueSoft, MimiTheme.background],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -375,10 +375,10 @@ public struct ScreenshotResultSnippetView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 11)
                     .background(
-                        Capsule().fill(Color(hex: 0xEDEFF5))
+                        Capsule().fill(MimiTheme.fillSubtle)
                     )
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
 
             Button {
                 onConfirmTapped?()
@@ -392,7 +392,7 @@ public struct ScreenshotResultSnippetView: View {
                         Capsule().fill(MimiTheme.expenseBlue)
                     )
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
         }
     }
 }
@@ -448,7 +448,7 @@ public struct ScanConfirmationCardView: View {
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
                         .background(
-                            Capsule().fill(Color(hex: 0xF2F4F8))
+                            Capsule().fill(MimiTheme.fillSubtle)
                         )
 
                     if !transaction.note.isEmpty {
@@ -459,7 +459,7 @@ public struct ScanConfirmationCardView: View {
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
                             .background(
-                                Capsule().fill(Color(hex: 0xF2F4F8))
+                                Capsule().fill(MimiTheme.fillSubtle)
                             )
                     }
 
@@ -492,7 +492,7 @@ public struct ScanConfirmationCardView: View {
         .padding(16)
         .background(
             LinearGradient(
-                colors: [Color(hex: 0xDEF0FE), Color(hex: 0xF6F9FE)],
+                colors: [MimiTheme.tintBlueSoft, MimiTheme.background],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -551,7 +551,7 @@ public struct ScanChoiceCardView: View {
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
                     .background(
-                        Capsule().fill(Color(hex: 0xF2F4F8))
+                        Capsule().fill(MimiTheme.fillSubtle)
                     )
 
                 if !transaction.note.isEmpty {
@@ -562,7 +562,7 @@ public struct ScanChoiceCardView: View {
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
                         .background(
-                            Capsule().fill(Color(hex: 0xF2F4F8))
+                            Capsule().fill(MimiTheme.fillSubtle)
                         )
                 }
 
@@ -582,7 +582,7 @@ public struct ScanChoiceCardView: View {
         .padding(16)
         .background(
             LinearGradient(
-                colors: [Color(hex: 0xDEF0FE), Color(hex: 0xF6F9FE)],
+                colors: [MimiTheme.tintBlueSoft, MimiTheme.background],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -786,7 +786,7 @@ public struct ScanScreenshotIntent: AppIntent {
     @Parameter(title: "类型", default: 2)
     public var type: Int?
 
-    @Parameter(title: "版本", default: "1.3.6")
+    @Parameter(title: "版本", default: "1.3.7")
     public var version: String?
 
     public init() {}

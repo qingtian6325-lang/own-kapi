@@ -41,6 +41,8 @@ public struct BudgetManagementView: View {
         var id: String { "\(categoryName)-\(year)-\(month)" }
     }
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     public init(store: MimiStore, onDismiss: @escaping () -> Void) {
         self.store = store
         self.onDismiss = onDismiss
@@ -180,7 +182,7 @@ public struct BudgetManagementView: View {
                             .padding(.vertical, 12)
                             .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.expenseBlue))
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
 
                 case .editCategory(let item):
                     HStack(spacing: 10) {
@@ -224,9 +226,9 @@ public struct BudgetManagementView: View {
                                 .foregroundColor(MimiTheme.dangerRed)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
-                                .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xFEECEC)))
+                                .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.dangerSoft))
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
 
                         Button {
                             if let val = Double(categoryBudgetInput), val >= 0 {
@@ -241,7 +243,7 @@ public struct BudgetManagementView: View {
                                 .padding(.vertical, 12)
                                 .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.expenseBlue))
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
                     }
 
                 case .addCategory(let grp):
@@ -289,7 +291,7 @@ public struct BudgetManagementView: View {
                             .padding(.vertical, 12)
                             .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.expenseBlue))
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
 
                 case .selectNewCategory:
                     Text("选择要增加预算的分类")
@@ -322,7 +324,7 @@ public struct BudgetManagementView: View {
                                     .padding(12)
                                     .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.background))
                                 }
-                                .buttonStyle(.plain)
+                                .mimiPressable()
                             }
                         }
                     }
@@ -395,7 +397,7 @@ public struct BudgetManagementView: View {
                                     .foregroundColor(MimiTheme.expenseBlue)
                             }
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
                         .accessibilityLabel("修改月预算")
                     }
                 }
@@ -445,7 +447,7 @@ public struct BudgetManagementView: View {
                         .mimiFont(18)
                         .foregroundColor(MimiTheme.expenseBlue)
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
             }
 
             if categoryBudgetsExpanded {
@@ -498,12 +500,12 @@ public struct BudgetManagementView: View {
                         .padding(.vertical, 4)
                         .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
                 }
             }
 
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                     categoryBudgetsExpanded.toggle()
                 }
             } label: {
@@ -518,7 +520,7 @@ public struct BudgetManagementView: View {
                 .foregroundColor(MimiTheme.textSecondary)
                 .padding(.top, 2)
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 20).fill(MimiTheme.cardBackground))
@@ -546,7 +548,7 @@ public struct BudgetManagementView: View {
                         .mimiFont(12, weight: .semibold)
                         .foregroundColor(MimiTheme.expenseBlue)
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
             }
 
             Text("点击查看当日花费，长按编辑日预算")
@@ -666,7 +668,7 @@ public struct BudgetManagementView: View {
                     Button {
                         categoryBudgetInput = String(format: "%.2f", item.monthlyLimit)
                         historyCategory = nil
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        withAnimation(MimiMotion.sheet(reduceMotion: reduceMotion)) {
                             activeSheetType = .editCategory(item)
                         }
                     } label: {
@@ -681,7 +683,7 @@ public struct BudgetManagementView: View {
                         .padding(14)
                         .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.tintBlueChip))
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
 
                     Text("历史月份")
                         .mimiFont(13, weight: .semibold)
@@ -722,7 +724,7 @@ public struct BudgetManagementView: View {
                                 .padding(.vertical, 12)
                                 .contentShape(Rectangle())
                             }
-                            .buttonStyle(.plain)
+                            .mimiPressable()
                             if idx < rows.count - 1 {
                                 Divider().padding(.leading, 14)
                             }
@@ -817,7 +819,7 @@ public struct BudgetManagementView: View {
                             }
                             .foregroundColor(MimiTheme.expenseBlue)
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
                     }
 
                     Text("点击查看当日花费，长按编辑日预算")
@@ -905,7 +907,7 @@ public struct BudgetManagementView: View {
         isSelected: Bool,
         opensFullSheetOnTap: Bool
     ) -> some View {
-        let selectedFill = Color(hex: 0xF0F5FF)
+        let selectedFill = MimiTheme.selectionSoft
         let todayFill = MimiTheme.expenseBlue
         let normalFill = MimiTheme.fillSubtle
 
@@ -953,10 +955,10 @@ public struct BudgetManagementView: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(isSelected ? Color(hex: 0x3366FF) : Color.clear, lineWidth: 2)
+                    .stroke(isSelected ? MimiTheme.expenseBlue : Color.clear, lineWidth: 2)
             )
         }
-        .buttonStyle(.plain)
+        .mimiPressable()
         .simultaneousGesture(
             LongPressGesture(minimumDuration: 0.45).onEnded { _ in
                 selectedDayKeyForCustomBudget = cell.id
@@ -1051,13 +1053,13 @@ public struct BudgetManagementView: View {
                                      : "+\(MimiTheme.formatRM(item.amount))")
                                     .mimiFont(15, weight: .bold, design: .rounded)
                                     .foregroundColor(item.type == .expense || item.type == .transfer
-                                                     ? Color(hex: 0x2A4E9E)
+                                                     ? MimiTheme.expenseDeep
                                                      : MimiTheme.incomeOrange)
                             }
                             .padding(14)
                             .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
 
                         if index < txs.count - 1 {
                             Divider().padding(.leading, 66)

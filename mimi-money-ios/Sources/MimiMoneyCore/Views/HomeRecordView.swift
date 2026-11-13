@@ -176,7 +176,8 @@ public struct HomeRecordView: View {
                         .foregroundColor(MimiTheme.textSecondary)
                 }
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
+            .accessibilityLabel("记录，切换账本视图")
 
             Spacer(minLength: 8)
 
@@ -209,8 +210,11 @@ public struct HomeRecordView: View {
                 .padding(.trailing, 10)
                 .padding(.vertical, 8)
                 .background(Capsule().fill(MimiTheme.cardBackground))
+                .frame(minHeight: MimiHIG.minTouch)
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
+            .accessibilityLabel("当前账本 \(store.currentLedgerName)")
+            .accessibilityHint("点按切换账本")
         }
     }
 
@@ -228,7 +232,7 @@ public struct HomeRecordView: View {
                     }
                     .foregroundColor(MimiTheme.textPrimary)
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
 
                 Button(action: onSwitchToStats) {
                     HStack(spacing: 2) {
@@ -239,7 +243,7 @@ public struct HomeRecordView: View {
                     }
                     .foregroundColor(MimiTheme.expenseBlue)
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
 
                 Spacer(minLength: 8)
             }
@@ -260,10 +264,9 @@ public struct HomeRecordView: View {
                             Text(isAmountsHidden ? "RM****" : MimiTheme.formatRM(monthlyRemaining))
                                 .mimiFont(28, weight: .bold, design: .rounded)
                                 .foregroundColor(MimiTheme.textPrimary)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.7)
+                                .mimiAmountFit()
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
 
                         Button {
                             isAmountsHidden.toggle()
@@ -271,8 +274,11 @@ public struct HomeRecordView: View {
                             Image(systemName: isAmountsHidden ? "eye.slash" : "eye")
                                 .mimiFont(14, weight: .regular)
                                 .foregroundColor(MimiTheme.textMuted)
+                                .mimiMinTouchTarget()
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
+                        .accessibilityLabel(isAmountsHidden ? "显示金额" : "隐藏金额")
+                        .mimiPressable()
                     }
 
                     budgetProgressBar
@@ -328,7 +334,7 @@ public struct HomeRecordView: View {
             .background(Capsule().fill(MimiTheme.cardBackground))
             .overlay(Capsule().stroke(MimiTheme.divider, lineWidth: 1))
         }
-        .buttonStyle(.plain)
+        .mimiPressable()
     }
 
     private var budgetProgressBar: some View {
@@ -343,7 +349,7 @@ public struct HomeRecordView: View {
                     Spacer(minLength: 0)
                     ZStack(alignment: .leading) {
                         Capsule()
-                            .fill(Color(hex: 0xE7EAF2))
+                            .fill(MimiTheme.progressTrack)
                             .frame(height: trackHeight)
                         Capsule()
                             .fill(MimiTheme.expenseBlue)
@@ -373,12 +379,12 @@ public struct HomeRecordView: View {
                     .stroke(
                         AngularGradient(
                             colors: [
-                                Color(hex: 0x4C6FFF),
-                                Color(hex: 0xF0A04B),
-                                Color(hex: 0x3DDC97),
-                                Color(hex: 0xE85AD8),
-                                Color(hex: 0x7A6CFF),
-                                Color(hex: 0x4C6FFF)
+                                MimiTheme.chartBlueBright,
+                                MimiTheme.chartOrangeBright,
+                                MimiTheme.chartTeal,
+                                MimiTheme.chartPink,
+                                MimiTheme.chartIndigo,
+                                MimiTheme.chartBlueBright
                             ],
                             center: .center
                         ),
@@ -400,25 +406,25 @@ public struct HomeRecordView: View {
                 .padding(.horizontal, 8)
             }
         }
-        .buttonStyle(.plain)
+        .mimiPressable()
         .fixedSize()
     }
 
     private var categoryBudgetSection: some View {
         VStack(spacing: 10) {
             Button {
-                withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                     isCategoryBudgetExpanded.toggle()
                 }
             } label: {
                 HStack(spacing: 8) {
                     ZStack {
                         Circle()
-                            .stroke(Color(hex: 0xD9E2FF), lineWidth: 3)
+                            .stroke(MimiTheme.ringTrack, lineWidth: 3)
                             .frame(width: 16, height: 16)
                         Circle()
                             .trim(from: 0.08, to: 0.42)
-                            .stroke(Color(hex: 0x7B93F7), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                            .stroke(MimiTheme.ringProgress, style: StrokeStyle(lineWidth: 3, lineCap: .round))
                             .frame(width: 16, height: 16)
                             .rotationEffect(.degrees(-20))
                     }
@@ -441,7 +447,7 @@ public struct HomeRecordView: View {
                     .foregroundColor(MimiTheme.expenseBlue)
                 }
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
 
             if isCategoryBudgetExpanded {
                 VStack(spacing: 10) {
@@ -510,7 +516,7 @@ public struct HomeRecordView: View {
                             .foregroundColor(MimiTheme.textPrimary)
                     }
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
 
                 Spacer(minLength: 8)
 
@@ -524,12 +530,12 @@ public struct HomeRecordView: View {
                                 .foregroundColor(MimiTheme.expenseBlue)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 3)
-                                .background(Capsule().fill(Color.white.opacity(0.92)))
+                                .background(Capsule().fill(MimiTheme.cardBackground))
                             HomeNetWorthSparkline()
                                 .frame(width: 124, height: 32)
                         }
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
                     .transition(.opacity.combined(with: .move(edge: .trailing)))
                 }
             }
@@ -544,7 +550,7 @@ public struct HomeRecordView: View {
                     .padding(.vertical, 2)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
         }
         .padding(.horizontal, 16)
         .padding(.top, 12)
@@ -556,7 +562,7 @@ public struct HomeRecordView: View {
     }
 
     private func toggleNetWorthExpanded() {
-        withAnimation(.easeInOut(duration: 0.22)) {
+        withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
             isNetWorthExpanded.toggle()
         }
     }
@@ -576,7 +582,7 @@ public struct HomeRecordView: View {
                     }
                     .foregroundColor(MimiTheme.textPrimary)
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
                 .accessibilityLabel("记录明细")
 
                 Spacer(minLength: 8)
@@ -639,7 +645,7 @@ public struct HomeRecordView: View {
             RoundedRectangle(cornerRadius: cardRadius, style: .continuous)
                 .fill(MimiTheme.cardBackground)
         )
-        .animation(.spring(response: 0.28, dampingFraction: 0.86), value: revealedDeleteID)
+        .animation(MimiMotion.quick(reduceMotion: reduceMotion), value: revealedDeleteID)
     }
 
     private func feedCardEndClip(radius: CGFloat, top: Bool = false, bottom: Bool = false) -> UnevenRoundedRectangle {
@@ -807,13 +813,13 @@ public struct HomeRecordView: View {
                 revealedDeleteID = nil
             }
         }
-        withAnimation(.easeOut(duration: 0.2)) {
+        withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
             showDeleteToast = true
         }
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: 1_200_000_000)
             guard deleteToastToken == token else { return }
-            withAnimation(.easeIn(duration: 0.2)) {
+            withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                 showDeleteToast = false
             }
         }
@@ -825,11 +831,7 @@ public struct HomeRecordView: View {
     }
 
     private func animateFeedChange(_ updates: () -> Void) {
-        if reduceMotion {
-            updates()
-        } else {
-            withAnimation(.spring(response: 0.28, dampingFraction: 0.86), updates)
-        }
+        withAnimation(MimiMotion.quick(reduceMotion: reduceMotion), updates)
     }
 
     private func transactionTitle(_ item: TransactionItem) -> String {
@@ -878,18 +880,18 @@ public struct HomeRecordView: View {
         VStack(spacing: 0) {
             if isAskPanelExpanded {
                 Button {
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                    withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                         isAskPanelExpanded = false
                     }
                 } label: {
                     Image(systemName: "chevron.compact.up")
                         .mimiFont(18, weight: .semibold)
-                        .foregroundColor(Color(hex: 0xC5C8D0))
+                        .foregroundColor(MimiTheme.controlDisabled)
                         .frame(maxWidth: .infinity)
                         .frame(height: 18)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
                 .padding(.bottom, 6)
                 .transition(.opacity)
             }
@@ -921,7 +923,7 @@ public struct HomeRecordView: View {
 
                 // ＋：展开相册 / 拍照 / 导入导出（金标三格）
                 Button {
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                    withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                         isAskPanelExpanded.toggle()
                     }
                 } label: {
@@ -954,19 +956,19 @@ public struct HomeRecordView: View {
             if isAskPanelExpanded {
                 AIAttachmentPanelView(
                     onPickFromAlbum: {
-                        withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                        withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                             isAskPanelExpanded = false
                         }
                         onPickFromAlbum()
                     },
                     onTakePhoto: {
-                        withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                        withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                             isAskPanelExpanded = false
                         }
                         onTakePhoto()
                     },
                     onOpenImportExport: {
-                        withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                        withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                             isAskPanelExpanded = false
                         }
                         onOpenImportExport()
@@ -1008,7 +1010,7 @@ public struct HomeRecordView: View {
                     .padding(14)
                     .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.background))
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
             }
             Spacer()
         }
@@ -1046,7 +1048,7 @@ private struct FeedBillMarkButton: View {
             }
             .frame(width: 32, height: 32)
         }
-        .buttonStyle(.plain)
+        .mimiPressable()
         .accessibilityLabel("全部记录")
     }
 }

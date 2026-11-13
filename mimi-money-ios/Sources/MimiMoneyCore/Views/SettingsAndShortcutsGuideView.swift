@@ -54,6 +54,8 @@ public struct SettingsAndShortcutsGuideView: View {
     @State private var groqTestStatus: String? = nil
     @State private var groqIsTesting: Bool = false
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     public init(
         store: MimiStore,
         aiEngine: MimiAIEngine,
@@ -82,7 +84,7 @@ public struct SettingsAndShortcutsGuideView: View {
                             Spacer()
                         }
                         .padding(12)
-                        .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xE8F5E9)))
+                        .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.successSoft))
                     }
 
                     switch initialSectionTitle {
@@ -172,7 +174,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     .padding(.vertical, 13)
                     .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.expenseBlue))
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
 
                 // Button 2: 导出账单
                 Button {
@@ -189,7 +191,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     .padding(.vertical, 13)
                     .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.incomeOrange))
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
             }
         }
         .padding(16)
@@ -226,7 +228,7 @@ public struct SettingsAndShortcutsGuideView: View {
                                 .padding(.vertical, 4)
                                 .background(Capsule().fill(MimiTheme.tintBlueChip))
                             }
-                            .buttonStyle(.plain)
+                            .mimiPressable()
                         }
 
                         Text("日期,时间,类型,金额,一级分类,二级分类,账户,备注\n2026-11-08,21:59:00,支出,38.78,交通,加油充电,PBBank,加油\n2026-11-08,16:56:34,支出,5.90,餐饮,餐厅,TNG eWallet,买egglab的东西\n2026-11-06,10:00:00,收入,1148.31,职业收入,工资,CIMB,月度薪资")
@@ -276,7 +278,7 @@ public struct SettingsAndShortcutsGuideView: View {
                                 .padding(.vertical, 7)
                                 .background(RoundedRectangle(cornerRadius: 8).fill(MimiTheme.fillSubtle))
                             }
-                            .buttonStyle(.plain)
+                            .mimiPressable()
 
                             Button {
                                 importInputText = MimiCSVService.userExportedCSV
@@ -286,12 +288,12 @@ public struct SettingsAndShortcutsGuideView: View {
                                     Text("填入 151 笔真实备份样例")
                                 }
                                 .mimiFont(12, weight: .medium)
-                                .foregroundColor(Color(hex: 0x2E7D32))
+                                .foregroundColor(MimiTheme.successSoftText)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 7)
-                                .background(RoundedRectangle(cornerRadius: 8).fill(Color(hex: 0xE8F5E9)))
+                                .background(RoundedRectangle(cornerRadius: 8).fill(MimiTheme.successSoft))
                             }
-                            .buttonStyle(.plain)
+                            .mimiPressable()
                         }
 
                         Toggle("覆盖清空现有账单（若关闭则追加合并）", isOn: $replaceExistingOnImport)
@@ -314,7 +316,7 @@ public struct SettingsAndShortcutsGuideView: View {
                             .padding(.vertical, 13)
                             .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.expenseBlue))
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
                 }
                 .padding(16)
             }
@@ -362,7 +364,7 @@ public struct SettingsAndShortcutsGuideView: View {
                                     Capsule().fill(exportPeriodOption == opt ? MimiTheme.incomeOrange : MimiTheme.fillSubtle)
                                 )
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
                     }
                 }
 
@@ -437,7 +439,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     .padding(.vertical, 14)
                     .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.incomeOrange))
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
             }
             .padding(16)
             .navigationTitle("导出账单")
@@ -558,7 +560,7 @@ public struct SettingsAndShortcutsGuideView: View {
         let expanded = expandedTriggerSection == index
         return VStack(alignment: .leading, spacing: 0) {
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                     expandedTriggerSection = expanded ? nil : index
                 }
             } label: {
@@ -578,7 +580,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 }
                 .padding(12)
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
 
             if expanded {
                 VStack(alignment: .leading, spacing: 5) {
@@ -598,7 +600,7 @@ public struct SettingsAndShortcutsGuideView: View {
         let expanded = expandedTriggerSection == index
         return VStack(alignment: .leading, spacing: 0) {
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                     expandedTriggerSection = expanded ? nil : index
                 }
             } label: {
@@ -615,7 +617,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 14)
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
 
             if expanded {
                 VStack(alignment: .leading, spacing: 5) {
@@ -630,7 +632,7 @@ public struct SettingsAndShortcutsGuideView: View {
         .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.cardBackground))
         .overlay(
             RoundedRectangle(cornerRadius: 14)
-                .stroke(Color(hex: 0xECEEF3), lineWidth: 1)
+                .stroke(MimiTheme.divider, lineWidth: 1)
         )
     }
 
@@ -695,7 +697,7 @@ public struct SettingsAndShortcutsGuideView: View {
             // 「教程」与「添加专属指令」双按钮
             HStack(spacing: 12) {
                 Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                         expandedTriggerSection = 4
                         showShortcutTutorial = true
                     }
@@ -711,13 +713,13 @@ public struct SettingsAndShortcutsGuideView: View {
                     .padding(.vertical, 12)
                     .background(Capsule().fill(MimiTheme.tintBlueChip))
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
 
                 Button {
                     if let link = ShortcutActionCoordinator.shortcutInstallURL, let url = URL(string: link) {
                         openURL(url)
                     } else {
-                        withAnimation(.easeInOut(duration: 0.2)) {
+                        withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                             expandedTriggerSection = 4
                             showShortcutTutorial = true
                         }
@@ -730,7 +732,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         .padding(.vertical, 12)
                         .background(Capsule().fill(MimiTheme.expenseBlue))
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
             }
 
             if ShortcutActionCoordinator.shortcutInstallURL == nil {
@@ -779,7 +781,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 .padding(.vertical, 13)
                 .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.expenseBlue))
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
 
             // 无需快捷指令：读取剪贴板截图 → 预览卡确认后才入账
             Button {
@@ -822,9 +824,9 @@ public struct SettingsAndShortcutsGuideView: View {
                 .foregroundColor(MimiTheme.incomeOrange)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 11)
-                .background(RoundedRectangle(cornerRadius: 10).fill(Color(hex: 0xFFF3E0)))
+                .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.warningSoft))
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
 
             // 识别卡片效果预览
             Text("效果预览（付款 App 上方弹出的卡片长这样）：")
@@ -908,7 +910,7 @@ public struct SettingsAndShortcutsGuideView: View {
                             .padding(.vertical, 12)
                             .background(Capsule().fill(MimiTheme.expenseBlue))
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
                 }
 
                 HStack(spacing: 10) {
@@ -933,7 +935,7 @@ public struct SettingsAndShortcutsGuideView: View {
                             .padding(.vertical, 10)
                             .background(Capsule().fill(MimiTheme.tintBlueChip))
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
                     .disabled(groqIsTesting)
 
                     if let groqTestStatus {
@@ -975,9 +977,9 @@ public struct SettingsAndShortcutsGuideView: View {
                         .foregroundColor(MimiTheme.dangerRed)
                 }
                 .padding(12)
-                .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: 0xFFEBEE)))
+                .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.dangerSoft))
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
 
             Button {
                 store.resetToDemoData()
@@ -994,7 +996,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 .padding(12)
                 .background(RoundedRectangle(cornerRadius: 12).fill(MimiTheme.tintBlueChip))
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 20).fill(MimiTheme.cardBackground))
@@ -1039,7 +1041,7 @@ public struct SettingsAndShortcutsGuideView: View {
                                         .foregroundColor(MimiTheme.balanceGreen)
                                         .padding(.horizontal, 6)
                                         .padding(.vertical, 2)
-                                        .background(Capsule().fill(Color(hex: 0xE8F5E9)))
+                                        .background(Capsule().fill(MimiTheme.successSoft))
                                 }
                             }
                             Text("主币种: \(ledger.currency.rawValue) · 月预算: \(MimiTheme.formatRM(ledger.monthlyBudget))")
@@ -1659,9 +1661,9 @@ public struct SettingsAndShortcutsGuideView: View {
                             .foregroundColor(MimiTheme.dangerRed)
                     }
                     .padding(14)
-                    .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: 0xFFEBEE)))
+                    .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.dangerSoft))
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
             }
         }
     }

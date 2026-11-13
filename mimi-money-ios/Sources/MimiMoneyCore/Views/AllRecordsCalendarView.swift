@@ -13,6 +13,8 @@ public struct AllRecordsCalendarView: View {
     @State private var showSearchField: Bool = false
     @State private var showAddTransactionSheet: Bool = false
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     public init(
         store: MimiStore,
         onDismiss: @escaping () -> Void,
@@ -144,7 +146,7 @@ public struct AllRecordsCalendarView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
-                        withAnimation { showSearchField.toggle() }
+                        withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) { showSearchField.toggle() }
                     } label: {
                         Image(systemName: "magnifyingglass")
                             .mimiFont(14, weight: .semibold)
@@ -188,7 +190,7 @@ public struct AllRecordsCalendarView: View {
                     .foregroundColor(MimiTheme.textSecondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Capsule().fill(Color(hex: 0xEFF1F5)))
+                    .background(Capsule().fill(MimiTheme.surfaceMuted))
             }
 
             Spacer()
@@ -295,7 +297,7 @@ public struct AllRecordsCalendarView: View {
                     } label: {
                         dayCellView(for: cell, isSelected: isSelected)
                     }
-                    .buttonStyle(.plain)
+                    .mimiPressable()
                 }
             }
             .padding(.vertical, 4)
@@ -306,11 +308,11 @@ public struct AllRecordsCalendarView: View {
                     .mimiFont(10)
                     .foregroundColor(MimiTheme.textMuted)
 
-                RoundedRectangle(cornerRadius: 2).fill(Color(hex: 0xFFD8B5)).frame(width: 12, height: 10)
-                RoundedRectangle(cornerRadius: 2).fill(Color(hex: 0xFFEBD9)).frame(width: 12, height: 10)
+                RoundedRectangle(cornerRadius: 2).fill(MimiTheme.heatmapIncome2).frame(width: 12, height: 10)
+                RoundedRectangle(cornerRadius: 2).fill(MimiTheme.heatmapIncome1).frame(width: 12, height: 10)
                 RoundedRectangle(cornerRadius: 2).fill(MimiTheme.fillSubtle).frame(width: 12, height: 10)
-                RoundedRectangle(cornerRadius: 2).fill(Color(hex: 0xDDE9FD)).frame(width: 12, height: 10)
-                RoundedRectangle(cornerRadius: 2).fill(Color(hex: 0xC3D7FD)).frame(width: 12, height: 10)
+                RoundedRectangle(cornerRadius: 2).fill(MimiTheme.heatmapExpense1).frame(width: 12, height: 10)
+                RoundedRectangle(cornerRadius: 2).fill(MimiTheme.heatmapExpense2).frame(width: 12, height: 10)
 
                 Text("支出多")
                     .mimiFont(10)
@@ -349,7 +351,7 @@ public struct AllRecordsCalendarView: View {
             if cell.expense > 0 && filterMode != "收入" {
                 Text(String(format: "-%.2f", cell.expense))
                     .mimiFont(8, weight: .bold, design: .rounded)
-                    .foregroundColor(Color(hex: 0x2A4E9E))
+                    .foregroundColor(MimiTheme.expenseDeep)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
@@ -357,7 +359,7 @@ public struct AllRecordsCalendarView: View {
             if cell.income > 0 && filterMode != "支出" {
                 Text(String(format: "+%.2f", cell.income))
                     .mimiFont(8, weight: .bold, design: .rounded)
-                    .foregroundColor(Color(hex: 0xB55716))
+                    .foregroundColor(MimiTheme.incomeDeep)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
@@ -372,31 +374,31 @@ public struct AllRecordsCalendarView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(isSelected ? Color(hex: 0x3366FF) : Color.clear, lineWidth: 2)
+                .stroke(isSelected ? MimiTheme.expenseBlue : Color.clear, lineWidth: 2)
         )
     }
 
     private func cellBackgroundColor(for cell: CalendarDaySummary, isSelected: Bool) -> Color {
         if isSelected {
-            return Color(hex: 0xF0F5FF)
+            return MimiTheme.selectionSoft
         }
         // Highest spend or > RM500 -> deep blue
         if cell.isHighestExpenseDay || cell.expense >= 500 {
-            return Color(hex: 0xC3D7FD)
+            return MimiTheme.heatmapExpense2
         }
         // Income dominant day
         if cell.income >= 500 {
-            return Color(hex: 0xFFD8B5)
+            return MimiTheme.heatmapIncome2
         } else if cell.income > 0 && cell.income > cell.expense {
-            return Color(hex: 0xFFEBD9)
+            return MimiTheme.heatmapIncome1
         }
         // Moderate expense
         if cell.expense >= 30 {
-            return Color(hex: 0xDDE9FD)
+            return MimiTheme.heatmapExpense1
         } else if cell.expense > 0 {
-            return Color(hex: 0xEDF3FE)
+            return MimiTheme.selectionSoftAlt
         }
-        return Color(hex: 0xF8F9FB)
+        return MimiTheme.surfaceQuiet
     }
 
     // MARK: - Selected Day Detail Section (11月8日 (周日) 支 RM44.68 | 收 RM0.00)
@@ -447,7 +449,7 @@ public struct AllRecordsCalendarView: View {
                             HStack(spacing: 12) {
                                 ZStack {
                                     Circle()
-                                        .fill(Color(hex: 0xEDF2FA))
+                                        .fill(MimiTheme.selectionSoftAlt)
                                         .frame(width: 40, height: 40)
                                     Text(item.iconName.isEmpty ? "📝" : item.iconName)
                                         .mimiFont(20)
@@ -483,11 +485,11 @@ public struct AllRecordsCalendarView: View {
 
                                 Text(item.type == .expense ? "-\(MimiTheme.formatRM(item.amount))" : "+\(MimiTheme.formatRM(item.amount))")
                                     .mimiFont(15, weight: .bold, design: .rounded)
-                                    .foregroundColor(item.type == .expense ? Color(hex: 0x2A4E9E) : MimiTheme.incomeOrange)
+                                    .foregroundColor(item.type == .expense ? MimiTheme.expenseDeep : MimiTheme.incomeOrange)
                             }
                             .padding(14)
                         }
-                        .buttonStyle(.plain)
+                        .mimiPressable()
 
                         if index < selectedDateTransactions.count - 1 {
                             Divider().padding(.leading, 64)
