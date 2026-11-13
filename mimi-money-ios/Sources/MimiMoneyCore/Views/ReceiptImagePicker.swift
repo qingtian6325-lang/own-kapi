@@ -12,8 +12,6 @@ public struct UIKitImagePicker: UIViewControllerRepresentable {
     public let onImagePicked: (UIImage) -> Void
     @Environment(\.dismiss) private var dismiss
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     public init(sourceType: SourceType, onImagePicked: @escaping (UIImage) -> Void) {
         self.sourceType = sourceType
         self.onImagePicked = onImagePicked
@@ -128,6 +126,7 @@ public struct FullscreenReceiptViewer: View {
     public let imageData: Data?
     public var onClose: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var scale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
     @State private var offset: CGSize = .zero
