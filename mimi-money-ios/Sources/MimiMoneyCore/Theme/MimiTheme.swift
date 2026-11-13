@@ -252,11 +252,11 @@ public struct MimiScaledFontModifier: ViewModifier {
 }
 
 public extension View {
-    /// Dynamic Type–aware system font (HIG). Prefer this over `.font(.system(size:))`.
+    /// Dynamic Type–aware brand font (SF Pro Rounded). Prefer this over `.font(.system(size:))`.
     func mimiFont(
         _ size: CGFloat,
         weight: Font.Weight = .regular,
-        design: Font.Design = .default,
+        design: Font.Design = MimiTheme.brandFontDesign,
         relativeTo textStyle: Font.TextStyle = .body
     ) -> some View {
         modifier(MimiScaledFontModifier(size: size, weight: weight, design: design, relativeTo: textStyle))
