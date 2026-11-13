@@ -142,11 +142,14 @@ public enum MimiTheme {
 
     // MARK: - Dynamic Type fonts
 
+    /// Brand UI face: SF Pro Rounded — softer, friendlier than default SF Pro.
+    public static let brandFontDesign: Font.Design = .rounded
+
     /// Scaled system font; updates with `@Environment(\.sizeCategory)`.
     public static func font(
         size: CGFloat,
         weight: Font.Weight = .regular,
-        design: Font.Design = .default,
+        design: Font.Design = brandFontDesign,
         relativeTo textStyle: Font.TextStyle = .body
     ) -> Font {
         .system(size: scaledSize(size, relativeTo: textStyle), weight: weight, design: design)

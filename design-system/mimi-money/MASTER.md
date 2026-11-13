@@ -22,7 +22,7 @@ All surfaces go through `MimiTheme` adaptive tokens (`Color(lightHex:darkHex:)`)
 - Icon-only controls need `.accessibilityLabel`
 - Swipe/drag never the sole path for critical actions (also button / toolbar)
 - Honor `accessibilityReduceMotion` via `MimiMotion.*(reduceMotion:)`
-- Typography: `.mimiFont` (Dynamic Type) — no fixed `.font(.system(size:))` in chrome
+- Typography: `.mimiFont` → **SF Pro Rounded** + Dynamic Type (soft/friendly; no Inter/Roboto)
 - Amounts: `.mimiAmountFit()` / `minimumScaleFactor` so values don’t clip
 
 ## Motion
