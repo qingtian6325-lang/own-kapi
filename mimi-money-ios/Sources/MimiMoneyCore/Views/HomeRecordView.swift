@@ -25,6 +25,7 @@ public struct HomeRecordView: View {
     @State private var showDeleteConfirm: Bool = false
     @State private var deleteToastToken: UUID = UUID()
     @State private var rowSwipeConsumedTap: Bool = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
         store: MimiStore,
@@ -149,9 +150,10 @@ public struct HomeRecordView: View {
                 Image(systemName: "line.3.horizontal")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(MimiTheme.textPrimary)
-                    .frame(width: 32, height: 36)
+                    .mimiMinTouchTarget()
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
+            .accessibilityLabel("打开菜单")
 
             Menu {
                 Button {
@@ -184,8 +186,10 @@ public struct HomeRecordView: View {
                     .foregroundColor(MimiTheme.textPrimary)
                     .frame(width: 36, height: 36)
                     .background(Circle().fill(Color.white))
+                    .mimiMinTouchTarget()
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
+            .accessibilityLabel("搜索与日历")
 
             Button {
                 showLedgerSwitcherSheet = true
@@ -584,11 +588,14 @@ public struct HomeRecordView: View {
             let groups = store.groupedTransactionsByDay()
             if groups.isEmpty {
                 VStack(spacing: 8) {
-                    Text("🐱")
-                        .font(.system(size: 36))
+                    Image(systemName: "pawprint.fill")
+                        .font(.system(size: 34))
+                        .foregroundColor(MimiTheme.incomeOrange)
+                        .accessibilityHidden(true)
                     Text("还没有账单记录，点击下方 + 或发送一句话记账吧")
                         .font(.system(size: 13))
                         .foregroundColor(MimiTheme.textMuted)
+                        .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 32)
@@ -721,8 +728,22 @@ public struct HomeRecordView: View {
             .padding(.vertical, 12)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .mimiPressable()
         .simultaneousGesture(rowSwipeGesture(for: item.id))
+        .contextMenu {
+            Button {
+                onSelectTransaction(item)
+            } label: {
+                Label("查看详情", systemImage: "doc.text")
+            }
+            Button(role: .destructive) {
+                pendingDeleteID = item.id
+                showDeleteConfirm = true
+            } label: {
+                Label("删除账单", systemImage: "trash")
+            }
+        }
+        .accessibilityHint("左滑或长按可删除")
         .overlay(alignment: .bottom) {
             if showsDivider {
                 Rectangle()
@@ -744,8 +765,8 @@ public struct HomeRecordView: View {
                 .frame(width: FeedDeleteChrome.side, height: FeedDeleteChrome.side)
                 .background(Circle().fill(MimiTheme.dangerRed))
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("删除")
+        .mimiPressable()
+        .accessibilityLabel("删除账单")
     }
 
     private func rowSwipeGesture(for id: UUID) -> some Gesture {
@@ -804,7 +825,11 @@ public struct HomeRecordView: View {
     }
 
     private func animateFeedChange(_ updates: () -> Void) {
-        withAnimation(.spring(response: 0.28, dampingFraction: 0.86), updates)
+        if reduceMotion {
+            updates()
+        } else {
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.86), updates)
+        }
     }
 
     private func transactionTitle(_ item: TransactionItem) -> String {
@@ -888,8 +913,11 @@ public struct HomeRecordView: View {
                         Spacer(minLength: 0)
                     }
                     .contentShape(Rectangle())
+                    .frame(minHeight: MimiHIG.minTouch)
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
+                .accessibilityLabel("问账记账")
+                .accessibilityHint(BookkeepingEntryPreference.current == .manual ? "将打开手动记账" : "将打开 AI 记账")
 
                 // ＋：展开相册 / 拍照 / 导入导出（金标三格）
                 Button {
@@ -912,7 +940,8 @@ public struct HomeRecordView: View {
                                 )
                         )
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
+                .accessibilityLabel(isAskPanelExpanded ? "收起附件面板" : "打开相册拍照导入")
             }
             .padding(.leading, 8)
             .padding(.trailing, 8)
@@ -962,7 +991,9 @@ public struct HomeRecordView: View {
                     showLedgerSwitcherSheet = false
                 } label: {
                     HStack {
-                        Text("📒")
+                        Image(systemName: "book.closed.fill")
+                            .foregroundColor(MimiTheme.expenseBlue)
+                            .accessibilityHidden(true)
                         Text(ledger.name)
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(MimiTheme.textPrimary)

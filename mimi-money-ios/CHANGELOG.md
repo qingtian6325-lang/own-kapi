@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.5] - 2026-11-13
+
+### 🎯 Highlights
+- **Apple HIG + ui-ux-pro-max**：44pt 热区、按压反馈、VoiceOver 标签、删除确认/长按菜单替代左划、结构 emoji 改 SF Symbol、AI 思考色改主蓝并尊重减少动态效果。
+- **规则**：仓库增加 always-on `apple-hig` Cursor 规则，后续 UI 按苹果规范迭代。
+- **发版**：`VERSION` / Intent 默认版本升至 1.3.5。
+
 ## [v1.3.4] - 2026-11-12
+
 
 ### 🎯 Highlights
 - **AI 记账浮层**：首页下方小窗（附件+打字+三快捷句+切手动），发送后全屏思考并显示「回答完毕」；上滑可放大；记住上次 AI/手动入口。

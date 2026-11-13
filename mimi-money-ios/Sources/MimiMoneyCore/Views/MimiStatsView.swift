@@ -337,15 +337,18 @@ public struct MimiStatsView: View {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(MimiTheme.textSecondary)
-                        .frame(width: 32, height: 32)
+                        .mimiMinTouchTarget()
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
+                .accessibilityLabel("上一段时间")
 
                 Spacer()
 
                 Text(periodLabelText)
                     .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundColor(MimiTheme.textPrimary)
+                    .minimumScaleFactor(0.8)
+                    .lineLimit(1)
 
                 Spacer()
 
@@ -353,9 +356,10 @@ public struct MimiStatsView: View {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(MimiTheme.textSecondary)
-                        .frame(width: 32, height: 32)
+                        .mimiMinTouchTarget()
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
+                .accessibilityLabel("下一段时间")
             }
 
             if selectedPeriod == "自定义" {

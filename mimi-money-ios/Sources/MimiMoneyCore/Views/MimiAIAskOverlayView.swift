@@ -33,6 +33,7 @@ public struct MimiAIAskOverlayView: View {
     @State private var showCameraPicker: Bool = false
     @State private var dragOffset: CGFloat = 0
     @FocusState private var inputFocused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     #if canImport(Speech) && canImport(AVFoundation)
     @StateObject private var speechTranscriber = SpeechTranscriber()
     #endif
@@ -258,9 +259,11 @@ public struct MimiAIAskOverlayView: View {
                 .foregroundColor(MimiTheme.textPrimary)
                 .padding(.horizontal, 11)
                 .padding(.vertical, 7)
+                .frame(minHeight: MimiHIG.minTouch)
                 .background(Capsule().strokeBorder(Color(hex: 0xD5DAE6), lineWidth: 1))
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
+            .accessibilityLabel("切换到手动记账")
 
             Button {
                 inputFocused = false
@@ -271,8 +274,10 @@ public struct MimiAIAskOverlayView: View {
                     .foregroundColor(MimiTheme.textSecondary)
                     .frame(width: 28, height: 28)
                     .background(Circle().strokeBorder(Color(hex: 0xD5DAE6), lineWidth: 1))
+                    .mimiMinTouchTarget()
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
+            .accessibilityLabel("关闭问账")
         }
     }
 
@@ -358,24 +363,33 @@ public struct MimiAIAskOverlayView: View {
 
     private var thinkingRow: some View {
         HStack(spacing: 8) {
-            TimelineView(.animation(minimumInterval: 0.35, paused: false)) { context in
-                let phase = Int(context.date.timeIntervalSinceReferenceDate * 3) % 3
-                HStack(spacing: 4) {
-                    ForEach(0..<3, id: \.self) { i in
-                        Circle()
-                            .fill(Color(hex: 0x8B5CF6).opacity(i == phase ? 1 : 0.35))
-                            .frame(width: 7, height: 7)
+            if reduceMotion {
+                ProgressView()
+                    .controlSize(.small)
+                    .tint(MimiTheme.expenseBlue)
+            } else {
+                TimelineView(.animation(minimumInterval: 0.35, paused: false)) { context in
+                    let phase = Int(context.date.timeIntervalSinceReferenceDate * 3) % 3
+                    HStack(spacing: 4) {
+                        ForEach(0..<3, id: \.self) { i in
+                            Circle()
+                                .fill(MimiTheme.expenseBlue.opacity(i == phase ? 1 : 0.35))
+                                .frame(width: 7, height: 7)
+                        }
                     }
                 }
             }
             Image(systemName: "sparkles")
-                .foregroundColor(Color(hex: 0x8B5CF6))
+                .foregroundColor(MimiTheme.expenseBlue)
+                .accessibilityHidden(true)
             Text("咪咪思考中…")
                 .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Color(hex: 0x8B5CF6))
+                .foregroundColor(MimiTheme.expenseBlue)
             Spacer()
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("咪咪思考中")
     }
 
     private var inputRow: some View {
@@ -397,8 +411,8 @@ public struct MimiAIAskOverlayView: View {
                     Image(systemName: speechTranscriber.isRecording ? "mic.fill" : "mic")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(speechTranscriber.isRecording ? MimiTheme.dangerRed : MimiTheme.textMuted)
-                        .frame(width: 28, height: 28)
-                        .contentShape(Rectangle())
+                        .mimiMinTouchTarget(40)
+                        .accessibilityLabel(speechTranscriber.isRecording ? "正在聆听，松开关闭" : "按住说话")
                         .onLongPressGesture(minimumDuration: 0.25, maximumDistance: 60, pressing: { pressing in
                             if pressing {
                                 Task {
@@ -424,13 +438,14 @@ public struct MimiAIAskOverlayView: View {
                     Image(systemName: showAttachmentPanel ? "xmark" : "plus")
                         .font(.system(size: 15, weight: .bold))
                         .foregroundColor(MimiTheme.textMuted)
-                        .frame(width: 28, height: 28)
+                        .mimiMinTouchTarget(40)
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
+                .accessibilityLabel(showAttachmentPanel ? "收起附件" : "添加照片或导入")
             }
             .padding(.leading, 14)
             .padding(.trailing, 8)
-            .padding(.vertical, 8)
+            .padding(.vertical, 4)
             .background(Capsule().fill(Color(hex: 0xF5F6FA)))
 
             Button(action: sendComposed) {
@@ -441,9 +456,11 @@ public struct MimiAIAskOverlayView: View {
                     .background(
                         Circle().fill(canSend ? MimiTheme.expenseBlue : Color(hex: 0xC5CCD8))
                     )
+                    .mimiMinTouchTarget()
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
             .disabled(!canSend)
+            .accessibilityLabel("发送")
         }
     }
 

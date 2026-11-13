@@ -259,8 +259,10 @@ public struct RecordAndAISheetView: View {
                     .foregroundColor(MimiTheme.textSecondary)
                     .frame(width: 30, height: 30)
                     .background(Circle().strokeBorder(Color(hex: 0xD5DAE6), lineWidth: 1))
+                    .mimiMinTouchTarget()
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
+            .accessibilityLabel("关闭")
         }
     }
 
@@ -301,7 +303,10 @@ public struct RecordAndAISheetView: View {
                         .foregroundColor(MimiTheme.textSecondary)
                         .frame(width: 32, height: 32)
                         .background(Circle().fill(Color(hex: 0xF2F4F8)))
+                        .mimiMinTouchTarget()
                 }
+                .mimiPressable()
+                .accessibilityLabel("关闭")
                 Button {
                     withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
                         isAIMode = false
@@ -316,9 +321,11 @@ public struct RecordAndAISheetView: View {
                     .foregroundColor(MimiTheme.textPrimary)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
+                    .frame(minHeight: MimiHIG.minTouch)
                     .background(Capsule().strokeBorder(Color(hex: 0xD8DEEA), lineWidth: 1))
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
+                .accessibilityLabel("切换到手动记账")
                 Spacer()
                 Text("任何事都能问我")
                     .font(.system(size: 16, weight: .bold))
@@ -372,9 +379,11 @@ public struct RecordAndAISheetView: View {
                         .foregroundColor(MimiTheme.expenseBlue)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
+                        .frame(minHeight: MimiHIG.minTouch)
                         .background(Capsule().fill(Color(hex: 0xE8F0FE)))
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
+                .accessibilityLabel("打开 AI 助手")
 
                 Button(action: onDismiss) {
                     Image(systemName: "xmark")
@@ -382,8 +391,10 @@ public struct RecordAndAISheetView: View {
                         .foregroundColor(MimiTheme.textSecondary)
                         .frame(width: 30, height: 30)
                         .background(Circle().fill(Color(hex: 0xF2F4F8)))
+                        .mimiMinTouchTarget()
                 }
-                .buttonStyle(.plain)
+                .mimiPressable()
+                .accessibilityLabel("关闭")
             }
         }
     }
@@ -1132,16 +1143,18 @@ public struct RecordAndAISheetView: View {
                 ForEach(Array(message.blocks.enumerated()), id: \.offset) { idx, block in
                     switch block {
                     case .pendingAnswer:
-                        // 金标：紫色闪点 +「咪咪思考中…」
                         HStack(spacing: 6) {
                             Image(systemName: "sparkles")
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(Color(hex: 0x8B5CF6))
+                                .foregroundColor(MimiTheme.expenseBlue)
+                                .accessibilityHidden(true)
                             Text("咪咪思考中…")
                                 .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Color(hex: 0x8B5CF6))
+                                .foregroundColor(MimiTheme.expenseBlue)
                         }
                         .padding(.vertical, 4)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("咪咪思考中")
 
                     case .text(let text):
                         if message.isUser {

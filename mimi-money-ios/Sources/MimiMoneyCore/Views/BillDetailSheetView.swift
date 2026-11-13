@@ -13,6 +13,7 @@ public struct BillDetailSheetView: View {
     @State private var amountExpression: String = ""
     @State private var showingActionSheet = false
     @State private var showingImagePicker = false
+    @State private var showDeleteConfirm = false
     #if canImport(UIKit)
     @State private var pickerSourceType: UIKitImagePicker.SourceType = .photoLibrary
     #endif
@@ -287,18 +288,30 @@ public struct BillDetailSheetView: View {
                         Image(systemName: "chevron.down")
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(MimiTheme.textSecondary)
+                            .mimiMinTouchTarget()
                     }
+                    .accessibilityLabel("关闭账单详情")
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
-                        store.deleteTransaction(id: editableBill.id)
-                        onDismiss()
+                        showDeleteConfirm = true
                     } label: {
                         Image(systemName: "trash")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(MimiTheme.dangerRed)
+                            .mimiMinTouchTarget()
                     }
+                    .accessibilityLabel("删除账单")
                 }
+            }
+            .confirmationDialog("删除这笔账单？", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+                Button("删除", role: .destructive) {
+                    store.deleteTransaction(id: editableBill.id)
+                    onDismiss()
+                }
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("删除后无法恢复")
             }
             .sheet(isPresented: $showingActionSheet) {
                 MimiChoiceSheet(

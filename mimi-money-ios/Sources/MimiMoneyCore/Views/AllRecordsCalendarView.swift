@@ -513,13 +513,7 @@ public struct AllRecordsCalendarView: View {
                 onDismiss()
             } label: {
                 HStack(spacing: 8) {
-                    ZStack {
-                        Circle()
-                            .fill(Color(hex: 0xFFE0B2))
-                            .frame(width: 32, height: 32)
-                        Text("🐱")
-                            .font(.system(size: 18))
-                    }
+                    MimiAskMascotView(size: 32)
                     Text("任何事都能问我")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(MimiTheme.textMuted)
@@ -527,10 +521,12 @@ public struct AllRecordsCalendarView: View {
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
+                .frame(minHeight: MimiHIG.minTouch)
                 .background(Capsule().fill(Color.white))
                 .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
+            .accessibilityLabel("返回并打开问账")
 
             Button {
                 store.isRecordSheetPresented = true
@@ -543,7 +539,8 @@ public struct AllRecordsCalendarView: View {
                     .background(Circle().fill(Color.white))
                     .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
+            .accessibilityLabel("记一笔")
         }
     }
 }

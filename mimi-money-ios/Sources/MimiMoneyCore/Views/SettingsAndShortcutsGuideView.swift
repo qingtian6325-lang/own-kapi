@@ -750,9 +750,14 @@ public struct SettingsAndShortcutsGuideView: View {
                     guideStepRow("4. 添加动作「截屏 (Take Screenshot)」")
                     guideStepRow("5. 添加动作「从截屏获取图像 (Get Images from Screenshot)」")
                     guideStepRow("6. 添加动作「识别账单 (咪咪记账)」，将「内容 (Content)」设为上一步的「图像 (Images)」，「类型 (Type)」保持 2")
-                    Text("⚠️ 点开「识别账单」的展开箭头，确认「运行时显示 (Show When Run)」与「运行时打开 (Open When Run)」两个开关都打开，识别卡片才会直接浮在当前付款 App 上方。")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(MimiTheme.expenseBlue)
+                    Label {
+                        Text("点开「识别账单」的展开箭头，确认「运行时显示 (Show When Run)」与「运行时打开 (Open When Run)」两个开关都打开，识别卡片才会直接浮在当前付款 App 上方。")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(MimiTheme.expenseBlue)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(MimiTheme.incomeOrange)
+                    }
                     guideStepRow("完成后回到上方四种触发方式，任选一种把这个捷徑绑定上去即可使用。无需下载任何 .shortcut 文件：本 App 安装后系统已内置原生动作「识别账单」。")
                 }
                 .padding(12)
@@ -1250,9 +1255,14 @@ public struct SettingsAndShortcutsGuideView: View {
             if let activeTag = selectedFilterTag {
                 let taggedBills = store.transactions(forTag: activeTag)
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("🏷️ 标签「#\(activeTag)」下的全部账单 (\(taggedBills.count) 笔)：")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(MimiTheme.textPrimary)
+                    Label {
+                        Text("标签「#\(activeTag)」下的全部账单 (\(taggedBills.count) 笔)：")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(MimiTheme.textPrimary)
+                    } icon: {
+                        Image(systemName: "tag.fill")
+                            .foregroundColor(MimiTheme.expenseBlue)
+                    }
 
                     if taggedBills.isEmpty {
                         Text("该标签下暂无账单记录")

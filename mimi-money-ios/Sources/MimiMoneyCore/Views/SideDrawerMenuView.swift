@@ -120,8 +120,9 @@ public struct SideDrawerMenuView: View {
                         Circle()
                             .fill(Color(hex: 0xF0F2F6))
                     )
+                    .mimiMinTouchTarget()
             }
-            .buttonStyle(.plain)
+            .mimiPressable()
             .accessibilityLabel("设置")
         }
         .padding(.top, 12)

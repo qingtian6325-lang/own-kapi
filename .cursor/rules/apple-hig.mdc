@@ -1,0 +1,37 @@
+---
+description: Apple Human Interface Guidelines for Mimi Money iOS (SwiftUI)
+alwaysApply: true
+---
+
+# Apple HIG — Mimi Money
+
+When changing UI or interaction in this iOS app, follow Apple Human Interface Guidelines. Keep the existing Mimi brand tokens (light background, expense blue, income orange) — do not replace them with generic dark/purple “AI fintech” palettes.
+
+## Layout & chrome
+- Respect safe areas for fixed headers, drawers, and the bottom ask bar.
+- Prefer `NavigationStack` / system sheets with clear dismiss (close button and/or swipe-down).
+- Bottom primary actions stay reachable; scroll content must clear sticky bars (`safeAreaInset`).
+
+## Touch & feedback
+- Interactive controls: minimum **44×44 pt** hit area (expand with padding/`contentShape` if the glyph is smaller).
+- Provide pressed feedback (opacity or background change within ~100ms). Prefer a shared pressable style over bare `.buttonStyle(.plain)` on new controls.
+- Avoid nested gestures that fight vertical scrolling or the system back edge-swipe.
+
+## Accessibility
+- Every icon-only control needs `.accessibilityLabel(...)` (and hint when action is non-obvious).
+- Swipe/drag must not be the only way to complete a critical action — also offer a button, toolbar item, or context menu.
+- Honor `@Environment(\.accessibilityReduceMotion)` for decorative motion (thinking dots, spring flourishes).
+- Prefer Dynamic Type / semantic text styles for body copy when practical; do not clip critical amounts without `minimumScaleFactor` or wrapping.
+
+## Symbols & copy
+- Use **SF Symbols** (or existing `MimiStickerIconView`) for structural icons — no emoji as navigation, empty-state, or control icons.
+- Destructive actions use red semantic styling and confirmation before irreversible delete.
+- Status that matters (AI answering, errors) should be visible and VoiceOver-friendly.
+
+## Lists & editing
+- Per-row actions (delete, edit) apply to **one** row, not the whole day card.
+- Prefer confirmation before deleting bills; keep undo/toast where already present.
+
+## Scope
+- Gold-reference layout can stay custom, but interactions must feel native (targets, labels, dismiss, alternatives to gestures).
+- Do not invent a second design system; extend `MimiTheme` tokens instead of one-off hex sprawl.
