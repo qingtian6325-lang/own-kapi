@@ -23,18 +23,26 @@ public struct MimiPressableButtonStyle: ButtonStyle {
     }
 }
 
-/// Shared 手动 ↔ AI mode switch chip (same icon + capsule on both sides).
+/// Shared mode-switch chip. AI entry uses the cat mascot; 手动 uses ⇌.
 public struct BookkeepingModeSwitchButton: View {
+    public enum LeadingIcon {
+        case swap
+        case mascot
+    }
+
     public var title: String
+    public var leading: LeadingIcon
     public var accessibilityName: String?
     public var action: () -> Void
 
     public init(
         title: String,
+        leading: LeadingIcon = .swap,
         accessibilityName: String? = nil,
         action: @escaping () -> Void
     ) {
         self.title = title
+        self.leading = leading
         self.accessibilityName = accessibilityName
         self.action = action
     }
@@ -42,8 +50,13 @@ public struct BookkeepingModeSwitchButton: View {
     public var body: some View {
         Button(action: action) {
             HStack(spacing: 5) {
-                Image(systemName: "arrow.left.arrow.right")
-                    .mimiFont(13, weight: .bold)
+                switch leading {
+                case .swap:
+                    Image(systemName: "arrow.left.arrow.right")
+                        .mimiFont(13, weight: .bold)
+                case .mascot:
+                    MimiAskMascotView(size: 20)
+                }
                 Text(title)
                     .mimiFont(13, weight: .semibold)
             }

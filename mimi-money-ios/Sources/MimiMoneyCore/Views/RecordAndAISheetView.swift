@@ -344,7 +344,11 @@ public struct RecordAndAISheetView: View {
 
                 Spacer()
 
-                BookkeepingModeSwitchButton(title: "AI 助手", accessibilityName: "切换到 AI 记账") {
+                BookkeepingModeSwitchButton(
+                    title: "AI 助手",
+                    leading: .mascot,
+                    accessibilityName: "切换到 AI 记账"
+                ) {
                     onSwitchToAIOverlay()
                 }
 
