@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Show Swift & Xcode Version
         run: |
@@ -335,7 +335,7 @@ jobs:
           echo "Packaged IPA: build/${IPA_NAME}"
 
       - name: Upload IPA Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: MimiMoney-iOS-IPA
           path: mimi-money-ios/build/${{ env.IPA_NAME }}
