@@ -283,7 +283,7 @@ public struct MimiAIAskOverlayView: View {
 
     private func headerRow(title: String) -> some View {
         HStack(spacing: 10) {
-            MimiAskMascotView(size: 30)
+            MimiAskMascotView(size: 32)
             Text(title)
                 .mimiFont(16, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
@@ -459,9 +459,7 @@ public struct MimiAIAskOverlayView: View {
                     }
                 }
             }
-            Image(systemName: "sparkles")
-                .foregroundColor(MimiTheme.expenseBlue)
-                .accessibilityHidden(true)
+            MimiAskMascotView(size: 22)
             Text("咪咪思考中…")
                 .mimiFont(14, weight: .medium)
                 .foregroundColor(MimiTheme.expenseBlue)
@@ -579,9 +577,7 @@ public struct MimiAIAskOverlayView: View {
 
                     case .text(let text):
                         if message.isUser {
-                            Text(text)
-                                .mimiFont(15)
-                                .foregroundColor(MimiTheme.textPrimary)
+                            MimiChatMarkdownText(text, size: 15)
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 10)
                                 .background(
@@ -590,9 +586,7 @@ public struct MimiAIAskOverlayView: View {
                                 )
                         } else {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(text)
-                                    .mimiFont(15)
-                                    .foregroundColor(MimiTheme.textPrimary)
+                                MimiChatMarkdownText(text, size: 15)
                                     .fixedSize(horizontal: false, vertical: true)
                                 if idx == message.blocks.count - 1 {
                                     Text("内容由AI生成")

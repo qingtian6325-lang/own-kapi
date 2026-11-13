@@ -58,6 +58,54 @@ public struct BookkeepingModeSwitchButton: View {
     }
 }
 
+/// AI 回复文案：把 `**粗体**` 渲染成真正加粗，不显示星号。
+public struct MimiChatMarkdownText: View {
+    public var text: String
+    public var size: CGFloat
+    public var weight: Font.Weight
+    public var color: Color
+
+    public init(
+        _ text: String,
+        size: CGFloat = 15,
+        weight: Font.Weight = .regular,
+        color: Color = MimiTheme.textPrimary
+    ) {
+        self.text = text
+        self.size = size
+        self.weight = weight
+        self.color = color
+    }
+
+    public var body: some View {
+        Text(attributed)
+            .foregroundColor(color)
+            .tint(color)
+    }
+
+    private var attributed: AttributedString {
+        let options = AttributedString.MarkdownParsingOptions(
+            interpretedSyntax: .inlineOnlyPreservingWhitespace,
+            failurePolicy: .returnPartiallyParsedIfPossible
+        )
+        let base = MimiTheme.font(size: size, weight: weight)
+        let bold = MimiTheme.font(size: size, weight: .bold)
+        if var parsed = try? AttributedString(markdown: text, options: options) {
+            parsed.font = base
+            for run in parsed.runs {
+                if let intent = run.inlinePresentationIntent,
+                   intent.contains(.stronglyEmphasized) {
+                    parsed[run.range].font = bold
+                }
+            }
+            return parsed
+        }
+        var plain = AttributedString(text)
+        plain.font = base
+        return plain
+    }
+}
+
 public extension View {
     /// Expand the tappable area to at least 44×44 pt without forcing a larger visual.
     func mimiMinTouchTarget(_ size: CGFloat = MimiHIG.minTouch) -> some View {

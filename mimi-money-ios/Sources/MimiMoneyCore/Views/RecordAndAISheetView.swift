@@ -226,7 +226,7 @@ public struct RecordAndAISheetView: View {
 
     private var aiChatTopHeader: some View {
         HStack(spacing: 10) {
-            MimiAskMascotView(size: 34)
+            MimiAskMascotView(size: 32)
 
             Text("来记笔账吧")
                 .mimiFont(17, weight: .bold)
@@ -1107,10 +1107,7 @@ public struct RecordAndAISheetView: View {
                     switch block {
                     case .pendingAnswer:
                         HStack(spacing: 6) {
-                            Image(systemName: "sparkles")
-                                .mimiFont(13, weight: .semibold)
-                                .foregroundColor(MimiTheme.expenseBlue)
-                                .accessibilityHidden(true)
+                            MimiAskMascotView(size: 22)
                             Text("咪咪思考中…")
                                 .mimiFont(14, weight: .medium)
                                 .foregroundColor(MimiTheme.expenseBlue)
@@ -1121,9 +1118,7 @@ public struct RecordAndAISheetView: View {
 
                     case .text(let text):
                         if message.isUser {
-                            Text(text)
-                                .mimiFont(15)
-                                .foregroundColor(MimiTheme.textPrimary)
+                            MimiChatMarkdownText(text, size: 15)
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 11)
                                 .background(
@@ -1132,9 +1127,7 @@ public struct RecordAndAISheetView: View {
                                 )
                         } else {
                             VStack(alignment: .leading, spacing: 6) {
-                                Text(text)
-                                    .mimiFont(15)
-                                    .foregroundColor(MimiTheme.textPrimary)
+                                MimiChatMarkdownText(text, size: 15)
                                     .fixedSize(horizontal: false, vertical: true)
                                 if idx == message.blocks.count - 1 {
                                     Text("\(aiGeneratedTimeLabel) 内容由AI生成")
