@@ -70,18 +70,15 @@ public struct MimiAIAskOverlayView: View {
                     }
 
                 VStack(spacing: 0) {
+                    // 小窗固定带三条快捷气泡；放大后不显示
                     if !isExpanded {
-                        // 小窗上方：三条快捷句（无附件、未展开时）
-                        if pendingAttachments.isEmpty && aiEngine.messages.isEmpty {
-                            suggestionBubbles
-                                .padding(.horizontal, 18)
-                                .padding(.bottom, 10)
-                        }
+                        suggestionBubbles
+                            .padding(.horizontal, 18)
+                            .padding(.bottom, 10)
                     }
 
                     card(maxHeight: isExpanded ? geo.size.height * 0.92 : nil)
-                        .offset(y: isExpanded ? min(0, dragOffset) : 0)
-                        .gesture(expandDragGesture)
+                        .offset(y: cardDragOffset)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                 .padding(.horizontal, isExpanded ? 0 : 10)
@@ -90,9 +87,8 @@ public struct MimiAIAskOverlayView: View {
         }
         .onAppear {
             BookkeepingEntryPreference.rememberAI()
-            if startExpanded || !aiEngine.messages.isEmpty {
-                isExpanded = true
-            }
+            // 点开一律先小窗；只有用户上滑（或发送后）才变大
+            isExpanded = startExpanded
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
                 inputFocused = true
             }
@@ -155,16 +151,20 @@ public struct MimiAIAskOverlayView: View {
 
     private func card(maxHeight: CGFloat?) -> some View {
         VStack(spacing: 0) {
-            // 上滑把手
-            Capsule()
-                .fill(Color(hex: 0xD5DAE6))
-                .frame(width: 36, height: 4)
-                .padding(.top, 8)
-                .padding(.bottom, 6)
+            // 把手 + 顶栏：上滑放大 / 放大后下滑关闭（不跟聊天列表抢手势）
+            VStack(spacing: 0) {
+                Capsule()
+                    .fill(Color(hex: 0xD5DAE6))
+                    .frame(width: 36, height: 4)
+                    .padding(.top, 8)
+                    .padding(.bottom, 6)
 
-            headerRow
-                .padding(.horizontal, 14)
-                .padding(.bottom, 8)
+                headerRow
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 8)
+            }
+            .contentShape(Rectangle())
+            .highPriorityGesture(expandDragGesture)
 
             if !pendingAttachments.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
@@ -598,13 +598,24 @@ public struct MimiAIAskOverlayView: View {
 
     // MARK: - Gestures / Actions
 
+    private var cardDragOffset: CGFloat {
+        if isExpanded {
+            return max(0, dragOffset)
+        }
+        return min(0, dragOffset)
+    }
+
     private var expandDragGesture: some Gesture {
         DragGesture(minimumDistance: 12)
             .onChanged { value in
                 if isExpanded {
+                    // 放大后只能往下拖，准备关掉
                     dragOffset = max(0, value.translation.height)
                 } else if value.translation.height < -24 {
+                    // 小窗往上拖，准备变大
                     dragOffset = value.translation.height
+                } else {
+                    dragOffset = 0
                 }
             }
             .onEnded { value in
@@ -612,12 +623,17 @@ public struct MimiAIAskOverlayView: View {
                     withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
                         isExpanded = true
                     }
+                    dragOffset = 0
                 } else if isExpanded && value.translation.height > 120 {
-                    withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
-                        isExpanded = false
+                    // 放大后往下划 → 直接关掉，不退回小窗
+                    dragOffset = 0
+                    inputFocused = false
+                    onDismiss()
+                } else {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                        dragOffset = 0
                     }
                 }
-                dragOffset = 0
             }
     }
 

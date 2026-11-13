@@ -601,50 +601,37 @@ public struct HomeRecordView: View {
         }
     }
 
-    /// 往左滑：删除图标出现在行右侧；点图标 → 确认弹窗 → 确认才删。
+    /// 往左滑：只挪这一笔账单，右侧露出删除；点图标 → 确认弹窗 → 确认才删。
     private func dayTransactionGroupCard(date: Date, items: [TransactionItem]) -> some View {
-        let openID = items.first { $0.id == revealedDeleteID }?.id
-        let gutter: CGFloat = openID == nil ? 0 : FeedDeleteChrome.gap + FeedDeleteChrome.side
         let cardRadius = MimiTheme.cardCornerRadius
 
         return VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                dayFeedHeader(date: date, items: items)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .clipShape(feedCardEndClip(radius: cardRadius, top: true))
-                if gutter > 0 {
-                    Color.clear.frame(width: gutter)
-                }
-            }
+            dayFeedHeader(date: date, items: items)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .clipShape(feedCardEndClip(radius: cardRadius, top: true))
 
             ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                 let isLast = index == items.count - 1
-                HStack(alignment: .center, spacing: gutter > 0 ? FeedDeleteChrome.gap : 0) {
+                let revealed = revealedDeleteID == item.id
+                ZStack(alignment: .trailing) {
+                    if revealed {
+                        deleteTrashButton(id: item.id)
+                            .padding(.trailing, 10)
+                            .transition(.scale.combined(with: .opacity))
+                    }
+
                     feedRowButton(item, showsDivider: !isLast)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .clipShape(feedCardEndClip(radius: cardRadius, bottom: isLast))
-
-                    if gutter > 0 {
-                        ZStack {
-                            if item.id == openID {
-                                deleteTrashButton(id: item.id)
-                                    .transition(.scale.combined(with: .opacity))
-                            }
-                        }
-                        .frame(width: FeedDeleteChrome.side, height: FeedDeleteChrome.side)
-                    }
+                        .offset(x: revealed ? -(FeedDeleteChrome.gap + FeedDeleteChrome.side) : 0)
                 }
+                .clipped()
             }
         }
-        .background(alignment: .leading) {
-            HStack(spacing: 0) {
-                RoundedRectangle(cornerRadius: cardRadius, style: .continuous)
-                    .fill(MimiTheme.cardBackground)
-                if gutter > 0 {
-                    Color.clear.frame(width: gutter)
-                }
-            }
-        }
+        .background(
+            RoundedRectangle(cornerRadius: cardRadius, style: .continuous)
+                .fill(MimiTheme.cardBackground)
+        )
         .animation(.spring(response: 0.28, dampingFraction: 0.86), value: revealedDeleteID)
     }
 
