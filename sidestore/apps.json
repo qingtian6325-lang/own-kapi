@@ -28,6 +28,15 @@
       },
       "versions": [
         {
+          "version": "1.3.14",
+          "date": "2026-11-14T09:51:36Z",
+          "localizedDescription": "半屏下滑关闭：共享 `mimiInteractiveSheet`（`presentationContentInteraction(.scrolls)`）；记账/账单/预算/分类/设置/账本等 sheet 均可下滑关闭；与记账横滑分页兼容（不覆盖 `interactiveDismissDisabled(suppressSheetDismiss)`）。; 边缘右滑返回：`navigationBarBackButtonHidden` 的推入页（账户详情、分类账单）恢复 `interactivePopGestureRecognizer`；ZStack 功能页（资产/统计/预算/分类/日历/设置/账单详情）增加跟手 `mimiEdgeSwipeBack` + 橡胶筋回弹。; 应用内语言：设置 → 语言，可选「跟随系统 / 中文 / English」；偏好持久化，切换后应用内文案立即更新（`.environment(\\.locale)` + String Catalog）。; 主屏幕名称：仅随系统语言，经 `InfoPlist.strings` 的 `CFBundleDisplayName`（zh-Hans「咪咪记账」、en「Mimi Money」）；不写入 `AppleLanguages`。",
+          "downloadURL": "https://github.com/qingtian6325-lang/own-mimi/releases/download/v1.3.14/MimiMoney-iOS-v1.3.14.ipa",
+          "size": 4204496,
+          "minOSVersion": "17.0",
+          "buildVersion": "119"
+        },
+        {
           "version": "1.3.13",
           "date": "2026-11-14T09:28:41Z",
           "localizedDescription": "转账半屏初始页：`AccountEntryRoute` 每次打开带唯一 `presentationID`，`sheet(item:)` + `.id` + `intendedInitialTab` 保证「⇆ 转账」始终落在转账页、「记账」落在支出页（修了偶发打开支出的竞态）。; 支出页左滑：`TabView` 分页 + `presentationContentInteraction(.scrolls)` + 水平轴锁定禁用 interactive dismiss，左滑切到收入不再被半屏下滑关掉。; 回归：`BookkeepingSheetSwipePolicy` 轴判定/邻页；entry route presentation identity 单测。; 发版：`VERSION` / Intent 默认版本升至 1.3.13。",
