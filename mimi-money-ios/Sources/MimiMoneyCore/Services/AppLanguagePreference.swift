@@ -35,15 +35,18 @@ public final class AppLanguageStore: ObservableObject {
 
     public static let storageKey = "mimi_app_language_preference"
 
+    private let defaults: UserDefaults
+
     @Published public var preference: AppLanguagePreference {
         didSet {
             guard oldValue != preference else { return }
-            UserDefaults.standard.set(preference.rawValue, forKey: Self.storageKey)
+            defaults.set(preference.rawValue, forKey: Self.storageKey)
             objectWillChange.send()
         }
     }
 
     public init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         if let raw = defaults.string(forKey: Self.storageKey),
            let pref = AppLanguagePreference(rawValue: raw) {
             preference = pref

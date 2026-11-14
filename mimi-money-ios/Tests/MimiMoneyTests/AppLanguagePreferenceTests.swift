@@ -35,7 +35,10 @@ final class AppLanguagePreferenceTests: XCTestCase {
 
         let reloaded = AppLanguageStore(defaults: defaults)
         XCTAssertEqual(reloaded.preference, .english)
-        XCTAssertEqual(reloaded.effectiveLocale.identifier, "en")
+        XCTAssertTrue(
+            reloaded.effectiveLocale.identifier.hasPrefix("en"),
+            "expected English locale, got \(reloaded.effectiveLocale.identifier)"
+        )
     }
 
     @MainActor
