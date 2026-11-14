@@ -247,7 +247,10 @@ public struct RecordAndAISheetView: View {
             applyIntendedTab()
         }
         #if os(iOS)
-        .presentationDetents([.medium, .large])
+        // Full-height bookkeeping (支出/收入/转账 + keypad). `.medium` was opening as a
+        // half-sheet over the 记录页 budget card after v1.3.13/1.3.14 gesture chrome.
+        // Keep swipe-down dismiss + horizontal tab paging (axis lock below).
+        .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .presentationContentInteraction(.scrolls)
         .interactiveDismissDisabled(suppressSheetDismiss)

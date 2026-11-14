@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.16] - 2026-11-14
+
+### 🎯 Highlights
+- **手动记账全屏**：记录页 / 账户详情「记账」「转账」半屏改回 `.presentationDetents([.large])`（不再默认 `.medium` 半盖预算卡）；保留下滑关闭与支出|收入|转账横滑分页。
+- **发版**：`VERSION` / Intent 默认版本升至 1.3.16。
+
 ## [v1.3.15] - 2026-11-14
 
 ### 🎯 Highlights

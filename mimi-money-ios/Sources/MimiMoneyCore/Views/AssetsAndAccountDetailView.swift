@@ -202,8 +202,8 @@ public struct AssetsAndAccountDetailView: View {
                     }
                 )
                 .id(route.presentationID)
-                // Sheet chrome; axis lock lives inside RecordAndAISheetView (v1.3.13).
-                .mimiInteractiveSheet()
+                // Full-screen 记账/转账; axis lock lives inside RecordAndAISheetView (v1.3.13).
+                .mimiInteractiveSheet(detents: [.large])
             }
             .sheet(item: $editAccountRoute) { route in
                 EditAccountView(

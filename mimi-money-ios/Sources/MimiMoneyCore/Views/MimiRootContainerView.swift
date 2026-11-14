@@ -411,8 +411,8 @@ public struct MimiRootContainerView: View {
                     }
                 }
             )
-            // Swipe-down chrome; RecordAndAISheetView owns axis-lock dismiss (v1.3.13).
-            .mimiInteractiveSheet()
+            // Full-screen bookkeeping; RecordAndAISheetView owns axis-lock dismiss (v1.3.13).
+            .mimiInteractiveSheet(detents: [.large])
         }
         #if canImport(UIKit)
         .sheet(isPresented: $showHomeAlbumPicker) {
