@@ -275,7 +275,7 @@ public struct RecordAndAISheetView: View {
         HStack(spacing: 10) {
             MimiAskMascotView(size: 32)
 
-            Text("来记笔账吧", bundle: .module)
+            Text("来记笔账吧", bundle: .mimiModule)
                 .mimiFont(17, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
 
@@ -347,7 +347,7 @@ public struct RecordAndAISheetView: View {
                     }
                 }
                 Spacer()
-                Text("任何事都能问我", bundle: .module)
+                Text("任何事都能问我", bundle: .mimiModule)
                     .mimiFont(16, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
@@ -543,7 +543,7 @@ public struct RecordAndAISheetView: View {
 
             if showDiscountInput, selectedTab != .transfer {
                 HStack(spacing: 10) {
-                    Text("优惠金额", bundle: .module)
+                    Text("优惠金额", bundle: .mimiModule)
                         .mimiFont(13, weight: .medium)
                         .foregroundColor(MimiTheme.textSecondary)
                     TextField("0.00", text: $discountAmountText)
@@ -1196,7 +1196,7 @@ public struct RecordAndAISheetView: View {
                 Button {
                     aiEngine.cancelDrafts(messageId: message.id)
                 } label: {
-                    Text("取消", bundle: .module)
+                    Text("取消", bundle: .mimiModule)
                         .mimiFont(13, weight: .semibold)
                         .foregroundColor(MimiTheme.textSecondary)
                         .frame(maxWidth: .infinity)
@@ -1208,7 +1208,7 @@ public struct RecordAndAISheetView: View {
                 Button {
                     aiEngine.confirmDrafts(messageId: message.id, in: store)
                 } label: {
-                    Text("确认记账", bundle: .module)
+                    Text("确认记账", bundle: .mimiModule)
                         .mimiFont(13, weight: .semibold)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -1235,7 +1235,7 @@ public struct RecordAndAISheetView: View {
                     case .pendingAnswer:
                         HStack(spacing: 6) {
                             MimiAskMascotView(size: 22)
-                            Text("咪咪思考中…", bundle: .module)
+                            Text("咪咪思考中…", bundle: .mimiModule)
                                 .mimiFont(14, weight: .medium)
                                 .foregroundColor(MimiTheme.expenseBlue)
                         }
@@ -1269,7 +1269,7 @@ public struct RecordAndAISheetView: View {
                             categoryTableBox(rows: expenseRows)
 
                             if !incomeRows.isEmpty {
-                                Text("标准收入分类如下：", bundle: .module)
+                                Text("标准收入分类如下：", bundle: .mimiModule)
                                     .mimiFont(13, weight: .bold)
                                     .foregroundColor(MimiTheme.textPrimary)
                                     .padding(.top, 4)
@@ -1325,10 +1325,10 @@ public struct RecordAndAISheetView: View {
     private func categoryTableBox(rows: [(String, String)]) -> some View {
         VStack(spacing: 0) {
             HStack {
-                Text("一级分类", bundle: .module)
+                Text("一级分类", bundle: .mimiModule)
                     .mimiFont(12, weight: .bold)
                     .frame(width: 82, alignment: .leading)
-                Text("二级分类", bundle: .module)
+                Text("二级分类", bundle: .mimiModule)
                     .mimiFont(12, weight: .bold)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }

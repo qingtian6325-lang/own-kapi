@@ -7,9 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v1.3.15] - 2026-11-14
 
 ### 🎯 Highlights
-- **应用内语言**：设置 → 语言，可选「跟随系统 / 中文 / English」；偏好持久化，切换后应用内文案立即更新（`.environment(\.locale)` + String Catalog）。
-- **主屏幕名称**：仅随系统语言，经 `InfoPlist.strings` 的 `CFBundleDisplayName`（zh-Hans「咪咪记账」、en「Mimi Money」）；不写入 `AppleLanguages`。
-- **英文化**：`Localizable.xcstrings` 覆盖界面文案；Views/Components 静态 `Text`/`Button`/`alert` 走 module catalog。
+- **启动崩溃热修**：v1.3.14 IPA 未打入 SPM 资源包 `MimiMoney_MimiMoneyCore.bundle`（CI 误搜 `MimiMoneyCore_MimiMoneyCore.bundle`），首屏 `Bundle.module` fatal。本版修正 CI 拷贝并缺包失败；运行时 `Bundle.mimiModule` 缺包回退不 fatal。
 - **发版**：`VERSION` / Intent 默认版本升至 1.3.15。
 
 ## [v1.2.5] - 2026-11-12

@@ -242,7 +242,7 @@ public struct SideDrawerMenuView: View {
                 .frame(height: MimiTheme.drawerHeatmapCellHeight)
 
             if cell.isToday {
-                Text("今", bundle: .module)
+                Text("今", bundle: .mimiModule)
                     .mimiFont(9, weight: .bold, design: .rounded)
                     .foregroundColor(MimiTheme.expenseBlue)
             } else {
@@ -261,7 +261,7 @@ public struct SideDrawerMenuView: View {
 
     private var moreFeaturesCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("更多功能", bundle: .module)
+            Text("更多功能", bundle: .mimiModule)
                 .mimiFont(13, weight: .semibold)
                 .foregroundColor(MimiTheme.textSecondary)
 
@@ -297,7 +297,7 @@ public struct SideDrawerMenuView: View {
 
     private var quickBookkeepingCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("快捷记账", bundle: .module)
+            Text("快捷记账", bundle: .mimiModule)
                 .mimiFont(13, weight: .semibold)
                 .foregroundColor(MimiTheme.textSecondary)
 
@@ -331,7 +331,7 @@ public struct SideDrawerMenuView: View {
             Text(value)
                 .mimiFont(19, weight: .bold, design: .rounded)
                 .foregroundColor(MimiTheme.textPrimary)
-            Text(LocalizedStringKey(label), bundle: .module)
+            Text(LocalizedStringKey(label), bundle: .mimiModule)
                 .mimiFont(11)
                 .foregroundColor(MimiTheme.textSecondary)
         }
@@ -377,7 +377,7 @@ public struct SideDrawerMenuView: View {
                         .mimiFont(21, weight: .light)
                         .foregroundColor(MimiTheme.textPrimary)
                 }
-                Text(LocalizedStringKey(title), bundle: .module)
+                Text(LocalizedStringKey(title), bundle: .mimiModule)
                     .mimiFont(12, weight: .medium)
                     .foregroundColor(MimiTheme.textPrimary)
                     .lineLimit(1)

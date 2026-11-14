@@ -114,7 +114,7 @@ public struct HomeRecordView: View {
             }
 
             if showDeleteToast {
-                Text("删除成功", bundle: .module)
+                Text("删除成功", bundle: .mimiModule)
                     .mimiFont(15, weight: .semibold)
                     .foregroundColor(.white)
                     .padding(.horizontal, 18)
@@ -142,7 +142,7 @@ public struct HomeRecordView: View {
                 pendingDeleteID = nil
             }
         } message: {
-            Text("删除后无法恢复", bundle: .module)
+            Text("删除后无法恢复", bundle: .mimiModule)
         }
     }
 
@@ -173,7 +173,7 @@ public struct HomeRecordView: View {
                 }
             } label: {
                 HStack(spacing: 4) {
-                    Text("记录", bundle: .module)
+                    Text("记录", bundle: .mimiModule)
                         .mimiFont(22, weight: .bold)
                         .foregroundColor(MimiTheme.textPrimary)
                     Image(systemName: "chevron.down")
@@ -241,7 +241,7 @@ public struct HomeRecordView: View {
 
                 Button(action: onSwitchToStats) {
                     HStack(spacing: 2) {
-                        Text("统计", bundle: .module)
+                        Text("统计", bundle: .mimiModule)
                             .mimiFont(15, weight: .semibold)
                         Image(systemName: "chevron.right")
                             .mimiFont(12, weight: .bold)
@@ -259,7 +259,7 @@ public struct HomeRecordView: View {
                         RoundedRectangle(cornerRadius: 1.5)
                             .fill(MimiTheme.expenseBlue)
                             .frame(width: 3, height: 12)
-                        Text("月预算剩余", bundle: .module)
+                        Text("月预算剩余", bundle: .mimiModule)
                             .mimiFont(13, weight: .medium)
                             .foregroundColor(MimiTheme.textSecondary)
                     }
@@ -335,7 +335,7 @@ public struct HomeRecordView: View {
             HStack(spacing: 3) {
                 Image(systemName: "arrow.left.arrow.right")
                     .mimiFont(11, weight: .semibold)
-                Text("收支", bundle: .module)
+                Text("收支", bundle: .mimiModule)
                     .mimiFont(13, weight: .medium)
             }
             .foregroundColor(MimiTheme.textSecondary)
@@ -404,7 +404,7 @@ public struct HomeRecordView: View {
                     .frame(width: MimiTheme.dailyRingSize, height: MimiTheme.dailyRingSize)
 
                 VStack(spacing: 1) {
-                    Text("今日可用", bundle: .module)
+                    Text("今日可用", bundle: .mimiModule)
                         .mimiFont(9, weight: .medium)
                         .foregroundColor(MimiTheme.textSecondary)
                     Text(isAmountsHidden ? "****" : String(format: "%.2f", dailyAvailable))
@@ -440,7 +440,7 @@ public struct HomeRecordView: View {
                     }
                     .frame(width: 22, height: 22)
                     HStack(spacing: 6) {
-                        Text("分类预算", bundle: .module)
+                        Text("分类预算", bundle: .mimiModule)
                             .mimiFont(14, weight: .semibold)
                             .foregroundColor(MimiTheme.textPrimary)
                         Text("共\(store.categoryBudgets.count)项")
@@ -524,7 +524,7 @@ public struct HomeRecordView: View {
             HStack(alignment: .center, spacing: 8) {
                 Button(action: onOpenAssetsManager) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("净资产", bundle: .module)
+                        Text("净资产", bundle: .mimiModule)
                             .mimiFont(13, weight: .medium)
                             .foregroundColor(MimiTheme.textSecondary)
                         Text(isAmountsHidden ? "RM****" : MimiTheme.formatRM(store.netWorth))
@@ -541,7 +541,7 @@ public struct HomeRecordView: View {
                         toggleNetWorthExpanded()
                     } label: {
                         VStack(alignment: .trailing, spacing: 2) {
-                            Text("30天趋势", bundle: .module)
+                            Text("30天趋势", bundle: .mimiModule)
                                 .mimiFont(10, weight: .medium)
                                 .foregroundColor(MimiTheme.expenseBlue)
                                 .padding(.horizontal, 8)
@@ -590,7 +590,7 @@ public struct HomeRecordView: View {
             HStack(spacing: 8) {
                 Button(action: onOpenSearchOrCalendar) {
                     HStack(spacing: 2) {
-                        Text("记录明细", bundle: .module)
+                        Text("记录明细", bundle: .mimiModule)
                             .mimiFont(16, weight: .bold)
                         Image(systemName: "chevron.right")
                             .mimiFont(12, weight: .bold)
@@ -614,7 +614,7 @@ public struct HomeRecordView: View {
                         .mimiFont(34)
                         .foregroundColor(MimiTheme.incomeOrange)
                         .accessibilityHidden(true)
-                    Text("还没有账单记录，点击下方 + 或发送一句话记账吧", bundle: .module)
+                    Text("还没有账单记录，点击下方 + 或发送一句话记账吧", bundle: .mimiModule)
                         .mimiFont(13)
                         .foregroundColor(MimiTheme.textMuted)
                         .multilineTextAlignment(.center)
@@ -927,7 +927,7 @@ public struct HomeRecordView: View {
                 } label: {
                     HStack(spacing: 8) {
                         MimiAskMascotView(size: 32)
-                        Text("任何事情都能问我", bundle: .module)
+                        Text("任何事情都能问我", bundle: .mimiModule)
                             .mimiFont(15, weight: .medium)
                             .foregroundColor(MimiTheme.textSecondary)
                         Spacer(minLength: 0)
@@ -1000,7 +1000,7 @@ public struct HomeRecordView: View {
 
     private var ledgerPickerSheet: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("切换账本", bundle: .module)
+            Text("切换账本", bundle: .mimiModule)
                 .mimiFont(17, weight: .bold)
                 .padding(.top, 16)
 

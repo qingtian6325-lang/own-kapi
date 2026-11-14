@@ -58,7 +58,7 @@ public struct BillDetailSheetView: View {
                                 }
                             } label: {
                                 HStack(spacing: 4) {
-                                    Text(LocalizedStringKey(editableBill.type.title), bundle: .module)
+                                    Text(LocalizedStringKey(editableBill.type.title), bundle: .mimiModule)
                                         .mimiFont(14, weight: .semibold)
                                         .foregroundColor(MimiTheme.textPrimary)
                                     Image(systemName: "chevron.right")
@@ -101,7 +101,7 @@ public struct BillDetailSheetView: View {
                                         transactionType: .transfer,
                                         size: 26
                                     )
-                                    Text("转账", bundle: .module)
+                                    Text("转账", bundle: .mimiModule)
                                         .mimiFont(14, weight: .semibold)
                                         .foregroundColor(MimiTheme.textPrimary)
                                 }
@@ -149,7 +149,7 @@ public struct BillDetailSheetView: View {
                         // Note + Receipt Photo Attachments (IMG_2242 & IMG_2243)
                         VStack(alignment: .leading, spacing: 10) {
                             HStack {
-                                Text("备注", bundle: .module)
+                                Text("备注", bundle: .mimiModule)
                                     .mimiFont(14, weight: .medium)
                                     .foregroundColor(MimiTheme.textSecondary)
                                 Spacer()
@@ -331,7 +331,7 @@ public struct BillDetailSheetView: View {
                     if editableBill.type != .transfer {
                         VStack(spacing: 0) {
                             Toggle(isOn: $editableBill.includeInStats) {
-                                Text("计入收支统计", bundle: .module)
+                                Text("计入收支统计", bundle: .mimiModule)
                                     .mimiFont(14, weight: .medium)
                                     .foregroundColor(MimiTheme.textPrimary)
                             }
@@ -342,7 +342,7 @@ public struct BillDetailSheetView: View {
                             Divider().padding(.leading, 16)
 
                             Toggle(isOn: $editableBill.includeInBudget) {
-                                Text("计入预算", bundle: .module)
+                                Text("计入预算", bundle: .mimiModule)
                                     .mimiFont(14, weight: .medium)
                                     .foregroundColor(MimiTheme.textPrimary)
                             }
@@ -367,7 +367,7 @@ public struct BillDetailSheetView: View {
                                     if on { editableBill.tags.append("待报销") }
                                 }
                             )) {
-                                Text("待报销", bundle: .module)
+                                Text("待报销", bundle: .mimiModule)
                                     .mimiFont(14, weight: .medium)
                                     .foregroundColor(MimiTheme.textPrimary)
                             }
@@ -422,7 +422,7 @@ public struct BillDetailSheetView: View {
                         store.updateTransaction(editableBill)
                         onDismiss()
                     } label: {
-                        Text("保存修改", bundle: .module)
+                        Text("保存修改", bundle: .mimiModule)
                             .mimiFont(16, weight: .bold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -468,7 +468,7 @@ public struct BillDetailSheetView: View {
                 }
                 Button(MimiL10n.string("取消"), role: .cancel) {}
             } message: {
-                Text("删除后无法恢复", bundle: .module)
+                Text("删除后无法恢复", bundle: .mimiModule)
             }
             .sheet(isPresented: $showingActionSheet) {
                 MimiChoiceSheet(
@@ -550,7 +550,7 @@ public struct BillDetailSheetView: View {
                 .frame(width: 36, height: 4)
                 .padding(.top, 10)
 
-            Text("实付金额", bundle: .module)
+            Text("实付金额", bundle: .mimiModule)
                 .mimiFont(15, weight: .semibold)
                 .foregroundColor(MimiTheme.textSecondary)
 

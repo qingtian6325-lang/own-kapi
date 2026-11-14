@@ -170,7 +170,7 @@ public struct CategoryBillsListView: View {
                         .mimiFont(12)
                         .foregroundColor(MimiTheme.textMuted)
                 } else if previousMonthTotal < 0.009 && monthTotal > 0 {
-                    Text("和上月比 ↑ —", bundle: .module)
+                    Text("和上月比 ↑ —", bundle: .mimiModule)
                         .mimiFont(12)
                         .foregroundColor(MimiTheme.textMuted)
                 }
@@ -178,13 +178,13 @@ public struct CategoryBillsListView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("账单数", bundle: .module)
+                Text("账单数", bundle: .mimiModule)
                     .mimiFont(13)
                     .foregroundColor(MimiTheme.textSecondary)
                 Text("\(monthTransactions.count)")
                     .mimiFont(26, weight: .bold, design: .rounded)
                     .foregroundColor(MimiTheme.textPrimary)
-                Text("本月记录", bundle: .module)
+                Text("本月记录", bundle: .mimiModule)
                     .mimiFont(12)
                     .foregroundColor(MimiTheme.textMuted)
             }
@@ -269,7 +269,7 @@ public struct CategoryBillsListView: View {
     private var billsSection: some View {
         Group {
             if dayGroups.isEmpty {
-                Text("本月暂无账单", bundle: .module)
+                Text("本月暂无账单", bundle: .mimiModule)
                     .mimiFont(14)
                     .foregroundColor(MimiTheme.textMuted)
                     .frame(maxWidth: .infinity)
