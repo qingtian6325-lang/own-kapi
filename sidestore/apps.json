@@ -29,12 +29,12 @@
       "versions": [
         {
           "version": "1.3.11",
-          "date": "2026-11-14T08:47:00Z",
+          "date": "2026-11-14T08:58:55Z",
           "localizedDescription": "账户详情导航：左/右（返回↔再进账户、记账↔转账）不再把界面卡在上一页「记账」；返回分层（先关 sheet → 再出详情 → 最后才关资产），记账/转账改用 `sheet(item:)` 身份切换。; 回归：`AssetsAccountNavigationState` 纯状态机 + 单测覆盖 left→right→left 与 记账→转账→记账。; 发版：`VERSION` / Intent 默认版本升至 1.3.11。",
           "downloadURL": "https://github.com/qingtian6325-lang/own-mimi/releases/download/v1.3.11/MimiMoney-iOS-v1.3.11.ipa",
-          "size": 4047632,
+          "size": 4047679,
           "minOSVersion": "17.0",
-          "buildVersion": "101"
+          "buildVersion": "107"
         },
         {
           "version": "1.3.10",
