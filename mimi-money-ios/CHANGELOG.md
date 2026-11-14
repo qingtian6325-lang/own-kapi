@@ -9,10 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🎯 Highlights
 - **半屏下滑关闭**：共享 `mimiInteractiveSheet`（`presentationContentInteraction(.scrolls)`）；记账/账单/预算/分类/设置/账本等 sheet 均可下滑关闭；与 v1.3.13 记账横滑分页兼容（不覆盖 `interactiveDismissDisabled(suppressSheetDismiss)`）。
 - **边缘右滑返回**：`navigationBarBackButtonHidden` 的推入页（账户详情、分类账单）恢复 `interactivePopGestureRecognizer`；ZStack 功能页（资产/统计/预算/分类/日历/设置/账单详情）增加跟手 `mimiEdgeSwipeBack` + 橡胶筋回弹。
+- **应用内语言**：设置 → 语言，可选「跟随系统 / 中文 / English」；偏好持久化，切换后应用内文案立即更新（`.environment(\.locale)` + String Catalog）。
+- **主屏幕名称**：仅随系统语言，经 `InfoPlist.strings` 的 `CFBundleDisplayName`（zh-Hans「咪咪记账」、en「Mimi Money」）；不写入 `AppleLanguages`。
 - **账户详情期初预填**：「设定期初资金(记账前)」预填账户 `initialBalance`（未设则为 0），不再误填当前余额；「校准当前余额」仍预填 `balance`；切换分段即时刷新 RM 输入框。
 - **添加账户**：起始开局余额留空时明确持久化 `initialBalance = 0`（与 `balance` 一致）。
-- **回归**：`MimiGesturePolicy` / `AccountBalanceEditPrefill` 单测；verify 脚本覆盖手势与期初预填。
-- **发版**：`VERSION` / Intent 默认版本升至 1.3.14。
+- **回归**：`MimiGesturePolicy` / `AccountBalanceEditPrefill` / `AppLanguagePreference` 单测；verify 脚本覆盖手势、期初预填与语言资源。
+- **发版**：`VERSION` / Intent 默认版本升至 1.3.14（统一合入原计划 1.3.14/15/16 改动；v1.3.13 已单独发过转账初始页与支出横滑修复）。
 
 
 ## [v1.3.13] - 2026-11-14

@@ -114,7 +114,7 @@ public struct HomeRecordView: View {
             }
 
             if showDeleteToast {
-                Text("删除成功")
+                Text("删除成功", bundle: .module)
                     .mimiFont(15, weight: .semibold)
                     .foregroundColor(.white)
                     .padding(.horizontal, 18)
@@ -131,18 +131,18 @@ public struct HomeRecordView: View {
             ledgerPickerSheet
                 .mimiInteractiveSheet(detents: [.height(260)])
         }
-        .alert("确认删除这笔账单？", isPresented: $showDeleteConfirm) {
-            Button("取消", role: .cancel) {
+        .alert(MimiL10n.string("确认删除这笔账单？"), isPresented: $showDeleteConfirm) {
+            Button(MimiL10n.string("取消"), role: .cancel) {
                 pendingDeleteID = nil
             }
-            Button("删除", role: .destructive) {
+            Button(MimiL10n.string("删除"), role: .destructive) {
                 if let id = pendingDeleteID {
                     deleteTransactionShowingToast(id)
                 }
                 pendingDeleteID = nil
             }
         } message: {
-            Text("删除后无法恢复")
+            Text("删除后无法恢复", bundle: .module)
         }
     }
 
@@ -157,23 +157,23 @@ public struct HomeRecordView: View {
                     .mimiMinTouchTarget()
             }
             .mimiPressable()
-            .accessibilityLabel("打开菜单")
+            .accessibilityLabel(MimiL10n.string("打开菜单"))
 
             Menu {
                 Button {
                     // Already on 记录
                 } label: {
-                    Label("记录", systemImage: "checkmark")
+                    Label(MimiL10n.string("记录"), systemImage: "checkmark")
                 }
                 .disabled(true)
                 Button {
                     onSwitchToStats()
                 } label: {
-                    Label("Mimi (统计与资产)", systemImage: "chart.pie")
+                    Label(MimiL10n.string("Mimi (统计与资产)"), systemImage: "chart.pie")
                 }
             } label: {
                 HStack(spacing: 4) {
-                    Text("记录")
+                    Text("记录", bundle: .module)
                         .mimiFont(22, weight: .bold)
                         .foregroundColor(MimiTheme.textPrimary)
                     Image(systemName: "chevron.down")
@@ -182,7 +182,7 @@ public struct HomeRecordView: View {
                 }
             }
             .mimiPressable()
-            .accessibilityLabel("记录，切换账本视图")
+            .accessibilityLabel(MimiL10n.string("记录，切换账本视图"))
 
             Spacer(minLength: 8)
 
@@ -195,7 +195,7 @@ public struct HomeRecordView: View {
                     .mimiMinTouchTarget()
             }
             .mimiPressable()
-            .accessibilityLabel("搜索与日历")
+            .accessibilityLabel(MimiL10n.string("搜索与日历"))
 
             Button {
                 showLedgerSwitcherSheet = true
@@ -219,7 +219,7 @@ public struct HomeRecordView: View {
             }
             .mimiPressable()
             .accessibilityLabel("当前账本 \(store.currentLedgerName)")
-            .accessibilityHint("点按切换账本")
+            .accessibilityHint(MimiL10n.string("点按切换账本"))
         }
     }
 
@@ -241,7 +241,7 @@ public struct HomeRecordView: View {
 
                 Button(action: onSwitchToStats) {
                     HStack(spacing: 2) {
-                        Text("统计")
+                        Text("统计", bundle: .module)
                             .mimiFont(15, weight: .semibold)
                         Image(systemName: "chevron.right")
                             .mimiFont(12, weight: .bold)
@@ -259,7 +259,7 @@ public struct HomeRecordView: View {
                         RoundedRectangle(cornerRadius: 1.5)
                             .fill(MimiTheme.expenseBlue)
                             .frame(width: 3, height: 12)
-                        Text("月预算剩余")
+                        Text("月预算剩余", bundle: .module)
                             .mimiFont(13, weight: .medium)
                             .foregroundColor(MimiTheme.textSecondary)
                     }
@@ -335,7 +335,7 @@ public struct HomeRecordView: View {
             HStack(spacing: 3) {
                 Image(systemName: "arrow.left.arrow.right")
                     .mimiFont(11, weight: .semibold)
-                Text("收支")
+                Text("收支", bundle: .module)
                     .mimiFont(13, weight: .medium)
             }
             .foregroundColor(MimiTheme.textSecondary)
@@ -404,7 +404,7 @@ public struct HomeRecordView: View {
                     .frame(width: MimiTheme.dailyRingSize, height: MimiTheme.dailyRingSize)
 
                 VStack(spacing: 1) {
-                    Text("今日可用")
+                    Text("今日可用", bundle: .module)
                         .mimiFont(9, weight: .medium)
                         .foregroundColor(MimiTheme.textSecondary)
                     Text(isAmountsHidden ? "****" : String(format: "%.2f", dailyAvailable))
@@ -440,7 +440,7 @@ public struct HomeRecordView: View {
                     }
                     .frame(width: 22, height: 22)
                     HStack(spacing: 6) {
-                        Text("分类预算")
+                        Text("分类预算", bundle: .module)
                             .mimiFont(14, weight: .semibold)
                             .foregroundColor(MimiTheme.textPrimary)
                         Text("共\(store.categoryBudgets.count)项")
@@ -509,7 +509,7 @@ public struct HomeRecordView: View {
                         }
                         .mimiPressable()
                         .accessibilityLabel("\(item.categoryName)预算")
-                        .accessibilityHint("打开预算管理")
+                        .accessibilityHint(MimiL10n.string("打开预算管理"))
                     }
                 }
                 .padding(.top, 4)
@@ -524,7 +524,7 @@ public struct HomeRecordView: View {
             HStack(alignment: .center, spacing: 8) {
                 Button(action: onOpenAssetsManager) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("净资产")
+                        Text("净资产", bundle: .module)
                             .mimiFont(13, weight: .medium)
                             .foregroundColor(MimiTheme.textSecondary)
                         Text(isAmountsHidden ? "RM****" : MimiTheme.formatRM(store.netWorth))
@@ -541,7 +541,7 @@ public struct HomeRecordView: View {
                         toggleNetWorthExpanded()
                     } label: {
                         VStack(alignment: .trailing, spacing: 2) {
-                            Text("30天趋势")
+                            Text("30天趋势", bundle: .module)
                                 .mimiFont(10, weight: .medium)
                                 .foregroundColor(MimiTheme.expenseBlue)
                                 .padding(.horizontal, 8)
@@ -590,7 +590,7 @@ public struct HomeRecordView: View {
             HStack(spacing: 8) {
                 Button(action: onOpenSearchOrCalendar) {
                     HStack(spacing: 2) {
-                        Text("记录明细")
+                        Text("记录明细", bundle: .module)
                             .mimiFont(16, weight: .bold)
                         Image(systemName: "chevron.right")
                             .mimiFont(12, weight: .bold)
@@ -599,7 +599,7 @@ public struct HomeRecordView: View {
                     .foregroundColor(MimiTheme.textPrimary)
                 }
                 .mimiPressable()
-                .accessibilityLabel("记录明细")
+                .accessibilityLabel(MimiL10n.string("记录明细"))
 
                 Spacer(minLength: 8)
 
@@ -614,7 +614,7 @@ public struct HomeRecordView: View {
                         .mimiFont(34)
                         .foregroundColor(MimiTheme.incomeOrange)
                         .accessibilityHidden(true)
-                    Text("还没有账单记录，点击下方 + 或发送一句话记账吧")
+                    Text("还没有账单记录，点击下方 + 或发送一句话记账吧", bundle: .module)
                         .mimiFont(13)
                         .foregroundColor(MimiTheme.textMuted)
                         .multilineTextAlignment(.center)
@@ -757,16 +757,16 @@ public struct HomeRecordView: View {
             Button {
                 onSelectTransaction(item)
             } label: {
-                Label("查看详情", systemImage: "doc.text")
+                Label(MimiL10n.string("查看详情"), systemImage: "doc.text")
             }
             Button(role: .destructive) {
                 pendingDeleteID = item.id
                 showDeleteConfirm = true
             } label: {
-                Label("删除账单", systemImage: "trash")
+                Label(MimiL10n.string("删除账单"), systemImage: "trash")
             }
         }
-        .accessibilityHint("左滑或长按可删除")
+        .accessibilityHint(MimiL10n.string("左滑或长按可删除"))
         .overlay(alignment: .bottom) {
             if showsDivider {
                 Rectangle()
@@ -789,7 +789,7 @@ public struct HomeRecordView: View {
                 .background(Circle().fill(MimiTheme.dangerRed))
         }
         .mimiPressable()
-        .accessibilityLabel("删除账单")
+        .accessibilityLabel(MimiL10n.string("删除账单"))
     }
 
     private func rowSwipeGesture(for id: UUID) -> some Gesture {
@@ -927,7 +927,7 @@ public struct HomeRecordView: View {
                 } label: {
                     HStack(spacing: 8) {
                         MimiAskMascotView(size: 32)
-                        Text("任何事情都能问我")
+                        Text("任何事情都能问我", bundle: .module)
                             .mimiFont(15, weight: .medium)
                             .foregroundColor(MimiTheme.textSecondary)
                         Spacer(minLength: 0)
@@ -936,7 +936,7 @@ public struct HomeRecordView: View {
                     .frame(minHeight: MimiHIG.minTouch)
                 }
                 .mimiPressable()
-                .accessibilityLabel("问账记账")
+                .accessibilityLabel(MimiL10n.string("问账记账"))
                 .accessibilityHint(BookkeepingEntryPreference.current == .manual ? "将打开手动记账" : "将打开 AI 记账")
 
                 // ＋：展开相册 / 拍照 / 导入导出（金标三格）
@@ -1000,7 +1000,7 @@ public struct HomeRecordView: View {
 
     private var ledgerPickerSheet: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("切换账本")
+            Text("切换账本", bundle: .module)
                 .mimiFont(17, weight: .bold)
                 .padding(.top, 16)
 
@@ -1067,7 +1067,7 @@ private struct FeedBillMarkButton: View {
             .frame(width: 32, height: 32)
         }
         .mimiPressable()
-        .accessibilityLabel("全部记录")
+        .accessibilityLabel(MimiL10n.string("全部记录"))
     }
 }
 
@@ -1100,7 +1100,7 @@ private struct HomeNetWorthSparkline: View {
                 }
             }
         }
-        .accessibilityLabel("近30天净资产趋势")
+        .accessibilityLabel(MimiL10n.string("近30天净资产趋势"))
     }
 
     private func samplePoints(in size: CGSize) -> [CGPoint] {

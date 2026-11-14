@@ -253,7 +253,7 @@ public struct MimiStatsView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "chevron.left")
                         .mimiFont(15, weight: .bold)
-                    Text("记录")
+                    Text("记录", bundle: .module)
                         .mimiFont(14, weight: .semibold)
                 }
                 .foregroundColor(MimiTheme.textPrimary)
@@ -264,15 +264,15 @@ public struct MimiStatsView: View {
             .mimiPressable()
 
             Menu {
-                Button("记录 (首页)") { onSwitchToHome() }
-                Button("Mimi (图表统计)") {
+                Button(MimiL10n.string("记录 (首页)")) { onSwitchToHome() }
+                Button(MimiL10n.string("Mimi (图表统计)")) {
                     // Already on stats — keep menu dismiss-only.
                 }
                 .disabled(true)
-                Button("资产管理") { onOpenAssets() }
+                Button(MimiL10n.string("资产管理")) { onOpenAssets() }
             } label: {
                 HStack(spacing: 4) {
-                    Text("统计")
+                    Text("统计", bundle: .module)
                         .mimiFont(20, weight: .bold, design: .rounded)
                         .foregroundColor(MimiTheme.textPrimary)
                     Image(systemName: "chevron.down")
@@ -285,7 +285,7 @@ public struct MimiStatsView: View {
 
             Menu {
                 Button("当前账本 (\(store.currentLedgerName))") { selectedLedgerFilterId = store.currentLedgerId }
-                Button("全部账本合并") { selectedLedgerFilterId = "all" }
+                Button(MimiL10n.string("全部账本合并")) { selectedLedgerFilterId = "all" }
                 Divider()
                 ForEach(store.ledgers) { l in
                     Button(l.name) { selectedLedgerFilterId = l.id }
@@ -305,9 +305,9 @@ public struct MimiStatsView: View {
             }
 
             Menu {
-                Button("全部类型") { selectedFilterType = "全部" }
-                Button("仅看支出") { selectedFilterType = "仅支出" }
-                Button("仅看收入") { selectedFilterType = "仅收入" }
+                Button(MimiL10n.string("全部类型")) { selectedFilterType = "全部" }
+                Button(MimiL10n.string("仅看支出")) { selectedFilterType = "仅支出" }
+                Button(MimiL10n.string("仅看收入")) { selectedFilterType = "仅收入" }
             } label: {
                 HStack(spacing: 3) {
                     Text(selectedFilterType == "全部" ? "筛选" : selectedFilterType)
@@ -358,7 +358,7 @@ public struct MimiStatsView: View {
                         .mimiMinTouchTarget()
                 }
                 .mimiPressable()
-                .accessibilityLabel("上一段时间")
+                .accessibilityLabel(MimiL10n.string("上一段时间"))
 
                 Spacer()
 
@@ -377,7 +377,7 @@ public struct MimiStatsView: View {
                         .mimiMinTouchTarget()
                 }
                 .mimiPressable()
-                .accessibilityLabel("下一段时间")
+                .accessibilityLabel(MimiL10n.string("下一段时间"))
             }
 
             if selectedPeriod == "自定义" {
@@ -406,7 +406,7 @@ public struct MimiStatsView: View {
     private var capybaraBalanceCard: some View {
         HStack(spacing: 0) {
             VStack(spacing: 6) {
-                Text("支出")
+                Text("支出", bundle: .module)
                     .mimiFont(12, weight: .medium)
                     .foregroundColor(MimiTheme.textSecondary)
                 Text(MimiTheme.formatRM(totalExpense))
@@ -420,7 +420,7 @@ public struct MimiStatsView: View {
             Divider().frame(height: 36)
 
             VStack(spacing: 6) {
-                Text("收入")
+                Text("收入", bundle: .module)
                     .mimiFont(12, weight: .medium)
                     .foregroundColor(MimiTheme.textSecondary)
                 Text(MimiTheme.formatRM(totalIncome))
@@ -434,7 +434,7 @@ public struct MimiStatsView: View {
             Divider().frame(height: 36)
 
             VStack(spacing: 6) {
-                Text("结余")
+                Text("结余", bundle: .module)
                     .mimiFont(12, weight: .medium)
                     .foregroundColor(MimiTheme.textSecondary)
                 Text(netBalance >= 0 ? MimiTheme.formatRM(netBalance) : "-\(MimiTheme.formatRM(abs(netBalance)))")
@@ -461,7 +461,7 @@ public struct MimiStatsView: View {
                 Spacer()
                 HStack(spacing: 0) {
                     Button { selectedChartType = .expense } label: {
-                        Text("支出")
+                        Text("支出", bundle: .module)
                             .mimiFont(12, weight: selectedChartType == .expense ? .bold : .medium)
                             .foregroundColor(selectedChartType == .expense ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
                             .padding(.horizontal, 12)
@@ -470,7 +470,7 @@ public struct MimiStatsView: View {
                     }
                     .mimiPressable()
                     Button { selectedChartType = .income } label: {
-                        Text("收入")
+                        Text("收入", bundle: .module)
                             .mimiFont(12, weight: selectedChartType == .income ? .bold : .medium)
                             .foregroundColor(selectedChartType == .income ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
                             .padding(.horizontal, 12)
@@ -812,16 +812,16 @@ public struct MimiStatsView: View {
         let avgNet = netBalance / Double(dayCount)
 
         return VStack(alignment: .leading, spacing: 12) {
-            Text("账单汇总")
+            Text("账单汇总", bundle: .module)
                 .mimiFont(15, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
 
             VStack(spacing: 0) {
                 HStack {
-                    Text("日期").frame(maxWidth: .infinity, alignment: .leading)
-                    Text("支出").frame(maxWidth: .infinity).foregroundColor(MimiTheme.expenseBlue)
-                    Text("收入").frame(maxWidth: .infinity).foregroundColor(MimiTheme.incomeOrange)
-                    Text("结余").frame(maxWidth: .infinity).foregroundColor(MimiTheme.balanceGreen)
+                    Text("日期", bundle: .module).frame(maxWidth: .infinity, alignment: .leading)
+                    Text("支出", bundle: .module).frame(maxWidth: .infinity).foregroundColor(MimiTheme.expenseBlue)
+                    Text("收入", bundle: .module).frame(maxWidth: .infinity).foregroundColor(MimiTheme.incomeOrange)
+                    Text("结余", bundle: .module).frame(maxWidth: .infinity).foregroundColor(MimiTheme.balanceGreen)
                 }
                 .mimiFont(11, weight: .bold)
                 .padding(10)
@@ -831,7 +831,7 @@ public struct MimiStatsView: View {
                 summaryTableRow(label: "日均", exp: avgExp, inc: avgInc, net: avgNet, emphasize: true)
 
                 if dayRows.isEmpty {
-                    Text("暂无账单")
+                    Text("暂无账单", bundle: .module)
                         .mimiFont(12)
                         .foregroundColor(MimiTheme.textMuted)
                         .frame(maxWidth: .infinity)

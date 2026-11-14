@@ -563,6 +563,39 @@ function verifyTask7() {
   checkBalancedBraces(swipePolicyTests, 'BookkeepingSheetSwipePolicyTests.swift');
   assertContains(swipePolicyTests, 'testHorizontalDominantBlocksDiagonalSheetDismissSteal', 'BookkeepingSheetSwipePolicyTests.swift');
 
+  // v1.3.15 — system InfoPlist display name + in-app language preference / String Catalog
+  const languagePref = assertFileExists('Sources/MimiMoneyCore/Services/AppLanguagePreference.swift');
+  checkBalancedBraces(languagePref, 'AppLanguagePreference.swift');
+  for (const label of [
+    'AppLanguagePreference',
+    'AppLanguageStore',
+    'MimiL10n',
+    'mimi_app_language_preference',
+    'effectiveLocale'
+  ]) {
+    assertContains(languagePref, label, 'AppLanguagePreference.swift');
+  }
+  assertContains(languagePref, 'AppleLanguages', 'AppLanguagePreference.swift'); // mentioned as NOT used
+  const xcstrings = assertFileExists('Sources/MimiMoneyCore/Resources/Localizable.xcstrings');
+  assertContains(xcstrings, '"咪咪记账"', 'Localizable.xcstrings');
+  assertContains(xcstrings, 'Mimi Money', 'Localizable.xcstrings');
+  assertContains(xcstrings, '"语言"', 'Localizable.xcstrings');
+  assertContains(xcstrings, 'Follow System', 'Localizable.xcstrings');
+  assertFileExists('Resources/zh-Hans.lproj/InfoPlist.strings');
+  assertFileExists('Resources/en.lproj/InfoPlist.strings');
+  const infoZh = assertFileExists('Resources/zh-Hans.lproj/InfoPlist.strings');
+  const infoEn = assertFileExists('Resources/en.lproj/InfoPlist.strings');
+  assertContains(infoZh, '咪咪记账', 'zh-Hans InfoPlist.strings');
+  assertContains(infoEn, 'Mimi Money', 'en InfoPlist.strings');
+  const packageSwift = assertFileExists('Package.swift');
+  assertContains(packageSwift, '.process("Resources")', 'Package.swift resources');
+  const settingsView = assertFileExists('Sources/MimiMoneyCore/Views/SettingsAndShortcutsGuideView.swift');
+  assertContains(settingsView, 'languageStore', 'SettingsAndShortcutsGuideView.swift');
+  assertContains(settingsView, 'AppLanguagePreference', 'SettingsAndShortcutsGuideView.swift');
+  const languageTests = assertFileExists('Tests/MimiMoneyTests/AppLanguagePreferenceTests.swift');
+  checkBalancedBraces(languageTests, 'AppLanguagePreferenceTests.swift');
+  assertContains(languageTests, 'testPersistsPreference', 'AppLanguagePreferenceTests.swift');
+
   const assets = assertFileExists('Sources/MimiMoneyCore/Views/AssetsAndAccountDetailView.swift');
   checkBalancedBraces(assets, 'AssetsAndAccountDetailView.swift');
   for (const label of [

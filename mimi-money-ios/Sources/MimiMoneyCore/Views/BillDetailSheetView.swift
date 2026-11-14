@@ -46,7 +46,7 @@ public struct BillDetailSheetView: View {
                         detailRow(label: "类型") {
                             Menu {
                                 ForEach(TransactionType.allCases, id: \.self) { type in
-                                    Button(type.title) {
+                                    Button(type.localizedTitle) {
                                         editableBill.type = type
                                         if type == .transfer {
                                             editableBill.categoryPath = "转账"
@@ -58,7 +58,7 @@ public struct BillDetailSheetView: View {
                                 }
                             } label: {
                                 HStack(spacing: 4) {
-                                    Text(editableBill.type.title)
+                                    Text(LocalizedStringKey(editableBill.type.title), bundle: .module)
                                         .mimiFont(14, weight: .semibold)
                                         .foregroundColor(MimiTheme.textPrimary)
                                     Image(systemName: "chevron.right")
@@ -101,7 +101,7 @@ public struct BillDetailSheetView: View {
                                         transactionType: .transfer,
                                         size: 26
                                     )
-                                    Text("转账")
+                                    Text("转账", bundle: .module)
                                         .mimiFont(14, weight: .semibold)
                                         .foregroundColor(MimiTheme.textPrimary)
                                 }
@@ -149,7 +149,7 @@ public struct BillDetailSheetView: View {
                         // Note + Receipt Photo Attachments (IMG_2242 & IMG_2243)
                         VStack(alignment: .leading, spacing: 10) {
                             HStack {
-                                Text("备注")
+                                Text("备注", bundle: .module)
                                     .mimiFont(14, weight: .medium)
                                     .foregroundColor(MimiTheme.textSecondary)
                                 Spacer()
@@ -238,7 +238,7 @@ public struct BillDetailSheetView: View {
 
                         detailRow(label: editableBill.type == .transfer ? "转出账户" : "付款账户") {
                             Menu {
-                                Button("不选账户") { editableBill.accountName = "不选账户" }
+                                Button(MimiL10n.string("不选账户")) { editableBill.accountName = "不选账户" }
                                 ForEach(store.accounts) { acc in
                                     Button(acc.name) { editableBill.accountName = acc.name }
                                 }
@@ -331,7 +331,7 @@ public struct BillDetailSheetView: View {
                     if editableBill.type != .transfer {
                         VStack(spacing: 0) {
                             Toggle(isOn: $editableBill.includeInStats) {
-                                Text("计入收支统计")
+                                Text("计入收支统计", bundle: .module)
                                     .mimiFont(14, weight: .medium)
                                     .foregroundColor(MimiTheme.textPrimary)
                             }
@@ -342,7 +342,7 @@ public struct BillDetailSheetView: View {
                             Divider().padding(.leading, 16)
 
                             Toggle(isOn: $editableBill.includeInBudget) {
-                                Text("计入预算")
+                                Text("计入预算", bundle: .module)
                                     .mimiFont(14, weight: .medium)
                                     .foregroundColor(MimiTheme.textPrimary)
                             }
@@ -367,7 +367,7 @@ public struct BillDetailSheetView: View {
                                     if on { editableBill.tags.append("待报销") }
                                 }
                             )) {
-                                Text("待报销")
+                                Text("待报销", bundle: .module)
                                     .mimiFont(14, weight: .medium)
                                     .foregroundColor(MimiTheme.textPrimary)
                             }
@@ -422,7 +422,7 @@ public struct BillDetailSheetView: View {
                         store.updateTransaction(editableBill)
                         onDismiss()
                     } label: {
-                        Text("保存修改")
+                        Text("保存修改", bundle: .module)
                             .mimiFont(16, weight: .bold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -435,7 +435,7 @@ public struct BillDetailSheetView: View {
                 .padding(16)
             }
             .background(MimiTheme.background.ignoresSafeArea())
-            .navigationTitle("账单详情")
+            .navigationTitle(MimiL10n.string("账单详情"))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -447,7 +447,7 @@ public struct BillDetailSheetView: View {
                             .foregroundColor(MimiTheme.textSecondary)
                             .mimiMinTouchTarget()
                     }
-                    .accessibilityLabel("关闭账单详情")
+                    .accessibilityLabel(MimiL10n.string("关闭账单详情"))
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
@@ -458,17 +458,17 @@ public struct BillDetailSheetView: View {
                             .foregroundColor(MimiTheme.dangerRed)
                             .mimiMinTouchTarget()
                     }
-                    .accessibilityLabel("删除账单")
+                    .accessibilityLabel(MimiL10n.string("删除账单"))
                 }
             }
-            .confirmationDialog("删除这笔账单？", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
-                Button("删除", role: .destructive) {
+            .confirmationDialog(MimiL10n.string("删除这笔账单？"), isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+                Button(MimiL10n.string("删除"), role: .destructive) {
                     store.deleteTransaction(id: editableBill.id)
                     onDismiss()
                 }
-                Button("取消", role: .cancel) {}
+                Button(MimiL10n.string("取消"), role: .cancel) {}
             } message: {
-                Text("删除后无法恢复")
+                Text("删除后无法恢复", bundle: .module)
             }
             .sheet(isPresented: $showingActionSheet) {
                 MimiChoiceSheet(
@@ -550,7 +550,7 @@ public struct BillDetailSheetView: View {
                 .frame(width: 36, height: 4)
                 .padding(.top, 10)
 
-            Text("实付金额")
+            Text("实付金额", bundle: .module)
                 .mimiFont(15, weight: .semibold)
                 .foregroundColor(MimiTheme.textSecondary)
 

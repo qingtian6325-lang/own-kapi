@@ -174,11 +174,11 @@ public struct RecordAndAISheetView: View {
             .presentationCornerRadius(24)
             #endif
         }
-        .alert("AI 识别失败", isPresented: Binding(
+        .alert(MimiL10n.string("AI 识别失败"), isPresented: Binding(
             get: { recognitionFailureText != nil },
             set: { if !$0 { recognitionFailureText = nil } }
         )) {
-            Button("好") { recognitionFailureText = nil }
+            Button(MimiL10n.string("好")) { recognitionFailureText = nil }
         } message: {
             Text(recognitionFailureText ?? "")
         }
@@ -262,7 +262,7 @@ public struct RecordAndAISheetView: View {
         HStack(spacing: 10) {
             MimiAskMascotView(size: 32)
 
-            Text("来记笔账吧")
+            Text("来记笔账吧", bundle: .module)
                 .mimiFont(17, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
 
@@ -283,7 +283,7 @@ public struct RecordAndAISheetView: View {
                     .mimiMinTouchTarget()
             }
             .mimiPressable()
-            .accessibilityLabel("关闭")
+            .accessibilityLabel(MimiL10n.string("关闭"))
         }
     }
 
@@ -327,14 +327,14 @@ public struct RecordAndAISheetView: View {
                         .mimiMinTouchTarget()
                 }
                 .mimiPressable()
-                .accessibilityLabel("关闭")
+                .accessibilityLabel(MimiL10n.string("关闭"))
                 BookkeepingModeSwitchButton(title: "手动记账") {
                     withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                         isAIMode = false
                     }
                 }
                 Spacer()
-                Text("任何事都能问我")
+                Text("任何事都能问我", bundle: .module)
                     .mimiFont(16, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
@@ -395,7 +395,7 @@ public struct RecordAndAISheetView: View {
                         .mimiMinTouchTarget()
                 }
                 .mimiPressable()
-                .accessibilityLabel("关闭")
+                .accessibilityLabel(MimiL10n.string("关闭"))
             }
         }
     }
@@ -452,7 +452,7 @@ public struct RecordAndAISheetView: View {
                         }
 
                         Menu {
-                            Button("不选账户") { selectedAccountName = "不选账户" }
+                            Button(MimiL10n.string("不选账户")) { selectedAccountName = "不选账户" }
                             ForEach(store.accounts) { acc in
                                 Button("\(acc.name) (\(MimiTheme.formatRM(acc.balance)))") {
                                     selectedAccountName = acc.name
@@ -527,7 +527,7 @@ public struct RecordAndAISheetView: View {
 
             if showDiscountInput, selectedTab != .transfer {
                 HStack(spacing: 10) {
-                    Text("优惠金额")
+                    Text("优惠金额", bundle: .module)
                         .mimiFont(13, weight: .medium)
                         .foregroundColor(MimiTheme.textSecondary)
                     TextField("0.00", text: $discountAmountText)
@@ -539,7 +539,7 @@ public struct RecordAndAISheetView: View {
                         .padding(.horizontal, 10)
                         .padding(.vertical, 8)
                         .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.fillSubtle))
-                    Button("完成") {
+                    Button(MimiL10n.string("完成")) {
                         showDiscountInput = false
                     }
                     .mimiFont(13, weight: .semibold)
@@ -1180,7 +1180,7 @@ public struct RecordAndAISheetView: View {
                 Button {
                     aiEngine.cancelDrafts(messageId: message.id)
                 } label: {
-                    Text("取消")
+                    Text("取消", bundle: .module)
                         .mimiFont(13, weight: .semibold)
                         .foregroundColor(MimiTheme.textSecondary)
                         .frame(maxWidth: .infinity)
@@ -1192,7 +1192,7 @@ public struct RecordAndAISheetView: View {
                 Button {
                     aiEngine.confirmDrafts(messageId: message.id, in: store)
                 } label: {
-                    Text("确认记账")
+                    Text("确认记账", bundle: .module)
                         .mimiFont(13, weight: .semibold)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -1219,13 +1219,13 @@ public struct RecordAndAISheetView: View {
                     case .pendingAnswer:
                         HStack(spacing: 6) {
                             MimiAskMascotView(size: 22)
-                            Text("咪咪思考中…")
+                            Text("咪咪思考中…", bundle: .module)
                                 .mimiFont(14, weight: .medium)
                                 .foregroundColor(MimiTheme.expenseBlue)
                         }
                         .padding(.vertical, 4)
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel("咪咪思考中")
+                        .accessibilityLabel(MimiL10n.string("咪咪思考中"))
 
                     case .text(let text):
                         if message.isUser {
@@ -1253,7 +1253,7 @@ public struct RecordAndAISheetView: View {
                             categoryTableBox(rows: expenseRows)
 
                             if !incomeRows.isEmpty {
-                                Text("标准收入分类如下：")
+                                Text("标准收入分类如下：", bundle: .module)
                                     .mimiFont(13, weight: .bold)
                                     .foregroundColor(MimiTheme.textPrimary)
                                     .padding(.top, 4)
@@ -1309,10 +1309,10 @@ public struct RecordAndAISheetView: View {
     private func categoryTableBox(rows: [(String, String)]) -> some View {
         VStack(spacing: 0) {
             HStack {
-                Text("一级分类")
+                Text("一级分类", bundle: .module)
                     .mimiFont(12, weight: .bold)
                     .frame(width: 82, alignment: .leading)
-                Text("二级分类")
+                Text("二级分类", bundle: .module)
                     .mimiFont(12, weight: .bold)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }

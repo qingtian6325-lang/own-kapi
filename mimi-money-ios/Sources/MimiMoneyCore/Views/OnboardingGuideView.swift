@@ -32,14 +32,14 @@ public struct OnboardingGuideView: View {
                 bottomBar
             }
             .background(MimiTheme.background.ignoresSafeArea())
-            .navigationTitle("新手指南")
+            .navigationTitle(MimiL10n.string("新手指南"))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("跳过") { finish(skip: true) }
-                        .accessibilityLabel("跳过新手指南")
+                    Button(MimiL10n.string("跳过")) { finish(skip: true) }
+                        .accessibilityLabel(MimiL10n.string("跳过新手指南"))
                 }
             }
             .onAppear {
@@ -168,7 +168,7 @@ public struct OnboardingGuideView: View {
     private var bottomBar: some View {
         HStack(spacing: 12) {
             if step > 0 {
-                Button("上一步") {
+                Button(MimiL10n.string("上一步")) {
                     withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) { step -= 1 }
                 }
                 .mimiFont(15, weight: .semibold)

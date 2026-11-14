@@ -21,7 +21,10 @@ public enum TransactionType: String, CaseIterable, Codable, Sendable {
     case income = "收入"
     case transfer = "转账"
 
+    /// Stable storage / matching key (Chinese). Prefer `localizedTitle` for UI.
     public var title: String { rawValue }
+
+    public var localizedTitle: String { MimiL10n.string(rawValue) }
 }
 
 public struct SubCategory: Identifiable, Codable, Equatable, Sendable {
