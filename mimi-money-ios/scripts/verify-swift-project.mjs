@@ -461,10 +461,36 @@ function verifyTask6() {
     'suppressSheetDismiss',
     'presentationContentInteraction(.scrolls)',
     'BookkeepingSheetSwipePolicy',
-    'tabViewStyle(.page'
+    'tabViewStyle(.page',
+    'presentationDetents([.large])'
   ]) {
     assertContains(recordSheet, label, 'RecordAndAISheetView.swift');
   }
+  // v1.3.16: bookkeeping must open full-height, not half-sheet over 记录页.
+  if (recordSheet.includes('presentationDetents([.medium, .large])')) {
+    throw new Error(
+      'RecordAndAISheetView.swift: do not use [.medium, .large] — opens as half-sheet; use [.large]'
+    );
+  }
+  // v1.3.16 bill-detail category picker (标准分类 sheet).
+  const billDetailCategory = assertFileExists('Sources/MimiMoneyCore/Views/BillDetailSheetView.swift');
+  assertContains(billDetailCategory, 'showCategoryPicker', 'BillDetailSheetView.swift');
+  assertContains(billDetailCategory, 'BillCategoryPickerSheet', 'BillDetailSheetView.swift');
+  const categoryPicker = assertFileExists('Sources/MimiMoneyCore/Views/BillCategoryPickerSheet.swift');
+  checkBalancedBraces(categoryPicker, 'BillCategoryPickerSheet.swift');
+  for (const label of [
+    '标准分类',
+    '分类编辑',
+    '确认',
+    'BillCategorySelection',
+    'LazyVGrid'
+  ]) {
+    assertContains(categoryPicker, label, 'BillCategoryPickerSheet.swift');
+  }
+  const categorySelection = assertFileExists('Sources/MimiMoneyCore/Services/BillCategorySelection.swift');
+  assertContains(categorySelection, 'resolvedPath', 'BillCategorySelection.swift');
+  const categorySelectionTests = assertFileExists('Tests/MimiMoneyTests/BillCategorySelectionTests.swift');
+  assertContains(categorySelectionTests, 'testParsesPrimaryAndSecondaryPath', 'BillCategorySelectionTests.swift');
   // Regression: PageTabViewStyle is unavailable on macOS host unit tests.
   if (!/#if\s+os\(iOS\)[\s\S]{0,240}tabViewStyle\(\.page/.test(recordSheet)) {
     throw new Error(
@@ -788,7 +814,7 @@ function verifyTask7() {
   assertContains(root, 'public struct MimiRootContainerView: View', 'MimiRootContainerView.swift');
   assertContains(root, 'onOpenURL', 'MimiRootContainerView.swift');
   assertContains(root, 'ShortcutActionCoordinator.handleIncomingURL', 'MimiRootContainerView.swift');
-  assertContains(root, 'mimiInteractiveSheet()', 'MimiRootContainerView.swift');
+  assertContains(root, 'mimiInteractiveSheet(detents: [.large])', 'MimiRootContainerView.swift');
   assertContains(root, 'mimiEdgeSwipeBack', 'MimiRootContainerView.swift');
 
   // v1.3.14 global gesture polish: sheet swipe-down + edge-pop / overlay edge-swipe.
