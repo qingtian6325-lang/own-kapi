@@ -569,12 +569,12 @@ function verifyTask7() {
   assertContains(assets, 'editAccountRoute', 'AssetsAndAccountDetailView.swift');
   assertContains(assets, 'EditAccountSheetRoute', 'AssetsAndAccountDetailView.swift');
   assertContains(assetsNav, 'struct EditAccountSheetRoute', 'AssetsAccountNavigation.swift');
-  assertContains(assetsNavTests, 'testEditAccountSheetRouteIdentityUsesAccountId', 'AssetsAccountNavigationTests.swift');
 
   const assetsNavTests = assertFileExists('Tests/MimiMoneyTests/AssetsAccountNavigationTests.swift');
   checkBalancedBraces(assetsNavTests, 'AssetsAccountNavigationTests.swift');
   assertContains(assetsNavTests, 'testLeftRightLeftAccountDrillDoesNotDismissAssets', 'AssetsAccountNavigationTests.swift');
   assertContains(assetsNavTests, 'testExpenseTransferExpenseEntryRouteNeverClearsAccount', 'AssetsAccountNavigationTests.swift');
+  assertContains(assetsNavTests, 'testEditAccountSheetRouteIdentityUsesAccountId', 'AssetsAccountNavigationTests.swift');
 
   const budget = assertFileExists('Sources/MimiMoneyCore/Views/BudgetManagementView.swift');
   checkBalancedBraces(budget, 'BudgetManagementView.swift');
