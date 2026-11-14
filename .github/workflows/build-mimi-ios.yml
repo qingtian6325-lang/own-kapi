@@ -18,8 +18,12 @@ jobs:
   test-and-package-ios:
     name: Swift Test & Package iOS IPA
     runs-on: macos-latest
+    # pages + id-token: upload Pages artifact after IPA; deploy job consumes it.
+    # GITHUB_TOKEN chore(sidestore) pushes do NOT trigger sidestore-pages.yml.
     permissions:
       contents: write
+      pages: write
+      id-token: write
     defaults:
       run:
         working-directory: mimi-money-ios
@@ -401,7 +405,8 @@ jobs:
           fi
 
       - name: Update SideStore source JSON
-        # Commits chore(sidestore): … which triggers sidestore-pages.yml to refresh Pages.
+        # Upserts apps.json then commits to main (raw URL). Pages artifact upload follows;
+        # deploy-sidestore-pages job publishes it (GITHUB_TOKEN chore ≠ workflow trigger).
         if: >
           github.event_name == 'push' && github.ref == 'refs/heads/main' &&
           !startsWith(github.event.head_commit.message, 'chore(sidestore):')
@@ -460,3 +465,37 @@ jobs:
             git commit -m "chore(sidestore): publish v${APP_VERSION} in apps.json"
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
+
+      - name: Upload SideStore Pages artifact
+        # Artifact is the local sidestore/ AFTER upsert (includes new version).
+        # deploy-sidestore-pages job publishes it; do not rely on chore commit triggers.
+        if: >
+          github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+          !startsWith(github.event.head_commit.message, 'chore(sidestore):')
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: sidestore
+
+  deploy-sidestore-pages:
+    name: Deploy SideStore Pages
+    needs: test-and-package-ios
+    if: >
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      !startsWith(github.event.head_commit.message, 'chore(sidestore):')
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages-sidestore
+      cancel-in-progress: true
+    steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
