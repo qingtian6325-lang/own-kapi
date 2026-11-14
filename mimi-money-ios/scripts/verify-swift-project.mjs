@@ -510,10 +510,25 @@ function verifyTask7() {
     assertContains(stats, label, 'MimiStatsView.swift');
   }
 
+  const assetsNav = assertFileExists('Sources/MimiMoneyCore/Services/AssetsAccountNavigation.swift');
+  checkBalancedBraces(assetsNav, 'AssetsAccountNavigation.swift');
+  for (const label of [
+    'public struct AssetsAccountNavigationState',
+    'case back',
+    'dismissAssetsOverlay',
+    'case openEntry',
+    'case dismissEntry'
+  ]) {
+    assertContains(assetsNav, label, 'AssetsAccountNavigation.swift');
+  }
+
   const assets = assertFileExists('Sources/MimiMoneyCore/Views/AssetsAndAccountDetailView.swift');
   checkBalancedBraces(assets, 'AssetsAndAccountDetailView.swift');
   for (const label of [
     'public struct AssetsAndAccountDetailView: View',
+    'AssetsAccountNavigationState',
+    'dispatch(.back)',
+    'entryRouteBinding',
     '净资产',
     '待报销',
     '账户详情',
@@ -525,6 +540,15 @@ function verifyTask7() {
   ]) {
     assertContains(assets, label, 'AssetsAndAccountDetailView.swift');
   }
+  // Regression: Bool entry sheet + shared cancellationAction caused stuck-on-记账.
+  if (assets.includes('showAccountEntrySheet')) {
+    throw new Error('AssetsAndAccountDetailView.swift must not use showAccountEntrySheet Bool sheet (use entryRoute item sheet)');
+  }
+
+  const assetsNavTests = assertFileExists('Tests/MimiMoneyTests/AssetsAccountNavigationTests.swift');
+  checkBalancedBraces(assetsNavTests, 'AssetsAccountNavigationTests.swift');
+  assertContains(assetsNavTests, 'testLeftRightLeftAccountDrillDoesNotDismissAssets', 'AssetsAccountNavigationTests.swift');
+  assertContains(assetsNavTests, 'testExpenseTransferExpenseEntryRouteNeverClearsAccount', 'AssetsAccountNavigationTests.swift');
 
   const budget = assertFileExists('Sources/MimiMoneyCore/Views/BudgetManagementView.swift');
   checkBalancedBraces(budget, 'BudgetManagementView.swift');
