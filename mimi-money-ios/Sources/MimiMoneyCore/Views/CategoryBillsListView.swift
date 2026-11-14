@@ -56,7 +56,7 @@ public struct CategoryBillsListView: View {
     }
 
     private var previousMonthTotal: Double {
-        var comps = DateComponents(year: year, month: month, day: 1)
+        let comps = DateComponents(year: year, month: month, day: 1)
         guard let thisMonth = cal.date(from: comps),
               let prev = cal.date(byAdding: .month, value: -1, to: thisMonth) else { return 0 }
         let py = cal.component(.year, from: prev)

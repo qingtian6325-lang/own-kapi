@@ -34,8 +34,34 @@ public struct SideDrawerMenuView: View {
         self.onSelectDestination = onSelectDestination
     }
 
+    private var heatmapYear: Int {
+        Calendar.current.component(.year, from: Date())
+    }
+
+    private var heatmapMonth: Int {
+        Calendar.current.component(.month, from: Date())
+    }
+
     private var monthDayCells: [CalendarDaySummary] {
-        DynamicBudgetEngine.buildMonthDayCells(year: 2026, month: 11, transactions: store.transactions)
+        DynamicBudgetEngine.buildMonthDayCells(
+            year: heatmapYear,
+            month: heatmapMonth,
+            transactions: store.transactions
+        )
+    }
+
+    private var heatmapMonthTitle: String {
+        "\(heatmapYear)年\(heatmapMonth)月"
+    }
+
+    private var heatmapLeadingBlanks: Int {
+        let cal = Calendar(identifier: .gregorian)
+        guard let first = cal.date(from: DateComponents(year: heatmapYear, month: heatmapMonth, day: 1)) else {
+            return 0
+        }
+        // Week starts Monday: Sun=1 → 6 blanks, Mon=2 → 0 blanks
+        let weekday = cal.component(.weekday, from: first)
+        return (weekday + 5) % 7
     }
 
     private var threeColumnGrid: [GridItem] {
@@ -167,7 +193,7 @@ public struct SideDrawerMenuView: View {
             openDestination(.calendar)
         } label: {
             VStack(alignment: .leading, spacing: 12) {
-                Text("November 2026")
+                Text(heatmapMonthTitle)
                     .mimiFont(14, weight: .bold, design: .rounded)
                     .foregroundColor(MimiTheme.textPrimary)
 
@@ -175,8 +201,7 @@ public struct SideDrawerMenuView: View {
                     columns: Array(repeating: GridItem(.flexible(), spacing: 3), count: 7),
                     spacing: 3
                 ) {
-                    // 2026-11-01 is Sunday; week starts Monday → 6 leading blanks
-                    ForEach(0..<6, id: \.self) { _ in
+                    ForEach(0..<heatmapLeadingBlanks, id: \.self) { _ in
                         Color.clear
                             .frame(height: MimiTheme.drawerHeatmapCellHeight)
                     }

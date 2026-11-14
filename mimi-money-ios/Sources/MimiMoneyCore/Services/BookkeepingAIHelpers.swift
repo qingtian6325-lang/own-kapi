@@ -102,7 +102,7 @@ let incomeRows: [(String, String)] = DefaultCatalog.standardIncomeCategories().m
 let subs = group.subCategories.map(\.name).joined(separator: "、")
 return (group.name, subs.isEmpty ? "（无二级）" : subs)
 }
-let customNote = "标准收入分类如下：\n另外你还自建了「家用」「车贷」两个支出分类和「别人转账」这个收入分类 😊\n你可以在左侧菜单 →「分类管理」中随时新增、编辑或长按排序分类。"
+let customNote = "标准收入分类如下：\n另外你还自建了「家用」「车贷」两个支出分类和「别人转账」这个收入分类 😊\n你可以在左侧菜单 →「分类管理」中随时新增、编辑分类；点右上角 ⋯ 进入排序模式用上下箭头调整顺序。"
 return [
 .text("小金主，咪咪记账的标准支出分类如下："),
 .categoryTable(expenseRows: expenseRows, incomeRows: incomeRows, customNote: customNote)

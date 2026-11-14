@@ -14,6 +14,17 @@ public struct CategoryManagementView: View {
     @State private var selectedStickerEmoji: String = "🍮"
     @State private var newSubcategoryName: String = ""
     @State private var isAddingSubcategory: Bool = false
+    @State private var renameTarget: CategoryRenameTarget?
+    @State private var renameText: String = ""
+    @State private var deletePrimaryConfirmId: String?
+    @State private var isReorderMode: Bool = false
+
+    private struct CategoryRenameTarget: Identifiable {
+        enum Kind { case primary, subcategory(groupId: String) }
+        let id: String
+        let kind: Kind
+        let currentName: String
+    }
 
     public init(store: MimiStore, onDismiss: @escaping () -> Void) {
         self.store = store
@@ -36,8 +47,30 @@ public struct CategoryManagementView: View {
                                     .mimiFont(16, weight: .bold)
                                     .foregroundColor(MimiTheme.textPrimary)
                                 Spacer()
-                                Image(systemName: "ellipsis")
-                                    .foregroundColor(MimiTheme.textMuted)
+                                Menu {
+                                    Button {
+                                        newCategoryName = ""
+                                        useFirstCharAsIcon = true
+                                        selectedStickerEmoji = "🍮"
+                                        showAddPrimarySheet = true
+                                    } label: {
+                                        Label("添加一级分类", systemImage: "plus")
+                                    }
+                                    Button {
+                                        isReorderMode.toggle()
+                                    } label: {
+                                        Label(
+                                            isReorderMode ? "完成排序" : "排序分类",
+                                            systemImage: isReorderMode ? "checkmark" : "arrow.up.arrow.down"
+                                        )
+                                    }
+                                } label: {
+                                    Image(systemName: "ellipsis")
+                                        .foregroundColor(MimiTheme.textMuted)
+                                        .frame(width: MimiHIG.minTouch, height: MimiHIG.minTouch)
+                                        .contentShape(Rectangle())
+                                }
+                                .accessibilityLabel("分类更多操作")
                             }
                             Text("支出 \(store.expenseCategories.count) 类 | 收入 \(store.incomeCategories.count) 类")
                                 .mimiFont(12)
@@ -73,38 +106,89 @@ public struct CategoryManagementView: View {
 
                         // 4-column category grid (gold 标准分类 modal)
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 16) {
-                            ForEach(activeGroups) { group in
-                                Button {
-                                    selectedGroupForSubSheet = group
-                                } label: {
-                                    VStack(spacing: 6) {
-                                        ZStack(alignment: .bottomTrailing) {
-                                            MimiStickerIconView(
-                                                iconName: group.displayBadgeToken,
-                                                categoryName: group.name,
-                                                transactionType: selectedTab,
-                                                useFirstCharIcon: group.useFirstCharIcon,
-                                                size: 48
-                                            )
-                                            if !group.subcategories.isEmpty {
-                                                Text("\(group.subcategories.count)")
-                                                    .mimiFont(9, weight: .bold)
-                                                    .foregroundColor(.white)
-                                                    .padding(.horizontal, 4)
-                                                    .padding(.vertical, 1)
-                                                    .background(Capsule().fill(MimiTheme.textMuted))
-                                                    .offset(x: 4, y: 4)
+                            ForEach(Array(activeGroups.enumerated()), id: \.element.id) { index, group in
+                                VStack(spacing: 6) {
+                                    Button {
+                                        selectedGroupForSubSheet = group
+                                    } label: {
+                                        VStack(spacing: 6) {
+                                            ZStack(alignment: .bottomTrailing) {
+                                                MimiStickerIconView(
+                                                    iconName: group.displayBadgeToken,
+                                                    categoryName: group.name,
+                                                    transactionType: selectedTab,
+                                                    useFirstCharIcon: group.useFirstCharIcon,
+                                                    size: 48
+                                                )
+                                                if !group.subcategories.isEmpty {
+                                                    Text("\(group.subcategories.count)")
+                                                        .mimiFont(9, weight: .bold)
+                                                        .foregroundColor(.white)
+                                                        .padding(.horizontal, 4)
+                                                        .padding(.vertical, 1)
+                                                        .background(Capsule().fill(MimiTheme.textMuted))
+                                                        .offset(x: 4, y: 4)
+                                                }
                                             }
+                                            Text(group.name)
+                                                .mimiFont(11, weight: .medium)
+                                                .foregroundColor(MimiTheme.textPrimary)
+                                                .lineLimit(1)
+                                                .minimumScaleFactor(0.8)
                                         }
-                                        Text(group.name)
-                                            .mimiFont(11, weight: .medium)
-                                            .foregroundColor(MimiTheme.textPrimary)
-                                            .lineLimit(1)
-                                            .minimumScaleFactor(0.8)
+                                        .frame(maxWidth: .infinity)
                                     }
-                                    .frame(maxWidth: .infinity)
+                                    .mimiPressable()
+
+                                    if isReorderMode {
+                                        HStack(spacing: 10) {
+                                            Button {
+                                                store.movePrimaryCategory(
+                                                    type: selectedTab,
+                                                    from: index,
+                                                    to: max(0, index - 1)
+                                                )
+                                            } label: {
+                                                Image(systemName: "chevron.up")
+                                                    .mimiFont(12, weight: .bold)
+                                                    .frame(width: 28, height: 28)
+                                            }
+                                            .disabled(index == 0)
+                                            .mimiPressable()
+                                            .accessibilityLabel("上移 \(group.name)")
+
+                                            Button {
+                                                store.movePrimaryCategory(
+                                                    type: selectedTab,
+                                                    from: index,
+                                                    to: min(activeGroups.count - 1, index + 1)
+                                                )
+                                            } label: {
+                                                Image(systemName: "chevron.down")
+                                                    .mimiFont(12, weight: .bold)
+                                                    .frame(width: 28, height: 28)
+                                            }
+                                            .disabled(index >= activeGroups.count - 1)
+                                            .mimiPressable()
+                                            .accessibilityLabel("下移 \(group.name)")
+                                        }
+                                        .foregroundColor(MimiTheme.expenseBlue)
+                                    }
                                 }
-                                .mimiPressable()
+                                .contextMenu {
+                                    Button("重命名") {
+                                        renameText = group.name
+                                        renameTarget = CategoryRenameTarget(
+                                            id: group.id,
+                                            kind: .primary,
+                                            currentName: group.name
+                                        )
+                                    }
+                                    Button("删除", role: .destructive) {
+                                        deletePrimaryConfirmId = group.id
+                                    }
+                                    .disabled(activeGroups.count <= 1)
+                                }
                             }
 
                             Button {
@@ -133,7 +217,7 @@ public struct CategoryManagementView: View {
                         .padding(16)
                         .background(RoundedRectangle(cornerRadius: 18).fill(MimiTheme.cardBackground))
 
-                        Text("点击编辑，长按排序")
+                        Text(isReorderMode ? "使用上下箭头调整分类顺序" : "点击分类管理二级；⋯ 可添加或排序；长按分类可重命名/删除")
                             .mimiFont(12)
                             .foregroundColor(MimiTheme.textMuted)
                             .frame(maxWidth: .infinity)
@@ -179,13 +263,63 @@ public struct CategoryManagementView: View {
                     .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
             }
+            .alert(
+                "重命名分类",
+                isPresented: Binding(
+                    get: { renameTarget != nil },
+                    set: { if !$0 { renameTarget = nil } }
+                )
+            ) {
+                TextField("名称", text: $renameText)
+                Button("保存") { commitRename() }
+                Button("取消", role: .cancel) { renameTarget = nil }
+            } message: {
+                Text("修改后会更新显示名称。")
+            }
+            .alert(
+                "删除一级分类？",
+                isPresented: Binding(
+                    get: { deletePrimaryConfirmId != nil },
+                    set: { if !$0 { deletePrimaryConfirmId = nil } }
+                )
+            ) {
+                Button("删除", role: .destructive) {
+                    if let id = deletePrimaryConfirmId {
+                        store.deletePrimaryCategory(id: id, type: selectedTab)
+                    }
+                    deletePrimaryConfirmId = nil
+                }
+                Button("取消", role: .cancel) { deletePrimaryConfirmId = nil }
+            } message: {
+                Text("已有账单不会被删除，只是不再挂在此分类下展示。")
+            }
         }
+    }
+
+    private func commitRename() {
+        guard let target = renameTarget else { return }
+        let trimmed = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            renameTarget = nil
+            return
+        }
+        switch target.kind {
+        case .primary:
+            store.renamePrimaryCategory(id: target.id, type: selectedTab, newName: trimmed)
+        case .subcategory(let groupId):
+            store.renameSubcategory(groupId: groupId, subId: target.id, type: selectedTab, newName: trimmed)
+        }
+        renameTarget = nil
     }
 
     // MARK: - Subcategory Management Bottom Sheet (gold: icon + name + … / gray rows)
 
     private func subcategoryManagerSheet(for group: CategoryGroup) -> some View {
-        VStack(spacing: 14) {
+        let liveGroup = (selectedTab == .expense
+            ? store.expenseCategories
+            : store.incomeCategories).first(where: { $0.id == group.id }) ?? group
+
+        return VStack(spacing: 14) {
             Capsule()
                 .fill(MimiTheme.strokeSubtle)
                 .frame(width: 36, height: 4)
@@ -193,25 +327,48 @@ public struct CategoryManagementView: View {
 
             HStack(spacing: 12) {
                 MimiStickerIconView(
-                    iconName: group.displayBadgeToken,
-                    categoryName: group.name,
+                    iconName: liveGroup.displayBadgeToken,
+                    categoryName: liveGroup.name,
                     transactionType: selectedTab,
-                    useFirstCharIcon: group.useFirstCharIcon,
+                    useFirstCharIcon: liveGroup.useFirstCharIcon,
                     size: 42
                 )
-                Text(group.name)
+                Text(liveGroup.name)
                     .mimiFont(18, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
-                Image(systemName: "ellipsis")
-                    .mimiFont(14, weight: .semibold)
-                    .foregroundColor(MimiTheme.iconInactive)
+                Menu {
+                    Button("重命名一级分类") {
+                        renameText = liveGroup.name
+                        renameTarget = CategoryRenameTarget(
+                            id: liveGroup.id,
+                            kind: .primary,
+                            currentName: liveGroup.name
+                        )
+                    }
+                    Button("添加二级分类") {
+                        isAddingSubcategory = true
+                        newSubcategoryName = ""
+                    }
+                    Button("删除一级分类", role: .destructive) {
+                        deletePrimaryConfirmId = liveGroup.id
+                        selectedGroupForSubSheet = nil
+                    }
+                    .disabled(activeGroups.count <= 1)
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .mimiFont(14, weight: .semibold)
+                        .foregroundColor(MimiTheme.iconInactive)
+                        .frame(width: MimiHIG.minTouch, height: MimiHIG.minTouch)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel("一级分类操作")
             }
             .padding(.horizontal, 20)
 
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 8) {
-                    ForEach(group.subcategories) { sub in
+                    ForEach(Array(liveGroup.subcategories.enumerated()), id: \.element.id) { index, sub in
                         HStack(spacing: 10) {
                             MimiStickerIconView(
                                 iconName: sub.iconName,
@@ -220,19 +377,86 @@ public struct CategoryManagementView: View {
                                 useFirstCharIcon: sub.useFirstCharIcon,
                                 size: 34
                             )
-                            Text(sub.name)
-                                .mimiFont(15, weight: .medium)
-                                .foregroundColor(MimiTheme.textPrimary)
-                            Image(systemName: "pencil")
-                                .mimiFont(11, weight: .medium)
-                                .foregroundColor(MimiTheme.iconInactive)
+                            Button {
+                                renameText = sub.name
+                                renameTarget = CategoryRenameTarget(
+                                    id: sub.id,
+                                    kind: .subcategory(groupId: liveGroup.id),
+                                    currentName: sub.name
+                                )
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Text(sub.name)
+                                        .mimiFont(15, weight: .medium)
+                                        .foregroundColor(MimiTheme.textPrimary)
+                                    Image(systemName: "pencil")
+                                        .mimiFont(11, weight: .medium)
+                                        .foregroundColor(MimiTheme.iconInactive)
+                                }
+                            }
+                            .mimiPressable()
+                            .accessibilityLabel("重命名 \(sub.name)")
+
                             Spacer(minLength: 8)
-                            Image(systemName: "line.3.horizontal")
-                                .mimiFont(13, weight: .semibold)
-                                .foregroundColor(MimiTheme.iconInactive)
-                            Image(systemName: "ellipsis")
-                                .mimiFont(13, weight: .semibold)
-                                .foregroundColor(MimiTheme.iconInactive)
+
+                            Button {
+                                store.moveSubcategory(
+                                    groupId: liveGroup.id,
+                                    type: selectedTab,
+                                    from: index,
+                                    to: max(0, index - 1)
+                                )
+                            } label: {
+                                Image(systemName: "chevron.up")
+                                    .mimiFont(12, weight: .semibold)
+                                    .foregroundColor(MimiTheme.iconInactive)
+                                    .frame(width: 28, height: 28)
+                            }
+                            .disabled(index == 0)
+                            .mimiPressable()
+                            .accessibilityLabel("上移")
+
+                            Button {
+                                store.moveSubcategory(
+                                    groupId: liveGroup.id,
+                                    type: selectedTab,
+                                    from: index,
+                                    to: min(liveGroup.subcategories.count - 1, index + 1)
+                                )
+                            } label: {
+                                Image(systemName: "chevron.down")
+                                    .mimiFont(12, weight: .semibold)
+                                    .foregroundColor(MimiTheme.iconInactive)
+                                    .frame(width: 28, height: 28)
+                            }
+                            .disabled(index >= liveGroup.subcategories.count - 1)
+                            .mimiPressable()
+                            .accessibilityLabel("下移")
+
+                            Menu {
+                                Button("重命名") {
+                                    renameText = sub.name
+                                    renameTarget = CategoryRenameTarget(
+                                        id: sub.id,
+                                        kind: .subcategory(groupId: liveGroup.id),
+                                        currentName: sub.name
+                                    )
+                                }
+                                Button("删除", role: .destructive) {
+                                    store.deleteSubcategory(
+                                        groupId: liveGroup.id,
+                                        subId: sub.id,
+                                        type: selectedTab
+                                    )
+                                }
+                            } label: {
+                                Image(systemName: "ellipsis")
+                                    .mimiFont(13, weight: .semibold)
+                                    .foregroundColor(MimiTheme.iconInactive)
+                                    .frame(width: MimiHIG.minTouch, height: MimiHIG.minTouch)
+                                    .contentShape(Rectangle())
+                            }
+                            .accessibilityLabel("二级分类操作")
                         }
                         .padding(.horizontal, 14)
                         .padding(.vertical, 12)
@@ -244,7 +468,7 @@ public struct CategoryManagementView: View {
                             TextField("输入二级分类名称", text: $newSubcategoryName)
                                 .mimiFont(14)
                             Button("添加") {
-                                commitNewSubcategory(to: group)
+                                commitNewSubcategory(to: liveGroup)
                             }
                             .mimiFont(14, weight: .semibold)
                             .foregroundColor(MimiTheme.expenseBlue)
@@ -257,7 +481,7 @@ public struct CategoryManagementView: View {
 
                     Button {
                         if isAddingSubcategory {
-                            commitNewSubcategory(to: group)
+                            commitNewSubcategory(to: liveGroup)
                         } else {
                             isAddingSubcategory = true
                             newSubcategoryName = ""

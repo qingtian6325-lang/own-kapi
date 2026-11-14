@@ -2,6 +2,7 @@ import SwiftUI
 
 public struct AssetsAndAccountDetailView: View {
     @ObservedObject public var store: MimiStore
+    @ObservedObject public var aiEngine: MimiAIEngine
     public var onDismiss: () -> Void
 
     @State private var selectedAccountID: String?
@@ -13,10 +14,62 @@ public struct AssetsAndAccountDetailView: View {
     @State private var newAccountName: String = ""
     @State private var newAccountBalance: String = ""
     @State private var billForDetail: TransactionItem? = nil
+    @State private var showAccountEntrySheet: Bool = false
+    @State private var accountEntryTab: TransactionType = .expense
+    @State private var accountEntryAccountName: String = ""
+    /// Keys: `"yyyy-M"` — months whose detail/bill lists are collapsed.
+    @State private var collapsedMonthKeys: Set<String> = []
+    @State private var showEditAccountSheet: Bool = false
+    @State private var editingAccountId: String? = nil
+    @State private var showPendingReimbursementSheet: Bool = false
 
-    public init(store: MimiStore, onDismiss: @escaping () -> Void) {
+    public init(store: MimiStore, aiEngine: MimiAIEngine, onDismiss: @escaping () -> Void) {
         self.store = store
+        self.aiEngine = aiEngine
         self.onDismiss = onDismiss
+    }
+
+    private func monthKey(from date: Date) -> String {
+        let cal = Calendar(identifier: .gregorian)
+        let c = cal.dateComponents([.year, .month], from: date)
+        return "\(c.year ?? 0)-\(c.month ?? 0)"
+    }
+
+    private func monthTitle(year: Int, month: Int) -> String {
+        "\(year)年\(month)月"
+    }
+
+    private func isMonthExpanded(_ key: String) -> Bool {
+        !collapsedMonthKeys.contains(key)
+    }
+
+    private func toggleMonthExpanded(_ key: String) {
+        if collapsedMonthKeys.contains(key) {
+            collapsedMonthKeys.remove(key)
+        } else {
+            collapsedMonthKeys.insert(key)
+        }
+    }
+
+    private func billSecondaryLine(for tx: TransactionItem) -> String {
+        let time = formattedBillTime(tx.date)
+        let detail: String = {
+            let note = tx.note.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !note.isEmpty { return note }
+            let party = tx.counterparty.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !party.isEmpty { return party }
+            return ""
+        }()
+        return detail.isEmpty ? time : "\(time) | \(detail)"
+    }
+
+    private func billCategoryTitle(for tx: TransactionItem) -> String {
+        if tx.type == .transfer { return "转账" }
+        let parts = tx.categoryPath
+            .components(separatedBy: "-")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        return parts.last ?? tx.categoryPath
     }
 
     public var body: some View {
@@ -69,6 +122,42 @@ public struct AssetsAndAccountDetailView: View {
                 BillDetailSheetView(store: store, transaction: tx) {
                     billForDetail = nil
                 }
+            }
+            .sheet(isPresented: $showAccountEntrySheet) {
+                RecordAndAISheetView(
+                    store: store,
+                    aiEngine: aiEngine,
+                    initialAIMode: false,
+                    initialTab: accountEntryTab,
+                    initialAccountName: accountEntryAccountName,
+                    onDismiss: { showAccountEntrySheet = false },
+                    onOpenCategorySettings: {
+                        showAccountEntrySheet = false
+                        // Category manager is opened from root drawer; from assets entry just dismiss.
+                    },
+                    onEditRecognizedTransaction: { tx in
+                        showAccountEntrySheet = false
+                        billForDetail = tx
+                    }
+                )
+            }
+            .sheet(isPresented: $showEditAccountSheet) {
+                if let editingAccountId {
+                    EditAccountView(
+                        store: store,
+                        accountId: editingAccountId,
+                        onDismiss: { showEditAccountSheet = false },
+                        onDeleted: {
+                            if selectedAccountID == editingAccountId {
+                                selectedAccountID = nil
+                            }
+                            showEditAccountSheet = false
+                        }
+                    )
+                }
+            }
+            .sheet(isPresented: $showPendingReimbursementSheet) {
+                pendingReimbursementSheet
             }
             .sheet(isPresented: $showAddAccountSheet) {
                 NavigationStack {
@@ -169,21 +258,102 @@ public struct AssetsAndAccountDetailView: View {
     // MARK: - Reimbursement row (gold: single grey bar 待报销)
 
     private var reimbursementAndLendingRow: some View {
-        HStack {
-            Text("待报销")
-                .mimiFont(13, weight: .medium)
-                .foregroundColor(MimiTheme.textSecondary)
-            Spacer()
-            Text(MimiTheme.formatRM(store.pendingReimbursementAmount))
-                .mimiFont(15, weight: .bold, design: .rounded)
-                .foregroundColor(MimiTheme.textPrimary)
-            Image(systemName: "chevron.right")
-                .mimiFont(11, weight: .semibold)
-                .foregroundColor(MimiTheme.textMuted)
+        Button {
+            showPendingReimbursementSheet = true
+        } label: {
+            HStack {
+                Text("待报销")
+                    .mimiFont(13, weight: .medium)
+                    .foregroundColor(MimiTheme.textSecondary)
+                Spacer()
+                Text(MimiTheme.formatRM(store.pendingReimbursementAmount))
+                    .mimiFont(15, weight: .bold, design: .rounded)
+                    .foregroundColor(MimiTheme.textPrimary)
+                Image(systemName: "chevron.right")
+                    .mimiFont(11, weight: .semibold)
+                    .foregroundColor(MimiTheme.textMuted)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .frame(minHeight: MimiHIG.minTouch)
+            .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.surfaceMuted))
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.surfaceMuted))
+        .mimiPressable()
+        .accessibilityLabel("待报销 \(MimiTheme.formatRM(store.pendingReimbursementAmount))")
+        .accessibilityHint("查看并处理待报销账单")
+    }
+
+    private var pendingReimbursementSheet: some View {
+        NavigationStack {
+            Group {
+                let items = store.pendingReimbursementTransactions
+                if items.isEmpty && store.pendingReimbursementAmount < 0.009 {
+                    Text("暂无待报销账单。记账时打开「待报销」或打上「报销」标签即可汇总到这里。")
+                        .mimiFont(14)
+                        .foregroundColor(MimiTheme.textSecondary)
+                        .padding(24)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                } else {
+                    List {
+                        Section {
+                            HStack {
+                                Text("待报销合计")
+                                Spacer()
+                                Text(MimiTheme.formatRM(store.pendingReimbursementAmount))
+                                    .foregroundColor(MimiTheme.incomeOrange)
+                                    .mimiFont(16, weight: .bold, design: .rounded)
+                            }
+                        }
+                        ForEach(items) { tx in
+                            Button {
+                                showPendingReimbursementSheet = false
+                                billForDetail = tx
+                            } label: {
+                                HStack(spacing: 12) {
+                                    MimiStickerIconView(
+                                        iconName: tx.iconName,
+                                        categoryName: tx.categoryPath,
+                                        transactionType: tx.type,
+                                        size: 34
+                                    )
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(tx.categoryPath)
+                                            .mimiFont(14, weight: .semibold)
+                                            .foregroundColor(MimiTheme.textPrimary)
+                                        Text(tx.note.isEmpty ? store.accountName(for: tx.accountId) : tx.note)
+                                            .mimiFont(12)
+                                            .foregroundColor(MimiTheme.textMuted)
+                                            .lineLimit(1)
+                                    }
+                                    Spacer()
+                                    Text(MimiTheme.formatRM(tx.amount))
+                                        .mimiFont(15, weight: .bold, design: .rounded)
+                                        .foregroundColor(MimiTheme.expenseBlue)
+                                }
+                            }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button("已报销") {
+                                    store.clearPendingReimbursementTag(on: tx.id)
+                                }
+                                .tint(MimiTheme.balanceGreen)
+                            }
+                        }
+                    }
+                    .listStyle(.insetGrouped)
+                }
+            }
+            .background(MimiTheme.background.ignoresSafeArea())
+            .navigationTitle("待报销")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("关闭") { showPendingReimbursementSheet = false }
+                }
+            }
+        }
     }
 
     // MARK: - Account List Card (现金, CIMB, TNGewallet, PBBank)
@@ -209,10 +379,10 @@ public struct AssetsAndAccountDetailView: View {
                 .mimiPressable()
             }
 
-            ForEach(store.accounts) { account in
+            ForEach(store.accountsForDisplay) { account in
                 Button {
                     newBalanceInput = String(format: "%.2f", account.balance)
-                    detailTabMode = "明细"
+                    detailTabMode = "账单"
                     showBalanceEditSheet = false
                     selectedAccountID = account.id
                 } label: {
@@ -225,10 +395,26 @@ public struct AssetsAndAccountDetailView: View {
                         )
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(account.name)
-                                .mimiFont(15, weight: .semibold)
-                                .foregroundColor(MimiTheme.textPrimary)
-                            Text(account.subtitle)
+                            HStack(spacing: 6) {
+                                Text(account.name)
+                                    .mimiFont(15, weight: .semibold)
+                                    .foregroundColor(MimiTheme.textPrimary)
+                                if account.isSpecialFocus {
+                                    Image(systemName: "star.fill")
+                                        .mimiFont(10)
+                                        .foregroundColor(MimiTheme.incomeOrange)
+                                        .accessibilityLabel("特别关注")
+                                }
+                                if account.isDefaultAccount {
+                                    Text("默认")
+                                        .mimiFont(10, weight: .semibold)
+                                        .foregroundColor(MimiTheme.expenseBlue)
+                                        .padding(.horizontal, 5)
+                                        .padding(.vertical, 1)
+                                        .background(Capsule().fill(MimiTheme.tintBlueChip))
+                                }
+                            }
+                            Text(account.subtitle.isEmpty ? "自定义余额" : account.subtitle)
                                 .mimiFont(11)
                                 .foregroundColor(MimiTheme.textMuted)
                         }
@@ -247,7 +433,7 @@ public struct AssetsAndAccountDetailView: View {
                 }
                 .mimiPressable()
 
-                if account.id != store.accounts.last?.id {
+                if account.id != store.accountsForDisplay.last?.id {
                     Divider()
                 }
             }
@@ -262,8 +448,12 @@ public struct AssetsAndAccountDetailView: View {
     private func accountDetailSheet(for initialAccount: AccountItem) -> some View {
         let liveAccount = store.accounts.first(where: { $0.id == initialAccount.id }) ?? initialAccount
         let auditLogs = store.auditLogs(for: liveAccount.name)
-        let bills = store.transactions.filter {
-            $0.accountName == liveAccount.name || $0.accountId == liveAccount.id
+        let bills = store.transactions.filter { tx in
+            let isSource = tx.accountId == liveAccount.id
+                || tx.accountName == liveAccount.name
+            let isTarget = tx.targetAccountId == liveAccount.id
+                || tx.targetAccountName == liveAccount.name
+            return isSource || isTarget
         }
 
         return ScrollView(.vertical, showsIndicators: false) {
@@ -286,9 +476,19 @@ public struct AssetsAndAccountDetailView: View {
                                     .foregroundColor(MimiTheme.textSecondary)
                             }
                             Spacer()
-                            Image(systemName: "ellipsis")
-                                .mimiFont(14, weight: .semibold)
-                                .foregroundColor(MimiTheme.iconInactive)
+                            Button {
+                                editingAccountId = liveAccount.id
+                                showEditAccountSheet = true
+                            } label: {
+                                Image(systemName: "ellipsis")
+                                    .mimiFont(14, weight: .semibold)
+                                    .foregroundColor(MimiTheme.iconInactive)
+                                    .frame(width: MimiHIG.minTouch, height: MimiHIG.minTouch)
+                                    .contentShape(Rectangle())
+                            }
+                            .mimiPressable()
+                            .accessibilityLabel("编辑账户")
+                            .accessibilityHint("修改名称、图标与账户设置")
                         }
 
                         Path { path in
@@ -362,9 +562,15 @@ public struct AssetsAndAccountDetailView: View {
                         HStack(spacing: 10) {
                             accountActionPill(title: "记账", systemName: "plus") {
                                 showBalanceEditSheet = false
+                                accountEntryTab = .expense
+                                accountEntryAccountName = liveAccount.name
+                                showAccountEntrySheet = true
                             }
                             accountActionPill(title: "转账", systemName: "arrow.left.arrow.right") {
                                 showBalanceEditSheet = false
+                                accountEntryTab = .transfer
+                                accountEntryAccountName = liveAccount.name
+                                showAccountEntrySheet = true
                             }
                         }
                     }
@@ -375,7 +581,7 @@ public struct AssetsAndAccountDetailView: View {
                     )
 
                     HStack {
-                        Text(detailTabMode == "明细" ? "账户明细" : "账户账单")
+                        Text("账户明细")
                             .mimiFont(15, weight: .bold)
                             .foregroundColor(MimiTheme.textPrimary)
                         Spacer()
@@ -405,97 +611,13 @@ public struct AssetsAndAccountDetailView: View {
                     }
 
                     if detailTabMode == "明细" {
-                        HStack {
-                            Text("2026年11月")
-                                .mimiFont(13, weight: .semibold)
-                                .foregroundColor(MimiTheme.textSecondary)
-                            Image(systemName: "chevron.down")
-                                .mimiFont(10, weight: .bold)
-                                .foregroundColor(MimiTheme.textMuted)
-                            Spacer()
-                        }
-
-                        VStack(spacing: 0) {
-                            ForEach(Array(auditLogs.enumerated()), id: \.element.id) { idx, log in
-                                Button {
-                                    if let tx = store.transaction(forAuditLog: log) {
-                                        billForDetail = tx
-                                    }
-                                } label: {
-                                    HStack(alignment: .top, spacing: 10) {
-                                        Text(formattedBillTime(log.loggedAt))
-                                            .mimiFont(12, weight: .medium, design: .rounded)
-                                            .foregroundColor(MimiTheme.textMuted)
-                                            .frame(width: 36, alignment: .leading)
-
-                                        VStack(spacing: 0) {
-                                            Text(log.action.rawValue)
-                                                .mimiFont(10, weight: .bold)
-                                                .foregroundColor(.white)
-                                                .frame(width: 22, height: 22)
-                                                .background(Circle().fill(badgeColor(for: log.action)))
-                                            if idx < auditLogs.count - 1 {
-                                                Rectangle()
-                                                    .fill(MimiTheme.divider)
-                                                    .frame(width: 1)
-                                                    .frame(maxHeight: .infinity)
-                                            }
-                                        }
-                                        .frame(width: 22)
-
-                                        VStack(alignment: .leading, spacing: 3) {
-                                            Text(auditTypeLabel(log))
-                                                .mimiFont(13, weight: .semibold)
-                                                .foregroundColor(MimiTheme.textPrimary)
-                                            if !log.note.isEmpty {
-                                                Text(log.note)
-                                                    .mimiFont(12)
-                                                    .foregroundColor(MimiTheme.textSecondary)
-                                                    .lineLimit(2)
-                                            }
-                                            HStack(spacing: 4) {
-                                                Image(systemName: "calendar")
-                                                    .mimiFont(10)
-                                                Text("账单日期 \(formattedBillDate(log.billDate))")
-                                                    .mimiFont(11)
-                                            }
-                                            .foregroundColor(MimiTheme.textMuted)
-                                        }
-
-                                        Spacer(minLength: 6)
-
-                                        VStack(alignment: .trailing, spacing: 3) {
-                                            Text("余额: \(MimiTheme.formatRM(log.balanceAfter))")
-                                                .mimiFont(11, design: .rounded)
-                                                .foregroundColor(MimiTheme.textMuted)
-                                            Text(
-                                                log.deltaAmount >= 0
-                                                    ? MimiTheme.formatRM(log.deltaAmount)
-                                                    : "-\(MimiTheme.formatRM(abs(log.deltaAmount)))"
-                                            )
-                                            .mimiFont(15, weight: .bold, design: .rounded)
-                                            .strikethrough(log.action == .deleted && log.deltaAmount < 0, color: MimiTheme.textMuted)
-                                            .foregroundColor(
-                                                log.action == .deleted && log.deltaAmount < 0
-                                                    ? MimiTheme.textMuted
-                                                    : (log.deltaAmount >= 0 ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
-                                            )
-                                        }
-                                    }
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 12)
-                                    .contentShape(Rectangle())
-                                }
-                                .mimiPressable()
-                                .disabled(store.transaction(forAuditLog: log) == nil)
-                            }
-                        }
-                        .background(RoundedRectangle(cornerRadius: 18).fill(MimiTheme.cardBackground))
+                        accountAuditSection(logs: auditLogs)
                     } else {
-                        accountBillsSection(bills: bills)
+                        accountBillsSection(bills: bills, account: liveAccount)
                     }
                 }
                 .padding(16)
+                .padding(.bottom, 72)
             }
         .background(MimiTheme.background.ignoresSafeArea())
         .navigationTitle("账户详情")
@@ -514,6 +636,52 @@ public struct AssetsAndAccountDetailView: View {
                 }
             }
         }
+        .safeAreaInset(edge: .bottom) {
+            accountDetailAskBar(for: liveAccount)
+        }
+    }
+
+    private func accountDetailAskBar(for account: AccountItem) -> some View {
+        HStack(spacing: 10) {
+            Button {
+                accountEntryTab = .expense
+                accountEntryAccountName = account.name
+                showAccountEntrySheet = true
+            } label: {
+                HStack(spacing: 8) {
+                    MimiAskMascotView(size: 32)
+                    Text("任何事情都能问我")
+                        .mimiFont(13, weight: .medium)
+                        .foregroundColor(MimiTheme.textMuted)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .frame(minHeight: MimiHIG.minTouch)
+                .background(Capsule().fill(MimiTheme.cardBackground))
+                .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
+            }
+            .mimiPressable()
+            .accessibilityLabel("记账")
+
+            Button {
+                accountEntryTab = .expense
+                accountEntryAccountName = account.name
+                showAccountEntrySheet = true
+            } label: {
+                Image(systemName: "plus")
+                    .mimiFont(16, weight: .bold)
+                    .foregroundColor(MimiTheme.textPrimary)
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(MimiTheme.cardBackground))
+                    .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
+            }
+            .mimiPressable()
+            .accessibilityLabel("记一笔")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(MimiTheme.background.opacity(0.96).ignoresSafeArea(edges: .bottom))
     }
 
     private func accountActionPill(title: String, systemName: String, action: @escaping () -> Void) -> some View {
@@ -548,118 +716,306 @@ public struct AssetsAndAccountDetailView: View {
         return f.string(from: date)
     }
 
+    private func isOutflow(_ tx: TransactionItem, for account: AccountItem) -> Bool {
+        if tx.type == .expense { return true }
+        if tx.type == .income { return false }
+        // transfer: 本账户为转出 → 流出；转入 → 流入
+        let isSource = tx.accountId == account.id || tx.accountName == account.name
+        return isSource
+    }
+
     @ViewBuilder
-    private func accountBillsSection(bills: [TransactionItem]) -> some View {
-        let cal = Calendar(identifier: .gregorian)
-        let outflow = bills.filter { $0.type == .expense || $0.type == .transfer }.reduce(0.0) { $0 + $1.amount }
-        let inflow = bills.filter { $0.type == .income }.reduce(0.0) { $0 + $1.amount }
-        let grouped: [(key: DateComponents, items: [TransactionItem])] = {
-            let dict = Dictionary(grouping: bills) { tx in
-                cal.dateComponents([.year, .month, .day], from: tx.date)
-            }
+    private func accountAuditSection(logs: [AccountAuditLog]) -> some View {
+        let monthGroups: [(key: String, title: String, items: [AccountAuditLog])] = {
+            let dict = Dictionary(grouping: logs) { monthKey(from: $0.billDate) }
             return dict.keys.sorted {
-                let a = cal.date(from: $0) ?? .distantPast
-                let b = cal.date(from: $1) ?? .distantPast
-                return a > b
-            }.map { ($0, dict[$0] ?? []) }
+                let a = $0.split(separator: "-").compactMap { Int($0) }
+                let b = $1.split(separator: "-").compactMap { Int($0) }
+                let ay = a.first ?? 0, am = a.count > 1 ? a[1] : 0
+                let by = b.first ?? 0, bm = b.count > 1 ? b[1] : 0
+                if ay != by { return ay > by }
+                return am > bm
+            }.map { key in
+                let parts = key.split(separator: "-").compactMap { Int($0) }
+                let title = monthTitle(year: parts.first ?? 0, month: parts.count > 1 ? parts[1] : 0)
+                let items = (dict[key] ?? []).sorted { $0.loggedAt > $1.loggedAt }
+                return (key, title, items)
+            }
         }()
 
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("2026年11月")
-                    .mimiFont(14, weight: .bold)
-                    .foregroundColor(MimiTheme.textPrimary)
-                Spacer()
-                Text("流出 \(MimiTheme.formatRM(outflow))")
-                    .mimiFont(12, weight: .semibold, design: .rounded)
-                    .foregroundColor(MimiTheme.expenseBlue)
-                Text("流入 \(MimiTheme.formatRM(inflow))")
-                    .mimiFont(12, weight: .semibold, design: .rounded)
-                    .foregroundColor(MimiTheme.incomeOrange)
-            }
-
-            if grouped.isEmpty {
-                Text("暂无账单")
-                    .mimiFont(13)
-                    .foregroundColor(MimiTheme.textMuted)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 24)
-                    .background(RoundedRectangle(cornerRadius: 16).fill(MimiTheme.cardBackground))
-            } else {
-                ForEach(Array(grouped.enumerated()), id: \.offset) { _, group in
-                    let dayDate = cal.date(from: group.key) ?? Date()
-                    let weekday = cal.component(.weekday, from: dayDate)
-                    let weekdayMap = ["", "周日", "周一", "周二", "周三", "周四", "周五", "周六"]
-                    let dayLabel = String(
-                        format: "%d月%d日 (%@)",
-                        group.key.month ?? 0,
-                        group.key.day ?? 0,
-                        (weekday >= 1 && weekday <= 7) ? weekdayMap[weekday] : ""
-                    )
-
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(dayLabel)
-                            .mimiFont(12, weight: .semibold)
-                            .foregroundColor(MimiTheme.textSecondary)
-                            .padding(.horizontal, 14)
-                            .padding(.top, 12)
-                            .padding(.bottom, 6)
-
-                        ForEach(Array(group.items.enumerated()), id: \.element.id) { idx, tx in
-                            Button {
-                                billForDetail = tx
-                            } label: {
-                                HStack(spacing: 12) {
-                                    MimiStickerIconView(
-                                        iconName: tx.iconName,
-                                        categoryName: tx.categoryPath,
-                                        transactionType: tx.type,
-                                        size: 34
-                                    )
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text(tx.categoryPath.components(separatedBy: "-").last ?? tx.categoryPath)
-                                            .mimiFont(14, weight: .semibold)
-                                            .foregroundColor(MimiTheme.textPrimary)
-                                        HStack(spacing: 4) {
-                                            Text(formattedBillTime(tx.date))
-                                                .mimiFont(11)
+        if monthGroups.isEmpty {
+            Text("暂无明细")
+                .mimiFont(13)
+                .foregroundColor(MimiTheme.textMuted)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+                .background(RoundedRectangle(cornerRadius: 18).fill(MimiTheme.cardBackground))
+        } else {
+            VStack(alignment: .leading, spacing: 14) {
+                ForEach(monthGroups, id: \.key) { group in
+                    let auditKey = "audit-\(group.key)"
+                    let expanded = isMonthExpanded(auditKey)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Button {
+                            toggleMonthExpanded(auditKey)
+                        } label: {
+                            HStack(spacing: 8) {
+                                Text(group.title)
+                                    .mimiFont(14, weight: .bold)
+                                    .foregroundColor(MimiTheme.textPrimary)
+                                Spacer(minLength: 8)
+                                Image(systemName: expanded ? "chevron.down" : "chevron.up")
+                                    .mimiFont(11, weight: .bold)
+                                    .foregroundColor(MimiTheme.textMuted)
+                            }
+                            .frame(minHeight: MimiHIG.minTouch)
+                            .contentShape(Rectangle())
+                        }
+                        .mimiPressable()
+                        .accessibilityLabel(group.title)
+                        .accessibilityHint(expanded ? "点按收起该月" : "点按展开该月")
+                        if expanded {
+                            VStack(spacing: 0) {
+                                ForEach(Array(group.items.enumerated()), id: \.element.id) { idx, log in
+                                    Button {
+                                        if let tx = store.transaction(forAuditLog: log) {
+                                            billForDetail = tx
+                                        }
+                                    } label: {
+                                        HStack(alignment: .top, spacing: 10) {
+                                            Text(formattedBillTime(log.loggedAt))
+                                                .mimiFont(12, weight: .medium, design: .rounded)
                                                 .foregroundColor(MimiTheme.textMuted)
-                                            if !tx.note.isEmpty {
-                                                Text("| \(tx.note)")
-                                                    .mimiFont(11)
-                                                    .foregroundColor(MimiTheme.textSecondary)
-                                                    .lineLimit(1)
+                                                .frame(width: 36, alignment: .leading)
+
+                                            VStack(spacing: 0) {
+                                                Text(log.action.rawValue)
+                                                    .mimiFont(10, weight: .bold)
+                                                    .foregroundColor(.white)
+                                                    .frame(width: 22, height: 22)
+                                                    .background(Circle().fill(badgeColor(for: log.action)))
+                                                if idx < group.items.count - 1 {
+                                                    Rectangle()
+                                                        .fill(MimiTheme.divider)
+                                                        .frame(width: 1)
+                                                        .frame(maxHeight: .infinity)
+                                                }
+                                            }
+                                            .frame(width: 22)
+
+                                            VStack(alignment: .leading, spacing: 3) {
+                                                Text(auditTypeLabel(log))
+                                                    .mimiFont(13, weight: .semibold)
+                                                    .foregroundColor(MimiTheme.textPrimary)
+                                                if !log.note.isEmpty {
+                                                    Text(log.note)
+                                                        .mimiFont(12)
+                                                        .foregroundColor(MimiTheme.textSecondary)
+                                                        .lineLimit(2)
+                                                }
+                                                HStack(spacing: 4) {
+                                                    Image(systemName: "calendar")
+                                                        .mimiFont(10)
+                                                    Text("账单日期 \(formattedBillDate(log.billDate))")
+                                                        .mimiFont(11)
+                                                }
+                                                .foregroundColor(MimiTheme.textMuted)
+                                            }
+
+                                            Spacer(minLength: 6)
+
+                                            VStack(alignment: .trailing, spacing: 3) {
+                                                Text("余额: \(MimiTheme.formatRM(log.balanceAfter))")
+                                                    .mimiFont(11, design: .rounded)
+                                                    .foregroundColor(MimiTheme.textMuted)
+                                                Text(
+                                                    log.deltaAmount >= 0
+                                                        ? MimiTheme.formatRM(log.deltaAmount)
+                                                        : "-\(MimiTheme.formatRM(abs(log.deltaAmount)))"
+                                                )
+                                                .mimiFont(15, weight: .bold, design: .rounded)
+                                                .strikethrough(log.action == .deleted && log.deltaAmount < 0, color: MimiTheme.textMuted)
+                                                .foregroundColor(
+                                                    log.action == .deleted && log.deltaAmount < 0
+                                                        ? MimiTheme.textMuted
+                                                        : (log.deltaAmount >= 0 ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
+                                                )
                                             }
                                         }
-                                        Text(tx.accountName)
-                                            .mimiFont(10, weight: .medium)
-                                            .foregroundColor(MimiTheme.textSecondary)
-                                            .padding(.horizontal, 6)
-                                            .padding(.vertical, 2)
-                                            .background(Capsule().fill(MimiTheme.fillSubtle))
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 12)
+                                        .contentShape(Rectangle())
                                     }
-                                    Spacer()
-                                    Text(tx.type == .expense || tx.type == .transfer
-                                         ? "-\(MimiTheme.formatRM(tx.amount))"
-                                         : MimiTheme.formatRM(tx.amount))
-                                        .mimiFont(15, weight: .bold, design: .rounded)
-                                        .foregroundColor(tx.type == .expense || tx.type == .transfer
-                                                         ? MimiTheme.expenseBlue
-                                                         : MimiTheme.incomeOrange)
-                                    Image(systemName: "chevron.right")
-                                        .mimiFont(11, weight: .semibold)
-                                        .foregroundColor(MimiTheme.controlDisabled)
+                                    .mimiPressable()
+                                    .disabled(store.transaction(forAuditLog: log) == nil)
                                 }
-                                .padding(14)
-                                .contentShape(Rectangle())
                             }
-                            .mimiPressable()
-                            if idx < group.items.count - 1 {
-                                Divider().padding(.leading, 60)
+                            .background(RoundedRectangle(cornerRadius: 18).fill(MimiTheme.cardBackground))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func accountBillsSection(bills: [TransactionItem], account: AccountItem) -> some View {
+        let cal = Calendar(identifier: .gregorian)
+        let monthGroups: [(key: String, title: String, items: [TransactionItem])] = {
+            let dict = Dictionary(grouping: bills) { monthKey(from: $0.date) }
+            return dict.keys.sorted {
+                let a = $0.split(separator: "-").compactMap { Int($0) }
+                let b = $1.split(separator: "-").compactMap { Int($0) }
+                let ay = a.first ?? 0, am = a.count > 1 ? a[1] : 0
+                let by = b.first ?? 0, bm = b.count > 1 ? b[1] : 0
+                if ay != by { return ay > by }
+                return am > bm
+            }.map { key in
+                let parts = key.split(separator: "-").compactMap { Int($0) }
+                let title = monthTitle(year: parts.first ?? 0, month: parts.count > 1 ? parts[1] : 0)
+                let items = (dict[key] ?? []).sorted { $0.date > $1.date }
+                return (key, title, items)
+            }
+        }()
+
+        if monthGroups.isEmpty {
+            Text("暂无账单")
+                .mimiFont(13)
+                .foregroundColor(MimiTheme.textMuted)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+                .background(RoundedRectangle(cornerRadius: 16).fill(MimiTheme.cardBackground))
+        } else {
+            VStack(alignment: .leading, spacing: 16) {
+                ForEach(monthGroups, id: \.key) { month in
+                    let outflow = month.items.filter { isOutflow($0, for: account) }.reduce(0.0) { $0 + $1.amount }
+                    let inflow = month.items.filter { !isOutflow($0, for: account) }.reduce(0.0) { $0 + $1.amount }
+                    let dayGrouped: [(key: DateComponents, items: [TransactionItem])] = {
+                        let dict = Dictionary(grouping: month.items) { tx in
+                            cal.dateComponents([.year, .month, .day], from: tx.date)
+                        }
+                        return dict.keys.sorted {
+                            let a = cal.date(from: $0) ?? .distantPast
+                            let b = cal.date(from: $1) ?? .distantPast
+                            return a > b
+                        }.map { ($0, (dict[$0] ?? []).sorted { $0.date > $1.date }) }
+                    }()
+
+                    let billsKey = "bills-\(month.key)"
+                    let expanded = isMonthExpanded(billsKey)
+                    VStack(alignment: .leading, spacing: 10) {
+                        // Gold: 2026年11月 · 流出 · 流入 · ∨ (chevron on the far right)
+                        Button {
+                            toggleMonthExpanded(billsKey)
+                        } label: {
+                            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                                Text(month.title)
+                                    .mimiFont(15, weight: .bold)
+                                    .foregroundColor(MimiTheme.textPrimary)
+                                Spacer(minLength: 6)
+                                Text("流出 \(MimiTheme.formatRM(outflow))")
+                                    .mimiFont(12, weight: .semibold, design: .rounded)
+                                    .foregroundColor(MimiTheme.expenseBlue)
+                                Text("流入 \(MimiTheme.formatRM(inflow))")
+                                    .mimiFont(12, weight: .semibold, design: .rounded)
+                                    .foregroundColor(MimiTheme.incomeOrange)
+                                Image(systemName: expanded ? "chevron.down" : "chevron.up")
+                                    .mimiFont(11, weight: .bold)
+                                    .foregroundColor(MimiTheme.textMuted)
+                            }
+                            .frame(minHeight: MimiHIG.minTouch)
+                            .contentShape(Rectangle())
+                        }
+                        .mimiPressable()
+                        .accessibilityLabel("\(month.title)，流出 \(MimiTheme.formatRM(outflow))，流入 \(MimiTheme.formatRM(inflow))")
+                        .accessibilityHint(expanded ? "点按收起该月账单" : "点按展开该月账单")
+
+                        if expanded {
+                            ForEach(Array(dayGrouped.enumerated()), id: \.offset) { _, group in
+                                let dayDate = cal.date(from: group.key) ?? Date()
+                                let weekday = cal.component(.weekday, from: dayDate)
+                                let weekdayMap = ["", "周日", "周一", "周二", "周三", "周四", "周五", "周六"]
+                                let dayLabel = String(
+                                    format: "%d月%d日 (%@)",
+                                    group.key.month ?? 0,
+                                    group.key.day ?? 0,
+                                    (weekday >= 1 && weekday <= 7) ? weekdayMap[weekday] : ""
+                                )
+
+                                VStack(alignment: .leading, spacing: 0) {
+                                    Text(dayLabel)
+                                        .mimiFont(13, weight: .semibold)
+                                        .foregroundColor(MimiTheme.textSecondary)
+                                        .padding(.horizontal, 14)
+                                        .padding(.top, 12)
+                                        .padding(.bottom, 4)
+
+                                    ForEach(Array(group.items.enumerated()), id: \.element.id) { idx, tx in
+                                        Button {
+                                            billForDetail = tx
+                                        } label: {
+                                            HStack(alignment: .top, spacing: 12) {
+                                                MimiStickerIconView(
+                                                    iconName: tx.iconName,
+                                                    categoryName: tx.categoryPath,
+                                                    transactionType: tx.type,
+                                                    size: 36
+                                                )
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                                        Text(billCategoryTitle(for: tx))
+                                                            .mimiFont(15, weight: .semibold)
+                                                            .foregroundColor(MimiTheme.textPrimary)
+                                                            .lineLimit(1)
+                                                        Spacer(minLength: 8)
+                                                        let rowOut = isOutflow(tx, for: account)
+                                                        Text(rowOut
+                                                             ? "-\(MimiTheme.formatRM(tx.amount))"
+                                                             : "+\(MimiTheme.formatRM(tx.amount))")
+                                                            .mimiFont(15, weight: .bold, design: .rounded)
+                                                            .foregroundColor(rowOut
+                                                                             ? MimiTheme.expenseBlue
+                                                                             : MimiTheme.incomeOrange)
+                                                    }
+                                                    Text(billSecondaryLine(for: tx))
+                                                        .mimiFont(12)
+                                                        .foregroundColor(MimiTheme.textMuted)
+                                                        .lineLimit(2)
+                                                    // Account chip — gold shows source/target account name
+                                                    Text({
+                                                        if tx.type == .transfer {
+                                                            let other = isOutflow(tx, for: account)
+                                                                ? (tx.targetAccountName ?? store.accountName(for: tx.targetAccountId))
+                                                                : store.accountName(for: tx.accountId)
+                                                            return other
+                                                        }
+                                                        return store.accountName(for: tx.accountId)
+                                                    }())
+                                                        .mimiFont(11, weight: .medium)
+                                                        .foregroundColor(MimiTheme.textSecondary)
+                                                        .padding(.horizontal, 7)
+                                                        .padding(.vertical, 3)
+                                                        .background(Capsule().fill(MimiTheme.fillSubtle))
+                                                }
+                                            }
+                                            .padding(.horizontal, 14)
+                                            .padding(.vertical, 10)
+                                            .contentShape(Rectangle())
+                                        }
+                                        .mimiPressable()
+                                        .accessibilityLabel("\(billCategoryTitle(for: tx)) \(billSecondaryLine(for: tx))")
+                                        if idx < group.items.count - 1 {
+                                            Divider().padding(.leading, 62)
+                                        }
+                                    }
+                                }
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(MimiTheme.cardBackground)
+                                )
                             }
                         }
                     }
-                    .background(RoundedRectangle(cornerRadius: 16).fill(MimiTheme.cardBackground))
                 }
             }
         }

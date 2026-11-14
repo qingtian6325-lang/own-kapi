@@ -43,18 +43,45 @@ public struct BillDetailSheetView: View {
                 VStack(spacing: 14) {
                     // Main Amount & Category Card (IMG_2242)
                     VStack(spacing: 0) {
+                        detailRow(label: "类型") {
+                            Menu {
+                                ForEach(TransactionType.allCases, id: \.self) { type in
+                                    Button(type.title) {
+                                        editableBill.type = type
+                                        if type == .transfer {
+                                            editableBill.categoryPath = "转账"
+                                            editableBill.iconName = "⇄"
+                                            editableBill.includeInStats = false
+                                            editableBill.includeInBudget = false
+                                        }
+                                    }
+                                }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Text(editableBill.type.title)
+                                        .mimiFont(14, weight: .semibold)
+                                        .foregroundColor(MimiTheme.textPrimary)
+                                    Image(systemName: "chevron.right")
+                                        .mimiFont(11)
+                                        .foregroundColor(MimiTheme.textMuted)
+                                }
+                            }
+                        }
+
+                        Divider().padding(.leading, 16)
+
                         Button {
                             amountExpression = amountString
                             showAmountKeypad = true
                         } label: {
-                            detailRow(label: "实付金额") {
+                            detailRow(label: editableBill.type == .income ? "实收金额" : "实付金额") {
                                 HStack(spacing: 4) {
-                                    Text(editableBill.type == .expense ? "-RM" : "+RM")
+                                    Text(editableBill.type == .income ? "+RM" : "-RM")
                                         .mimiFont(18, weight: .bold, design: .rounded)
-                                        .foregroundColor(editableBill.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange)
+                                        .foregroundColor(editableBill.type == .income ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
                                     Text(amountString.isEmpty ? "0.00" : amountString)
                                         .mimiFont(18, weight: .bold, design: .rounded)
-                                        .foregroundColor(editableBill.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange)
+                                        .foregroundColor(editableBill.type == .income ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
                                     Image(systemName: "chevron.right")
                                         .mimiFont(11, weight: .semibold)
                                         .foregroundColor(MimiTheme.textMuted)
@@ -66,36 +93,53 @@ public struct BillDetailSheetView: View {
                         Divider().padding(.leading, 16)
 
                         detailRow(label: "分类") {
-                            Menu {
-                                ForEach(store.expenseCategories) { group in
-                                    if group.subcategories.isEmpty {
-                                        Button(group.name) {
-                                            editableBill.categoryPath = group.name
-                                            editableBill.iconName = group.displayBadgeToken
-                                        }
-                                    } else {
-                                        ForEach(group.subcategories) { sub in
-                                            Button("\(group.name)-\(sub.name)") {
-                                                editableBill.categoryPath = "\(group.name)-\(sub.name)"
-                                                editableBill.iconName = sub.iconName
+                            if editableBill.type == .transfer {
+                                HStack(spacing: 8) {
+                                    MimiStickerIconView(
+                                        iconName: "⇄",
+                                        categoryName: "转账",
+                                        transactionType: .transfer,
+                                        size: 26
+                                    )
+                                    Text("转账")
+                                        .mimiFont(14, weight: .semibold)
+                                        .foregroundColor(MimiTheme.textPrimary)
+                                }
+                            } else {
+                                Menu {
+                                    let groups = editableBill.type == .income
+                                        ? store.incomeCategories
+                                        : store.expenseCategories
+                                    ForEach(groups) { group in
+                                        if group.subcategories.isEmpty {
+                                            Button(group.name) {
+                                                editableBill.categoryPath = group.name
+                                                editableBill.iconName = group.displayBadgeToken
+                                            }
+                                        } else {
+                                            ForEach(group.subcategories) { sub in
+                                                Button("\(group.name)-\(sub.name)") {
+                                                    editableBill.categoryPath = "\(group.name)-\(sub.name)"
+                                                    editableBill.iconName = sub.iconName
+                                                }
                                             }
                                         }
                                     }
-                                }
-                            } label: {
-                                HStack(spacing: 8) {
-                                    MimiStickerIconView(
-                                        iconName: editableBill.iconName,
-                                        categoryName: editableBill.categoryPath,
-                                        transactionType: editableBill.type,
-                                        size: 26
-                                    )
-                                    Text(editableBill.categoryPath)
-                                        .mimiFont(14, weight: .semibold)
-                                        .foregroundColor(MimiTheme.textPrimary)
-                                    Image(systemName: "chevron.right")
-                                        .mimiFont(11)
-                                        .foregroundColor(MimiTheme.textMuted)
+                                } label: {
+                                    HStack(spacing: 8) {
+                                        MimiStickerIconView(
+                                            iconName: editableBill.iconName,
+                                            categoryName: editableBill.categoryPath,
+                                            transactionType: editableBill.type,
+                                            size: 26
+                                        )
+                                        Text(editableBill.categoryPath)
+                                            .mimiFont(14, weight: .semibold)
+                                            .foregroundColor(MimiTheme.textPrimary)
+                                        Image(systemName: "chevron.right")
+                                            .mimiFont(11)
+                                            .foregroundColor(MimiTheme.textMuted)
+                                    }
                                 }
                             }
                         }
@@ -192,7 +236,7 @@ public struct BillDetailSheetView: View {
 
                         Divider().padding(.leading, 16)
 
-                        detailRow(label: "付款账户") {
+                        detailRow(label: editableBill.type == .transfer ? "转出账户" : "付款账户") {
                             Menu {
                                 Button("不选账户") { editableBill.accountName = "不选账户" }
                                 ForEach(store.accounts) { acc in
@@ -210,19 +254,47 @@ public struct BillDetailSheetView: View {
                             }
                         }
 
+                        if editableBill.type == .transfer {
+                            Divider().padding(.leading, 16)
+                            detailRow(label: "转入账户") {
+                                Menu {
+                                    ForEach(store.accounts) { acc in
+                                        Button(acc.name) { editableBill.targetAccountName = acc.name }
+                                    }
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Text(editableBill.targetAccountName ?? "选择转入账户")
+                                            .mimiFont(14, weight: .semibold)
+                                            .foregroundColor(MimiTheme.textPrimary)
+                                        Image(systemName: "chevron.right")
+                                            .mimiFont(11)
+                                            .foregroundColor(MimiTheme.textMuted)
+                                    }
+                                }
+                            }
+                        }
+
                         Divider().padding(.leading, 16)
 
                         detailRow(label: "所属账本") {
-                            HStack(spacing: 6) {
-                                Image(systemName: "book.closed.fill")
-                                    .mimiFont(14)
-                                    .foregroundColor(MimiTheme.vipGold)
-                                Text(editableBill.ledgerName)
-                                    .mimiFont(14, weight: .medium)
-                                    .foregroundColor(MimiTheme.textPrimary)
-                                Image(systemName: "chevron.right")
-                                    .mimiFont(11)
-                                    .foregroundColor(MimiTheme.textMuted)
+                            Menu {
+                                ForEach(store.ledgers) { ledger in
+                                    Button(ledger.name) {
+                                        editableBill.ledgerName = ledger.name
+                                    }
+                                }
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "book.closed.fill")
+                                        .mimiFont(14)
+                                        .foregroundColor(MimiTheme.vipGold)
+                                    Text(editableBill.ledgerName)
+                                        .mimiFont(14, weight: .medium)
+                                        .foregroundColor(MimiTheme.textPrimary)
+                                    Image(systemName: "chevron.right")
+                                        .mimiFont(11)
+                                        .foregroundColor(MimiTheme.textMuted)
+                                }
                             }
                         }
                     }
@@ -255,6 +327,90 @@ public struct BillDetailSheetView: View {
                         }
                     }
                     .background(RoundedRectangle(cornerRadius: 18).fill(MimiTheme.cardBackground))
+
+                    if editableBill.type != .transfer {
+                        VStack(spacing: 0) {
+                            Toggle(isOn: $editableBill.includeInStats) {
+                                Text("计入收支统计")
+                                    .mimiFont(14, weight: .medium)
+                                    .foregroundColor(MimiTheme.textPrimary)
+                            }
+                            .tint(MimiTheme.expenseBlue)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+
+                            Divider().padding(.leading, 16)
+
+                            Toggle(isOn: $editableBill.includeInBudget) {
+                                Text("计入预算")
+                                    .mimiFont(14, weight: .medium)
+                                    .foregroundColor(MimiTheme.textPrimary)
+                            }
+                            .tint(MimiTheme.expenseBlue)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+
+                            Divider().padding(.leading, 16)
+
+                            Toggle(isOn: Binding(
+                                get: {
+                                    editableBill.tags.contains(where: {
+                                        let t = $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                                        return t == "待报销" || t == "报销"
+                                    })
+                                },
+                                set: { on in
+                                    editableBill.tags.removeAll {
+                                        let t = $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                                        return t == "待报销" || t == "报销"
+                                    }
+                                    if on { editableBill.tags.append("待报销") }
+                                }
+                            )) {
+                                Text("待报销")
+                                    .mimiFont(14, weight: .medium)
+                                    .foregroundColor(MimiTheme.textPrimary)
+                            }
+                            .tint(MimiTheme.expenseBlue)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+
+                            Divider().padding(.leading, 16)
+
+                            detailRow(label: "标签") {
+                                Menu {
+                                    ForEach(store.tags, id: \.self) { tag in
+                                        Button {
+                                            if editableBill.tags.contains(tag) {
+                                                editableBill.tags.removeAll { $0 == tag }
+                                            } else {
+                                                editableBill.tags.append(tag)
+                                            }
+                                        } label: {
+                                            if editableBill.tags.contains(tag) {
+                                                Label(tag, systemImage: "checkmark")
+                                            } else {
+                                                Text(tag)
+                                            }
+                                        }
+                                    }
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Text(editableBill.tags.isEmpty
+                                             ? "选择标签"
+                                             : editableBill.tags.joined(separator: "、"))
+                                            .mimiFont(14, weight: .semibold)
+                                            .foregroundColor(MimiTheme.textPrimary)
+                                            .lineLimit(1)
+                                        Image(systemName: "chevron.right")
+                                            .mimiFont(11)
+                                            .foregroundColor(MimiTheme.textMuted)
+                                    }
+                                }
+                            }
+                        }
+                        .background(RoundedRectangle(cornerRadius: 18).fill(MimiTheme.cardBackground))
+                    }
 
                     // Save Changes Button
                     Button {

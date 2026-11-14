@@ -27,7 +27,7 @@ public struct MimiRootContainerView: View {
     @State private var homeRecognitionFailureText: String?
 
     @MainActor
-    public init(store: MimiStore = .shared) {
+    public init(store: MimiStore) {
         self.store = store
     }
 
@@ -273,6 +273,30 @@ public struct MimiRootContainerView: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + pageHandoffDelay) {
                             pushOpen { activeBillForEdit = tx }
                         }
+                    },
+                    onOpenStats: {
+                        pushClose { showAllRecordsCalendar = false }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + pageHandoffDelay) {
+                            pushOpen { showStatsView = true }
+                        }
+                    },
+                    onOpenAsk: {
+                        pushClose { showAllRecordsCalendar = false }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + pageHandoffDelay) {
+                            aiOverlayAttachments = []
+                            aiOverlayStartExpanded = false
+                            withAnimation(MimiMotion.sheet(reduceMotion: reduceMotion)) {
+                                showAIAskOverlay = true
+                            }
+                        }
+                    },
+                    onOpenRecord: {
+                        pushClose { showAllRecordsCalendar = false }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + pageHandoffDelay) {
+                            BookkeepingEntryPreference.rememberManual()
+                            openRecordSheetInAIMode = false
+                            showRecordSheet = true
+                        }
                     }
                 )
                 .transition(MimiMotion.pageTransition(reduceMotion: reduceMotion))
@@ -282,6 +306,7 @@ public struct MimiRootContainerView: View {
             if showAssetsManager {
                 AssetsAndAccountDetailView(
                     store: store,
+                    aiEngine: aiEngine,
                     onDismiss: { pushClose { showAssetsManager = false } }
                 )
                 .transition(MimiMotion.pageTransition(reduceMotion: reduceMotion))
@@ -418,6 +443,16 @@ public struct MimiRootContainerView: View {
             Button("好") { homeRecognitionFailureText = nil }
         } message: {
             Text(homeRecognitionFailureText ?? "")
+        }
+        .fullScreenCover(isPresented: Binding(
+            get: { !store.hasCompletedOnboarding },
+            set: { presented in
+                if !presented { store.completeOnboarding() }
+            }
+        )) {
+            OnboardingGuideView(store: store) {
+                // Flag already set inside the guide
+            }
         }
     }
 

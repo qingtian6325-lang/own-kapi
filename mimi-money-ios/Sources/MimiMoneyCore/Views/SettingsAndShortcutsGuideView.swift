@@ -1375,20 +1375,31 @@ public struct SettingsAndShortcutsGuideView: View {
                             .padding(.vertical, 12)
                     } else {
                         ForEach(taggedBills) { item in
-                            HStack {
-                                Text(item.categoryPath)
-                                    .mimiFont(13, weight: .semibold)
-                                Text(item.note)
-                                    .mimiFont(11)
-                                    .foregroundColor(MimiTheme.textMuted)
-                                    .lineLimit(1)
-                                Spacer()
-                                Text(item.type == .expense ? "-\(MimiTheme.formatRM(item.amount))" : "+\(MimiTheme.formatRM(item.amount))")
-                                    .mimiFont(13, weight: .bold, design: .rounded)
-                                    .foregroundColor(item.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange)
+                            Button {
+                                onModifyTransactionFromPopup(item)
+                            } label: {
+                                HStack {
+                                    Text(item.categoryPath)
+                                        .mimiFont(13, weight: .semibold)
+                                        .foregroundColor(MimiTheme.textPrimary)
+                                    Text(item.note)
+                                        .mimiFont(11)
+                                        .foregroundColor(MimiTheme.textMuted)
+                                        .lineLimit(1)
+                                    Spacer()
+                                    Text(item.type == .expense ? "-\(MimiTheme.formatRM(item.amount))" : "+\(MimiTheme.formatRM(item.amount))")
+                                        .mimiFont(13, weight: .bold, design: .rounded)
+                                        .foregroundColor(item.type == .expense ? MimiTheme.expenseBlue : MimiTheme.incomeOrange)
+                                    Image(systemName: "chevron.right")
+                                        .mimiFont(11, weight: .semibold)
+                                        .foregroundColor(MimiTheme.textMuted)
+                                }
+                                .padding(10)
+                                .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.cardBackground))
+                                .contentShape(Rectangle())
                             }
-                            .padding(10)
-                            .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.cardBackground))
+                            .mimiPressable()
+                            .accessibilityLabel("打开账单 \(item.categoryPath)")
                         }
                     }
                 }
@@ -1418,7 +1429,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 }
             }
 
-            Text("针对房租、宽带、月薪、订阅会员等固定周期收支，到期自动入账或一键执行，告别重复手工输入。")
+            Text("针对房租、宽带、月薪、订阅会员等固定周期收支。启用计划后，可在卡片上点「立即入账」手动执行；到期自动入账将在后续版本接入。")
                 .mimiFont(12)
                 .foregroundColor(MimiTheme.textSecondary)
 
@@ -1610,11 +1621,11 @@ public struct SettingsAndShortcutsGuideView: View {
 
     private var widgetsShowcaseSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("iOS 桌面与锁屏小组件")
+            Text("iOS 桌面小组件（设计预览）")
                 .mimiFont(16, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
 
-            Text("在 iPhone 桌面长按进入编辑状态 ➔ 点击左上角「+」➔ 搜索「咪咪记账」，即可添加以下官方设计小组件：")
+            Text("下方为小组件视觉预览，数字取自当前账本实时数据。正式 WidgetKit 扩展上架后，可在桌面长按「+」搜索「咪咪记账」添加。")
                 .mimiFont(12)
                 .foregroundColor(MimiTheme.textSecondary)
 
@@ -1638,7 +1649,7 @@ public struct SettingsAndShortcutsGuideView: View {
                             Text("今日可用")
                                 .mimiFont(9)
                                 .foregroundColor(MimiTheme.textSecondary)
-                            Text(MimiTheme.formatRM(store.monthlyBudgetRemaining(year: 2026, month: 11) / 21.0))
+                            Text(MimiTheme.formatRM(store.dailyAvailableBudget()))
                                 .mimiFont(13, weight: .bold, design: .rounded)
                                 .foregroundColor(MimiTheme.textPrimary)
                         }
@@ -1648,7 +1659,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         Text("动态结余滚入")
                             .mimiFont(11, weight: .semibold)
                             .foregroundColor(MimiTheme.expenseBlue)
-                        Text("今日已花费 \(MimiTheme.formatRM(0))")
+                        Text("今日已花费 \(MimiTheme.formatRM(store.todayExpenseTotal()))")
                             .mimiFont(10)
                             .foregroundColor(MimiTheme.textMuted)
                         Text("实时同步当前账本")
@@ -1738,6 +1749,35 @@ public struct SettingsAndShortcutsGuideView: View {
             // AI / API
             aiEngineCard
 
+            // 账期
+            VStack(alignment: .leading, spacing: 8) {
+                Text("账期")
+                    .mimiFont(13, weight: .semibold)
+                    .foregroundColor(MimiTheme.textSecondary)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("月统计起始日")
+                        .mimiFont(14, weight: .medium)
+                        .foregroundColor(MimiTheme.textPrimary)
+                    Text("首页预算、分类花费与统计「月」都按此账期计算。")
+                        .mimiFont(12)
+                        .foregroundColor(MimiTheme.textSecondary)
+                    Picker("起始日", selection: Binding(
+                        get: { store.monthStartDay },
+                        set: { store.setMonthStartDay($0) }
+                    )) {
+                        ForEach(1...28, id: \.self) { day in
+                            Text(day == 1 ? "每月 1 日（自然月）" : "每月 \(day) 日").tag(day)
+                        }
+                    }
+                    Text("当前账期：\(store.currentBillingPeriod().displayRangeLabel)")
+                        .mimiFont(12, weight: .medium)
+                        .foregroundColor(MimiTheme.expenseBlue)
+                }
+                .padding(14)
+                .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.cardBackground))
+            }
+
             // 其他
             VStack(alignment: .leading, spacing: 8) {
                 Text("其他")
@@ -1750,6 +1790,24 @@ public struct SettingsAndShortcutsGuideView: View {
                 }
                 .padding(14)
                 .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.cardBackground))
+
+                Button {
+                    store.reopenOnboarding()
+                    onDismiss()
+                } label: {
+                    HStack {
+                        Text("重新打开新手指南")
+                            .mimiFont(14, weight: .medium)
+                            .foregroundColor(MimiTheme.textPrimary)
+                        Spacer()
+                        Image(systemName: "sparkles")
+                            .foregroundColor(MimiTheme.expenseBlue)
+                    }
+                    .padding(14)
+                    .background(RoundedRectangle(cornerRadius: 14).fill(MimiTheme.cardBackground))
+                }
+                .mimiPressable()
+                .accessibilityLabel("重新打开新手指南")
 
                 Button {
                     showResetCleanAlert = true

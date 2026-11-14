@@ -4,25 +4,38 @@ public struct AllRecordsCalendarView: View {
     @ObservedObject public var store: MimiStore
     public var onDismiss: () -> Void
     public var onSelectTransaction: (TransactionItem) -> Void
+    public var onOpenStats: () -> Void
+    public var onOpenAsk: () -> Void
+    public var onOpenRecord: () -> Void
 
-    @State private var selectedYear: Int = 2026
-    @State private var selectedMonth: Int = 11
-    @State private var selectedDay: Int = 8
+    @State private var selectedYear: Int
+    @State private var selectedMonth: Int
+    @State private var selectedDay: Int
     @State private var filterMode: String = "收支" // "收支" | "支出" | "收入"
     @State private var searchQuery: String = ""
     @State private var showSearchField: Bool = false
-    @State private var showAddTransactionSheet: Bool = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
         store: MimiStore,
         onDismiss: @escaping () -> Void,
-        onSelectTransaction: @escaping (TransactionItem) -> Void
+        onSelectTransaction: @escaping (TransactionItem) -> Void,
+        onOpenStats: @escaping () -> Void = {},
+        onOpenAsk: @escaping () -> Void = {},
+        onOpenRecord: @escaping () -> Void = {}
     ) {
         self.store = store
         self.onDismiss = onDismiss
         self.onSelectTransaction = onSelectTransaction
+        self.onOpenStats = onOpenStats
+        self.onOpenAsk = onOpenAsk
+        self.onOpenRecord = onOpenRecord
+        let now = Date()
+        let cal = Calendar.current
+        _selectedYear = State(initialValue: cal.component(.year, from: now))
+        _selectedMonth = State(initialValue: cal.component(.month, from: now))
+        _selectedDay = State(initialValue: cal.component(.day, from: now))
     }
 
     private var calendar: Calendar {
@@ -162,13 +175,16 @@ public struct AllRecordsCalendarView: View {
     private var subHeaderMonthBar: some View {
         HStack(spacing: 8) {
             Menu {
+                let thisYear = Calendar.current.component(.year, from: Date())
+                ForEach((thisYear - 2)...(thisYear + 1), id: \.self) { y in
+                    Button("\(y)年") { selectedYear = y }
+                }
+                Divider()
                 ForEach(1...12, id: \.self) { m in
-                    Button(String(format: "%d年%d月", selectedYear, m)) {
+                    Button(String(format: "%d月", m)) {
                         selectedMonth = m
                     }
                 }
-                Button("2025年") { selectedYear = 2025 }
-                Button("2026年") { selectedYear = 2026 }
             } label: {
                 HStack(spacing: 4) {
                     Text(String(format: "%d年%d月", selectedYear, selectedMonth))
@@ -181,9 +197,10 @@ public struct AllRecordsCalendarView: View {
             }
 
             Button {
-                selectedYear = 2026
-                selectedMonth = 11
-                selectedDay = 8
+                let now = Date()
+                selectedYear = Calendar.current.component(.year, from: now)
+                selectedMonth = Calendar.current.component(.month, from: now)
+                selectedDay = Calendar.current.component(.day, from: now)
             } label: {
                 Text("回今天")
                     .mimiFont(11, weight: .semibold)
@@ -192,6 +209,8 @@ public struct AllRecordsCalendarView: View {
                     .padding(.vertical, 4)
                     .background(Capsule().fill(MimiTheme.surfaceMuted))
             }
+            .mimiPressable()
+            .accessibilityLabel("回今天")
 
             Spacer()
 
@@ -253,7 +272,7 @@ public struct AllRecordsCalendarView: View {
             Spacer()
 
             Button {
-                onDismiss()
+                onOpenStats()
             } label: {
                 HStack(spacing: 2) {
                     Text(filterMode == "支出" ? "支出分析" : "收支分析")
@@ -263,6 +282,9 @@ public struct AllRecordsCalendarView: View {
                 }
                 .foregroundColor(MimiTheme.textMuted)
             }
+            .mimiPressable()
+            .accessibilityLabel(filterMode == "支出" ? "支出分析" : "收支分析")
+            .accessibilityHint("打开图表统计")
         }
         .padding(.vertical, 2)
     }
@@ -512,7 +534,7 @@ public struct AllRecordsCalendarView: View {
     private var floatingBottomBar: some View {
         HStack(spacing: 10) {
             Button {
-                onDismiss()
+                onOpenAsk()
             } label: {
                 HStack(spacing: 8) {
                     MimiAskMascotView(size: 32)
@@ -528,11 +550,11 @@ public struct AllRecordsCalendarView: View {
                 .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
             }
             .mimiPressable()
-            .accessibilityLabel("返回并打开问账")
+            .accessibilityLabel("问账")
+            .accessibilityHint("打开 AI 问账")
 
             Button {
-                store.isRecordSheetPresented = true
-                onDismiss()
+                onOpenRecord()
             } label: {
                 Image(systemName: "plus")
                     .mimiFont(16, weight: .bold)

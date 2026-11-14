@@ -268,42 +268,71 @@ public enum DefaultCatalog {
         return cal.date(from: DateComponents(year: year, month: month, day: day, hour: hour, minute: minute)) ?? Date()
     }
 
+    /// Live account list synced from `MimiStore` so custom accounts resolve by name/id.
+    private static let liveAccountsLock = NSLock()
+    private static var liveAccountsCache: [AccountItem] = defaultAccounts()
+
+    public static func syncLiveAccounts(_ accounts: [AccountItem]) {
+        liveAccountsLock.lock()
+        liveAccountsCache = accounts
+        liveAccountsLock.unlock()
+    }
+
+    private static func liveAccountsSnapshot() -> [AccountItem] {
+        liveAccountsLock.lock()
+        let snap = liveAccountsCache
+        liveAccountsLock.unlock()
+        return snap
+    }
+
     public static func resolveAccountId(from accountName: String) -> String? {
+        resolveAccountId(from: accountName, among: liveAccountsSnapshot())
+    }
+
+    /// Resolve against live accounts first (custom accounts), then built-in aliases.
+    public static func resolveAccountId(from accountName: String, among accounts: [AccountItem]) -> String? {
         let trimmed = accountName.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty || trimmed == "不选账户" || trimmed == "无账户" {
             return nil
         }
+        if let exact = accounts.first(where: {
+            $0.id == trimmed || $0.name.caseInsensitiveCompare(trimmed) == .orderedSame
+        }) {
+            return exact.id
+        }
         let lower = trimmed.lowercased()
         if lower.contains("tng") || lower.contains("touch") || lower.contains("ewallet") {
-            return "acc_tng"
+            return accounts.first(where: { $0.id == "acc_tng" })?.id ?? "acc_tng"
         }
         if lower.contains("cimb") {
-            return "acc_cimb"
+            return accounts.first(where: { $0.id == "acc_cimb" })?.id ?? "acc_cimb"
         }
         if lower.contains("pbb") || lower.contains("public") {
-            return "acc_pbb"
+            return accounts.first(where: { $0.id == "acc_pbb" })?.id ?? "acc_pbb"
         }
         if lower.contains("cash") || lower.contains("现金") {
-            return "acc_cash"
+            return accounts.first(where: { $0.id == "acc_cash" })?.id ?? "acc_cash"
         }
         if lower.contains("maybank") || lower.contains("mbb") {
-            return "acc_maybank"
+            return accounts.first(where: { $0.id == "acc_maybank" || $0.name.localizedCaseInsensitiveContains("maybank") })?.id
         }
-        if let match = defaultAccounts().first(where: { $0.name.caseInsensitiveCompare(trimmed) == .orderedSame || $0.id == trimmed }) {
-            return match.id
-        }
-        return "acc_tng"
+        // Unknown name must not silently map to TNGewallet.
+        return nil
     }
 
     public static func resolveAccountName(from accountId: String?) -> String {
+        resolveAccountName(from: accountId, among: liveAccountsSnapshot())
+    }
+
+    public static func resolveAccountName(from accountId: String?, among accounts: [AccountItem]) -> String {
         guard let accountId, !accountId.isEmpty else { return "不选账户" }
+        if let match = accounts.first(where: { $0.id == accountId || $0.name == accountId }) {
+            return match.name
+        }
         if accountId == "acc_tng" { return "TNGewallet" }
         if accountId == "acc_cimb" { return "CIMB" }
         if accountId == "acc_pbb" { return "PBBank" }
         if accountId == "acc_cash" { return "现金" }
-        if let match = defaultAccounts().first(where: { $0.id == accountId || $0.name == accountId }) {
-            return match.name
-        }
         return accountId
     }
 

@@ -48,38 +48,34 @@ public struct BudgetManagementView: View {
         self.onDismiss = onDismiss
     }
 
-    private var currentYear: Int { 2026 }
-    private var currentMonth: Int { 11 }
+    private var currentPeriod: BillingPeriod { store.currentBillingPeriod() }
+
+    private var currentYear: Int {
+        Calendar(identifier: .gregorian).component(.year, from: currentPeriod.start)
+    }
+    private var currentMonth: Int {
+        Calendar(identifier: .gregorian).component(.month, from: currentPeriod.start)
+    }
 
     private var monthlySpent: Double {
-        store.monthlyExpenseTotal(year: currentYear, month: currentMonth)
+        store.expenseTotal(in: currentPeriod)
     }
 
     private var monthlyRemaining: Double {
-        store.monthlyBudgetRemaining(year: currentYear, month: currentMonth)
+        store.budgetRemaining(in: currentPeriod)
     }
 
     private var dailyAvailable: Double {
-        DynamicBudgetEngine.calculateDailyBudget(
-            monthlyBudget: store.monthlyBudgetTotal,
-            spentBeforeToday: monthlySpent,
-            remainingDaysIncludingToday: 21
-        )
+        store.dailyAvailableBudget()
     }
 
     private var todaySpent: Double {
         let cal = Calendar(identifier: .gregorian)
-        let now = Date()
-        let todayComps = cal.dateComponents([.year, .month, .day], from: now)
-        let targetYear = (todayComps.year == currentYear && todayComps.month == currentMonth) ? (todayComps.year ?? currentYear) : currentYear
-        let targetMonth = (todayComps.year == currentYear && todayComps.month == currentMonth) ? (todayComps.month ?? currentMonth) : currentMonth
-        let targetDay = (todayComps.year == currentYear && todayComps.month == currentMonth) ? (todayComps.day ?? 8) : 8
-
+        let todayStart = cal.startOfDay(for: Date())
         return store.transactions
             .filter { tx in
                 guard tx.type == .expense && tx.includeInStats else { return false }
-                let comps = cal.dateComponents([.year, .month, .day], from: tx.date)
-                return comps.year == targetYear && comps.month == targetMonth && comps.day == targetDay
+                return cal.startOfDay(for: tx.date) == todayStart
             }
             .reduce(0.0) { $0 + $1.amount }
     }
@@ -353,7 +349,7 @@ public struct BudgetManagementView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("2026年11月")
+                    Text(currentPeriod.displayRangeLabel)
                         .mimiFont(12, weight: .medium)
                         .foregroundColor(MimiTheme.textSecondary)
 
@@ -452,7 +448,7 @@ public struct BudgetManagementView: View {
 
             if categoryBudgetsExpanded {
                 ForEach(store.categoryBudgets) { item in
-                    let spent = store.categorySpent(for: item.categoryName, year: currentYear, month: currentMonth)
+                    let spent = store.categorySpent(for: item.categoryName, in: currentPeriod)
                     let rem = item.monthlyLimit - spent
                     let ratio = item.monthlyLimit > 0 ? min(1.0, spent / item.monthlyLimit) : 0
 
@@ -604,7 +600,7 @@ public struct BudgetManagementView: View {
     // MARK: - 分类预算历史（按月：预算 / 已用）
 
     private func categoryHistoryMonths(for item: CategoryBudgetItem) -> [(year: Int, month: Int, spent: Double, limit: Double)] {
-        var cal = Calendar(identifier: .gregorian)
+        let cal = Calendar(identifier: .gregorian)
         var seen = Set<String>()
         var rows: [(year: Int, month: Int, spent: Double, limit: Double)] = []
 

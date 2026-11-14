@@ -105,6 +105,12 @@ public struct AccountItem: Identifiable, Codable, Equatable, Sendable {
     public var balance: Double
     public var initialBalance: Double
     public var isLiability: Bool
+    /// 计入总资产（关闭后不计入净资产/资产合计）
+    public var includeInAssets: Bool
+    /// 特别关注：资产列表置顶
+    public var isSpecialFocus: Bool
+    /// 默认收支账户（记账未选账户时用）
+    public var isDefaultAccount: Bool
 
     public init(
         id: String,
@@ -114,7 +120,10 @@ public struct AccountItem: Identifiable, Codable, Equatable, Sendable {
         iconName: String,
         balance: Double,
         initialBalance: Double? = nil,
-        isLiability: Bool = false
+        isLiability: Bool = false,
+        includeInAssets: Bool = true,
+        isSpecialFocus: Bool = false,
+        isDefaultAccount: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -124,10 +133,14 @@ public struct AccountItem: Identifiable, Codable, Equatable, Sendable {
         self.balance = balance
         self.initialBalance = initialBalance ?? balance
         self.isLiability = isLiability
+        self.includeInAssets = includeInAssets
+        self.isSpecialFocus = isSpecialFocus
+        self.isDefaultAccount = isDefaultAccount
     }
 
     private enum CodingKeys: String, CodingKey {
         case id, name, subtitle, badgeText, iconName, balance, initialBalance, isLiability
+        case includeInAssets, isSpecialFocus, isDefaultAccount
     }
 
     public init(from decoder: Decoder) throws {
@@ -140,6 +153,9 @@ public struct AccountItem: Identifiable, Codable, Equatable, Sendable {
         balance = try container.decode(Double.self, forKey: .balance)
         initialBalance = try container.decodeIfPresent(Double.self, forKey: .initialBalance) ?? balance
         isLiability = try container.decodeIfPresent(Bool.self, forKey: .isLiability) ?? false
+        includeInAssets = try container.decodeIfPresent(Bool.self, forKey: .includeInAssets) ?? true
+        isSpecialFocus = try container.decodeIfPresent(Bool.self, forKey: .isSpecialFocus) ?? false
+        isDefaultAccount = try container.decodeIfPresent(Bool.self, forKey: .isDefaultAccount) ?? false
     }
 }
 
@@ -161,11 +177,14 @@ public struct AccountAuditLog: Identifiable, Codable, Equatable, Sendable {
     public var billDate: Date
     public var loggedAt: Date
     public var transactionId: UUID?
+    /// 转账入款侧为 true，使 `deltaAmount` 显示为正。
+    public var isInflow: Bool
 
     public var title: String { categoryTitle }
     public var subtitle: String { note }
     public var deltaAmount: Double {
-        transactionType == .income ? amount : -amount
+        if transactionType == .income || isInflow { return amount }
+        return -amount
     }
 
     public init(
@@ -179,7 +198,8 @@ public struct AccountAuditLog: Identifiable, Codable, Equatable, Sendable {
         balanceAfter: Double,
         billDate: Date,
         loggedAt: Date = Date(),
-        transactionId: UUID? = nil
+        transactionId: UUID? = nil,
+        isInflow: Bool = false
     ) {
         self.id = id
         self.accountId = accountId
@@ -192,6 +212,28 @@ public struct AccountAuditLog: Identifiable, Codable, Equatable, Sendable {
         self.billDate = billDate
         self.loggedAt = loggedAt
         self.transactionId = transactionId
+        self.isInflow = isInflow
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, accountId, action, transactionType, categoryTitle, note
+        case amount, balanceAfter, billDate, loggedAt, transactionId, isInflow
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        accountId = try c.decode(String.self, forKey: .accountId)
+        action = try c.decode(AuditActionType.self, forKey: .action)
+        transactionType = try c.decode(TransactionType.self, forKey: .transactionType)
+        categoryTitle = try c.decode(String.self, forKey: .categoryTitle)
+        note = try c.decode(String.self, forKey: .note)
+        amount = try c.decode(Double.self, forKey: .amount)
+        balanceAfter = try c.decode(Double.self, forKey: .balanceAfter)
+        billDate = try c.decode(Date.self, forKey: .billDate)
+        loggedAt = try c.decode(Date.self, forKey: .loggedAt)
+        transactionId = try c.decodeIfPresent(UUID.self, forKey: .transactionId)
+        isInflow = try c.decodeIfPresent(Bool.self, forKey: .isInflow) ?? false
     }
 }
 

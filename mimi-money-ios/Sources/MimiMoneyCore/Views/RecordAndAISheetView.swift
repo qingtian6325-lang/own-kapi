@@ -12,12 +12,12 @@ public struct RecordAndAISheetView: View {
     public var onSwitchToAIOverlay: () -> Void = {}
 
     @State private var isAIMode: Bool
-    @State private var selectedTab: TransactionType = .expense
+    @State private var selectedTab: TransactionType
     @State private var selectedGroupIndex: Int = 0
     @State private var selectedSubIndex: Int? = 5 // defaults to 零食甜品 or first sub
     @State private var expression: String = ""
     @State private var noteText: String = ""
-    @State private var selectedAccountName: String = "不选账户"
+    @State private var selectedAccountName: String
     @State private var targetAccountName: String = ""
     @State private var includeInStats: Bool = true
     @State private var includeInBudget: Bool = true
@@ -49,6 +49,8 @@ public struct RecordAndAISheetView: View {
         store: MimiStore,
         aiEngine: MimiAIEngine,
         initialAIMode: Bool = false,
+        initialTab: TransactionType = .expense,
+        initialAccountName: String? = nil,
         onDismiss: @escaping () -> Void,
         onOpenCategorySettings: @escaping () -> Void,
         onEditRecognizedTransaction: @escaping (TransactionItem) -> Void,
@@ -64,6 +66,10 @@ public struct RecordAndAISheetView: View {
         self.onOpenImportExport = onOpenImportExport
         self.onSwitchToAIOverlay = onSwitchToAIOverlay
         _isAIMode = State(initialValue: initialAIMode)
+        _selectedTab = State(initialValue: initialTab)
+        let prefills = initialAccountName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let fallback = store.defaultBookkeepingAccount?.name ?? "不选账户"
+        _selectedAccountName = State(initialValue: prefills.isEmpty ? fallback : prefills)
     }
 
     private var activeCategories: [CategoryGroup] {
@@ -494,6 +500,7 @@ public struct RecordAndAISheetView: View {
                             pillLabel(icon: "tag", text: discountAmountText.isEmpty ? "优惠" : "优惠 RM\(discountAmountText)")
                         }
                         .mimiPressable()
+                        .accessibilityLabel(discountAmountText.isEmpty ? "添加优惠" : "优惠 RM\(discountAmountText)")
 
                         Button {
                             markPendingReimbursement.toggle()
@@ -548,6 +555,30 @@ public struct RecordAndAISheetView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
+            }
+
+            if showDiscountInput, selectedTab != .transfer {
+                HStack(spacing: 10) {
+                    Text("优惠金额")
+                        .mimiFont(13, weight: .medium)
+                        .foregroundColor(MimiTheme.textSecondary)
+                    TextField("0.00", text: $discountAmountText)
+                        .mimiFont(15, weight: .semibold, design: .rounded)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.fillSubtle))
+                    Button("完成") {
+                        showDiscountInput = false
+                    }
+                    .mimiFont(13, weight: .semibold)
+                    .foregroundColor(MimiTheme.expenseBlue)
+                    .frame(minHeight: MimiHIG.minTouch)
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 4)
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
             // Amount + Note Row (gold: RM0.00 + MYR ⌄, 点击填写备注信息 + 相册/拍照)
@@ -792,12 +823,21 @@ public struct RecordAndAISheetView: View {
             if dismissAfter { onDismiss() }
             return
         }
+        if selectedTab == .transfer {
+            let src = selectedAccountName.trimmingCharacters(in: .whitespacesAndNewlines)
+            let dst = targetAccountName.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !src.isEmpty, src != "不选账户",
+                  !dst.isEmpty, dst != "不选账户",
+                  src != dst else {
+                return
+            }
+        }
         let discountVal = Double(discountAmountText) ?? 0.0
         var tags = selectedTags
         if markPendingReimbursement, !tags.contains("待报销") {
             tags.append("待报销")
         }
-        let tx = TransactionItem(
+        var tx = TransactionItem(
             type: selectedTab,
             categoryPath: selectedTab == .transfer ? "转账" : composedCategoryPath,
             iconName: selectedTab == .transfer ? "⇄" : currentIconName,
@@ -812,6 +852,7 @@ public struct RecordAndAISheetView: View {
             receiptImageLabels: attachedReceiptFilenames,
             date: selectedDate
         )
+        tx.currency = selectedCurrency
         store.addTransaction(tx)
         expression = ""
         noteText = ""

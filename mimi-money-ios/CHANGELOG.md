@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.10] - 2026-11-14
+
+### 🎯 Highlights
+- **资金账户**：记账/转账可用；编辑账户（⋯）；转账双边余额与明细；账单按日展示时间|备注与账户标签；月份可收起；待报销可点开。
+- **空壳清理**：分类管理排序/重命名删除、统计排行可点、日历问账/记一笔、账单详情类型账本标签、优惠输入、识别卡片确认回调等。
+- **账期/新手**：月起始日账期引擎与新手指南入口落地。
+- **发版**：`VERSION` / Intent 默认版本升至 1.3.10。
+
 ## [v1.3.9] - 2026-11-13
 
 ### 🎯 Highlights

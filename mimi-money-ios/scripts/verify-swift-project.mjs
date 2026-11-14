@@ -129,12 +129,24 @@ function verifyTask2() {
     'public func resetToCleanEmpty()',
     'public func importMimiCSV(',
     'public func exportMimiCSV()',
+    'monthStartDay',
+    'hasCompletedOnboarding',
+    'currentBillingPeriod',
     '.created',
     '.updated',
     '.deleted'
   ]) {
     assertContains(store, sym, 'MimiStore.swift');
   }
+
+  const billing = assertFileExists('Sources/MimiMoneyCore/Services/BillingPeriod.swift');
+  checkBalancedBraces(billing, 'BillingPeriod.swift');
+  assertContains(billing, 'public enum BillingPeriodEngine', 'BillingPeriod.swift');
+  assertContains(billing, 'period(containing', 'BillingPeriod.swift');
+
+  const onboarding = assertFileExists('Sources/MimiMoneyCore/Views/OnboardingGuideView.swift');
+  checkBalancedBraces(onboarding, 'OnboardingGuideView.swift');
+  assertContains(onboarding, 'public struct OnboardingGuideView: View', 'OnboardingGuideView.swift');
 
   const csvService = assertFileExists('Sources/MimiMoneyCore/Services/MimiCSVService.swift');
   checkBalancedBraces(csvService, 'MimiCSVService.swift');

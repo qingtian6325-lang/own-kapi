@@ -317,40 +317,9 @@ public struct ScreenshotResultSnippetView: View {
                     .foregroundColor(MimiTheme.textSecondary)
             }
 
-            // Two-Button Action Row: View (修改) & Got it (确认) - matches user screenshot
-            #if canImport(AppIntents)
-            if #available(iOS 16.0, *) {
-                HStack(spacing: 12) {
-                    Button(intent: OpenBillForEditIntent(transactionId: transaction.id)) {
-                        Text("修改 (View)")
-                            .mimiFont(14, weight: .semibold)
-                            .foregroundColor(MimiTheme.textPrimary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 11)
-                            .background(
-                                Capsule().fill(MimiTheme.fillSubtle)
-                            )
-                    }
-                    .mimiPressable()
-
-                    Button(intent: ConfirmBillIntent(transactionId: transaction.id)) {
-                        Text("确认 (Got it)")
-                            .mimiFont(14, weight: .semibold)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 11)
-                            .background(
-                                Capsule().fill(MimiTheme.expenseBlue)
-                            )
-                    }
-                    .mimiPressable()
-                }
-            } else {
-                fallbackTwoButtons
-            }
-            #else
+            // In-app snippet always uses callbacks so confirm/edit actually save / open detail.
+            // App Intent buttons are only for Shortcuts system confirmation cards.
             fallbackTwoButtons
-            #endif
         }
         .padding(16)
         .background(
@@ -786,7 +755,7 @@ public struct ScanScreenshotIntent: AppIntent {
     @Parameter(title: "类型", default: 2)
     public var type: Int?
 
-    @Parameter(title: "版本", default: "1.3.9")
+    @Parameter(title: "版本", default: "1.3.10")
     public var version: String?
 
     public init() {}
@@ -939,8 +908,8 @@ public struct ScanScreenshotIntent: AppIntent {
                 transaction.amount
             )
             try await requestConfirmation(
-                result: .result(dialog: "确认记账：\(transaction.categoryPath) \(amountText)（\(transaction.accountName)）？"),
-                confirmationActionName: .log
+                actionName: .log,
+                dialog: IntentDialog("确认记账：\(transaction.categoryPath) \(amountText)（\(transaction.accountName)）？")
             )
         }
     }

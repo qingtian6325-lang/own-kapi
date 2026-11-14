@@ -14,8 +14,9 @@ public struct MimiStatsView: View {
     @State private var selectedLedgerFilterId: String? = nil // nil = current ledger
     @State private var selectedFilterType: String = "全部" // 全部 | 仅支出 | 仅收入
 
-    @State private var statsYear: Int = 2026
-    @State private var statsMonth: Int = 11
+    @State private var statsYear: Int = Calendar.current.component(.year, from: Date())
+    @State private var statsMonth: Int = Calendar.current.component(.month, from: Date())
+    @State private var statsMonthOffset: Int = 0
     @State private var statsWeekOffset: Int = 0
     @State private var customStartDate: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
     @State private var customEndDate: Date = Date()
@@ -57,8 +58,7 @@ public struct MimiStatsView: View {
                 guard let weekStart = cal.date(byAdding: .day, value: -6, to: baseDate) else { return true }
                 return tx.date >= weekStart && tx.date <= baseDate
             case "月":
-                let txComps = cal.dateComponents([.year, .month], from: tx.date)
-                return txComps.year == statsYear && txComps.month == statsMonth
+                return statsBillingPeriod.contains(tx.date)
             case "年":
                 let txYear = cal.component(.year, from: tx.date)
                 return txYear == statsYear
@@ -68,6 +68,16 @@ public struct MimiStatsView: View {
                 return true
             }
         }
+    }
+
+    private var statsBillingPeriod: BillingPeriod {
+        let cal = Calendar(identifier: .gregorian)
+        let base = store.currentBillingPeriod()
+        guard statsMonthOffset != 0,
+              let shifted = cal.date(byAdding: .month, value: statsMonthOffset, to: base.start) else {
+            return base
+        }
+        return BillingPeriodEngine.period(containing: shifted, startDay: store.monthStartDay)
     }
 
     private var periodLabelText: String {
@@ -81,7 +91,7 @@ public struct MimiStatsView: View {
                 return String(format: "往后第 %d 周", statsWeekOffset)
             }
         case "月":
-            return String(format: "%d年%d月", statsYear, statsMonth)
+            return statsBillingPeriod.displayRangeLabel
         case "年":
             return String(format: "%d年 全年", statsYear)
         case "自定义":
@@ -94,27 +104,22 @@ public struct MimiStatsView: View {
     }
 
     private func navigatePeriod(forward: Bool) {
+        let cal = Calendar(identifier: .gregorian)
+        let delta = forward ? 1 : -1
         switch selectedPeriod {
         case "月":
-            if forward {
-                if statsMonth == 12 {
-                    statsMonth = 1
-                    statsYear += 1
-                } else {
-                    statsMonth += 1
-                }
-            } else {
-                if statsMonth == 1 {
-                    statsMonth = 12
-                    statsYear -= 1
-                } else {
-                    statsMonth -= 1
-                }
-            }
+            statsMonthOffset += delta
         case "周":
-            statsWeekOffset += (forward ? 1 : -1)
+            statsWeekOffset += delta
         case "年":
-            statsYear += (forward ? 1 : -1)
+            statsYear += delta
+        case "自定义":
+            let span = max(1, cal.dateComponents([.day], from: customStartDate, to: customEndDate).day ?? 1)
+            if let newStart = cal.date(byAdding: .day, value: delta * span, to: customStartDate),
+               let newEnd = cal.date(byAdding: .day, value: delta * span, to: customEndDate) {
+                customStartDate = newStart
+                customEndDate = newEnd
+            }
         default:
             break
         }
@@ -208,12 +213,15 @@ public struct MimiStatsView: View {
                 set: { if !$0 { drillCategoryName = nil } }
             )) {
                 if let name = drillCategoryName {
+                    let periodStart = statsBillingPeriod.start
+                    let y = Calendar(identifier: .gregorian).component(.year, from: periodStart)
+                    let m = Calendar(identifier: .gregorian).component(.month, from: periodStart)
                     CategoryBillsListView(
                         store: store,
                         categoryName: name,
                         transactionType: selectedChartType,
-                        year: statsYear,
-                        month: statsMonth,
+                        year: y,
+                        month: m,
                         onSelectTransaction: { tx in
                             billForDetail = tx
                         },
@@ -252,7 +260,10 @@ public struct MimiStatsView: View {
 
             Menu {
                 Button("记录 (首页)") { onSwitchToHome() }
-                Button("Mimi (图表统计)") {}
+                Button("Mimi (图表统计)") {
+                    // Already on stats — keep menu dismiss-only.
+                }
+                .disabled(true)
                 Button("资产管理") { onOpenAssets() }
             } label: {
                 HStack(spacing: 4) {
@@ -696,49 +707,54 @@ public struct MimiStatsView: View {
                     .padding(.vertical, 8)
             } else {
                 ForEach(Array(visible.enumerated()), id: \.element.id) { idx, item in
-                    HStack(spacing: 10) {
-                        Text("\(idx + 1)")
-                            .mimiFont(12, weight: .bold, design: .rounded)
-                            .foregroundColor(idx < 3 ? MimiTheme.expenseBlue : MimiTheme.textMuted)
-                            .frame(width: 18)
+                    Button {
+                        billForDetail = item
+                    } label: {
+                        HStack(spacing: 10) {
+                            Text("\(idx + 1)")
+                                .mimiFont(12, weight: .bold, design: .rounded)
+                                .foregroundColor(idx < 3 ? MimiTheme.expenseBlue : MimiTheme.textMuted)
+                                .frame(width: 18)
 
-                        MimiStickerIconView(
-                            iconName: item.iconName,
-                            categoryName: item.categoryPath,
-                            transactionType: item.type,
-                            size: 32
-                        )
+                            MimiStickerIconView(
+                                iconName: item.iconName,
+                                categoryName: item.categoryPath,
+                                transactionType: item.type,
+                                size: 32
+                            )
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(item.categoryPath)
-                                .mimiFont(13, weight: .semibold)
-                                .foregroundColor(MimiTheme.textPrimary)
-                            if !item.note.isEmpty {
-                                Text(item.note)
-                                    .mimiFont(11)
-                                    .foregroundColor(MimiTheme.textMuted)
-                                    .lineLimit(1)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(item.categoryPath)
+                                    .mimiFont(13, weight: .semibold)
+                                    .foregroundColor(MimiTheme.textPrimary)
+                                if !item.note.isEmpty {
+                                    Text(item.note)
+                                        .mimiFont(11)
+                                        .foregroundColor(MimiTheme.textMuted)
+                                        .lineLimit(1)
+                                }
                             }
+
+                            Spacer(minLength: 8)
+
+                            Text(MimiTheme.formatRM(item.amount))
+                                .mimiFont(14, weight: .bold, design: .rounded)
+                                .foregroundColor(rankingMode == "收入" ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
+
+                            Image(systemName: "chevron.right")
+                                .mimiFont(11, weight: .semibold)
+                                .foregroundColor(MimiTheme.textMuted)
                         }
-
-                        Spacer(minLength: 8)
-
-                        Text(rankingMode == "收入"
-                             ? MimiTheme.formatRM(item.amount)
-                             : MimiTheme.formatRM(item.amount))
-                            .mimiFont(14, weight: .bold, design: .rounded)
-                            .foregroundColor(rankingMode == "收入" ? MimiTheme.incomeOrange : MimiTheme.expenseBlue)
-
-                        Image(systemName: "chevron.right")
-                            .mimiFont(11, weight: .semibold)
-                            .foregroundColor(MimiTheme.controlDisabled)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(idx < 3 ? MimiTheme.rowHoverSoft : Color.clear)
+                        )
+                        .contentShape(Rectangle())
                     }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 8)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(idx < 3 ? MimiTheme.rowHoverSoft : Color.clear)
-                    )
+                    .mimiPressable()
+                    .accessibilityLabel("打开账单 \(item.categoryPath)")
                 }
 
                 if ranked.count > 5 {
@@ -770,9 +786,11 @@ public struct MimiStatsView: View {
     private var tabularBillSummaryCard: some View {
         let cal = Calendar(identifier: .gregorian)
         let dayRows: [(label: String, exp: Double, inc: Double, net: Double)] = {
-            var map: [Int: (exp: Double, inc: Double)] = [:]
+            var map: [Date: (exp: Double, inc: Double)] = [:]
+            let labelFmt = DateFormatter()
+            labelFmt.dateFormat = "M.d"
             for tx in periodTransactions {
-                let day = cal.component(.day, from: tx.date)
+                let day = cal.startOfDay(for: tx.date)
                 var cur = map[day] ?? (0, 0)
                 if tx.type == .expense { cur.exp += tx.amount }
                 if tx.type == .income { cur.inc += tx.amount }
@@ -780,7 +798,7 @@ public struct MimiStatsView: View {
             }
             return map.keys.sorted(by: >).map { day in
                 let v = map[day]!
-                return (label: "\(statsMonth).\(day)", exp: v.exp, inc: v.inc, net: v.inc - v.exp)
+                return (label: labelFmt.string(from: day), exp: v.exp, inc: v.inc, net: v.inc - v.exp)
             }
         }()
         let dayCount = max(1, dayRows.count)

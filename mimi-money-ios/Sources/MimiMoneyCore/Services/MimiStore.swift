@@ -13,6 +13,54 @@ public struct PersistedAppState: Codable, Sendable {
     public var expenseCategories: [CategoryGroup]
     public var incomeCategories: [CategoryGroup]
     public var tags: [String]
+    /// 月统计/预算账期起始日（1…28）。1 = 自然月。
+    public var monthStartDay: Int
+    /// 是否已完成新手指南。旧存档缺字段时按「已完成」迁移，避免老用户被强制引导。
+    public var hasCompletedOnboarding: Bool
+
+    public init(
+        ledgers: [LedgerItem],
+        currentLedgerId: String,
+        accounts: [AccountItem],
+        transactions: [TransactionItem],
+        auditLogs: [AccountAuditLog],
+        expenseCategories: [CategoryGroup],
+        incomeCategories: [CategoryGroup],
+        tags: [String],
+        monthStartDay: Int = 1,
+        hasCompletedOnboarding: Bool = false
+    ) {
+        self.ledgers = ledgers
+        self.currentLedgerId = currentLedgerId
+        self.accounts = accounts
+        self.transactions = transactions
+        self.auditLogs = auditLogs
+        self.expenseCategories = expenseCategories
+        self.incomeCategories = incomeCategories
+        self.tags = tags
+        self.monthStartDay = BillingPeriodEngine.clampedStartDay(monthStartDay)
+        self.hasCompletedOnboarding = hasCompletedOnboarding
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case ledgers, currentLedgerId, accounts, transactions, auditLogs
+        case expenseCategories, incomeCategories, tags, monthStartDay, hasCompletedOnboarding
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        ledgers = try c.decode([LedgerItem].self, forKey: .ledgers)
+        currentLedgerId = try c.decode(String.self, forKey: .currentLedgerId)
+        accounts = try c.decode([AccountItem].self, forKey: .accounts)
+        transactions = try c.decode([TransactionItem].self, forKey: .transactions)
+        auditLogs = try c.decode([AccountAuditLog].self, forKey: .auditLogs)
+        expenseCategories = try c.decode([CategoryGroup].self, forKey: .expenseCategories)
+        incomeCategories = try c.decode([CategoryGroup].self, forKey: .incomeCategories)
+        tags = try c.decode([String].self, forKey: .tags)
+        monthStartDay = BillingPeriodEngine.clampedStartDay(try c.decodeIfPresent(Int.self, forKey: .monthStartDay) ?? 1)
+        // Missing key → existing install: treat as completed
+        hasCompletedOnboarding = try c.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? true
+    }
 }
 
 @MainActor
@@ -36,6 +84,9 @@ public final class MimiStore: ObservableObject {
     @Published public var userNickname: String = "jinghao"
     @Published public var hapticsEnabled: Bool = true
     @Published public var scheduledTransactions: [ScheduledTransactionItem] = []
+    /// 月账期起始日 1…28（1 = 自然月 1 号）
+    @Published public var monthStartDay: Int = 1
+    @Published public var hasCompletedOnboarding: Bool = false
 
     private let inMemory: Bool
     private let storageURL: URL
@@ -197,6 +248,8 @@ public final class MimiStore: ObservableObject {
             self.expenseCategories = decoded.expenseCategories
             self.incomeCategories = decoded.incomeCategories
             self.tags = decoded.tags
+            self.monthStartDay = decoded.monthStartDay
+            self.hasCompletedOnboarding = decoded.hasCompletedOnboarding
         } else if inMemory {
             // Unit test in-memory store uses deterministic test dataset
             let initial = Self.makeDemoAppState()
@@ -208,6 +261,8 @@ public final class MimiStore: ObservableObject {
             self.expenseCategories = initial.expenseCategories
             self.incomeCategories = initial.incomeCategories
             self.tags = initial.tags
+            self.monthStartDay = initial.monthStartDay
+            self.hasCompletedOnboarding = initial.hasCompletedOnboarding
             self.reimbursableAmount = 1000.00
         } else {
             // Production App default: completely empty transactions, audit logs, and 0.00 account balances
@@ -220,6 +275,8 @@ public final class MimiStore: ObservableObject {
             self.expenseCategories = empty.expenseCategories
             self.incomeCategories = empty.incomeCategories
             self.tags = empty.tags
+            self.monthStartDay = empty.monthStartDay
+            self.hasCompletedOnboarding = empty.hasCompletedOnboarding
             self.reimbursableAmount = 0.00
         }
         if !inMemory,
@@ -227,6 +284,7 @@ public final class MimiStore: ObservableObject {
            let decoded = try? JSONDecoder().decode([TransactionItem].self, from: data) {
             self.pendingScanTransactions = decoded
         }
+        DefaultCatalog.syncLiveAccounts(accounts)
         recalculateAllAccountBalances()
     }
 
@@ -415,6 +473,23 @@ public final class MimiStore: ObservableObject {
 
     public func addAccount(_ account: AccountItem) {
         accounts.append(account)
+        DefaultCatalog.syncLiveAccounts(accounts)
+        saveState()
+    }
+
+    public func updateAccount(_ account: AccountItem) {
+        guard let idx = accounts.firstIndex(where: { $0.id == account.id }) else { return }
+        var next = account
+        // Metadata edit must not clobber the running ledger balance.
+        next.balance = accounts[idx].balance
+        next.initialBalance = accounts[idx].initialBalance
+        if next.isDefaultAccount {
+            for i in accounts.indices where accounts[i].id != next.id {
+                accounts[i].isDefaultAccount = false
+            }
+        }
+        accounts[idx] = next
+        DefaultCatalog.syncLiveAccounts(accounts)
         saveState()
     }
 
@@ -479,6 +554,117 @@ public final class MimiStore: ObservableObject {
         useFirstCharIcon: Bool
     ) {
         addSubCategory(to: toGroupId, name: name, iconName: iconName)
+    }
+
+    public func renamePrimaryCategory(id: String, type: TransactionType, newName: String) {
+        let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        if type == .expense, let idx = expenseCategories.firstIndex(where: { $0.id == id }) {
+            expenseCategories[idx].name = trimmed
+            saveState()
+        } else if type == .income, let idx = incomeCategories.firstIndex(where: { $0.id == id }) {
+            incomeCategories[idx].name = trimmed
+            saveState()
+        }
+    }
+
+    public func updatePrimaryCategoryIcon(id: String, type: TransactionType, iconName: String, useFirstCharIcon: Bool) {
+        if type == .expense, let idx = expenseCategories.firstIndex(where: { $0.id == id }) {
+            expenseCategories[idx].iconName = iconName
+            expenseCategories[idx].useFirstCharIcon = useFirstCharIcon
+            saveState()
+        } else if type == .income, let idx = incomeCategories.firstIndex(where: { $0.id == id }) {
+            incomeCategories[idx].iconName = iconName
+            incomeCategories[idx].useFirstCharIcon = useFirstCharIcon
+            saveState()
+        }
+    }
+
+    public func deletePrimaryCategory(id: String, type: TransactionType) {
+        if type == .expense {
+            guard expenseCategories.count > 1 else { return }
+            expenseCategories.removeAll(where: { $0.id == id })
+        } else {
+            guard incomeCategories.count > 1 else { return }
+            incomeCategories.removeAll(where: { $0.id == id })
+        }
+        saveState()
+    }
+
+    public func renameSubcategory(groupId: String, subId: String, type: TransactionType, newName: String) {
+        let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        func rename(in groups: inout [CategoryGroup]) {
+            guard let gIdx = groups.firstIndex(where: { $0.id == groupId }),
+                  let sIdx = groups[gIdx].subCategories.firstIndex(where: { $0.id == subId }) else { return }
+            groups[gIdx].subCategories[sIdx].name = trimmed
+        }
+        if type == .expense {
+            rename(in: &expenseCategories)
+        } else {
+            rename(in: &incomeCategories)
+        }
+        saveState()
+    }
+
+    public func deleteSubcategory(groupId: String, subId: String, type: TransactionType) {
+        func remove(in groups: inout [CategoryGroup]) {
+            guard let gIdx = groups.firstIndex(where: { $0.id == groupId }) else { return }
+            groups[gIdx].subCategories.removeAll(where: { $0.id == subId })
+        }
+        if type == .expense {
+            remove(in: &expenseCategories)
+        } else {
+            remove(in: &incomeCategories)
+        }
+        saveState()
+    }
+
+    public func moveSubcategory(groupId: String, type: TransactionType, from fromIndex: Int, to toIndex: Int) {
+        func move(in groups: inout [CategoryGroup]) {
+            guard let gIdx = groups.firstIndex(where: { $0.id == groupId }) else { return }
+            var subs = groups[gIdx].subCategories
+            guard fromIndex >= 0, fromIndex < subs.count,
+                  toIndex >= 0, toIndex < subs.count,
+                  fromIndex != toIndex else { return }
+            let item = subs.remove(at: fromIndex)
+            subs.insert(item, at: toIndex)
+            for i in subs.indices { subs[i].sortOrder = i }
+            groups[gIdx].subCategories = subs
+        }
+        if type == .expense {
+            move(in: &expenseCategories)
+        } else {
+            move(in: &incomeCategories)
+        }
+        saveState()
+    }
+
+    public func movePrimaryCategory(type: TransactionType, from fromIndex: Int, to toIndex: Int) {
+        func move(in groups: inout [CategoryGroup]) {
+            guard fromIndex >= 0, fromIndex < groups.count,
+                  toIndex >= 0, toIndex < groups.count,
+                  fromIndex != toIndex else { return }
+            let item = groups.remove(at: fromIndex)
+            groups.insert(item, at: toIndex)
+            for i in groups.indices { groups[i].sortOrder = i }
+        }
+        if type == .expense {
+            move(in: &expenseCategories)
+        } else {
+            move(in: &incomeCategories)
+        }
+        saveState()
+    }
+
+    public func clearPendingReimbursementTag(on transactionId: UUID) {
+        guard let idx = transactions.firstIndex(where: { $0.id == transactionId }) else { return }
+        var tx = transactions[idx]
+        tx.tags.removeAll { tag in
+            let t = tag.trimmingCharacters(in: .whitespacesAndNewlines)
+            return t == "待报销" || t == "报销"
+        }
+        updateTransaction(tx)
     }
 
     public var monthlyBudgetTotal: Double {
@@ -593,6 +779,118 @@ public final class MimiStore: ObservableObject {
         max(0.0, monthlyBudgetTotal - monthlyExpenseTotal(year: year, month: month))
     }
 
+    public func setMonthStartDay(_ day: Int) {
+        monthStartDay = BillingPeriodEngine.clampedStartDay(day)
+        saveState()
+    }
+
+    public func completeOnboarding() {
+        hasCompletedOnboarding = true
+        saveState()
+    }
+
+    public func reopenOnboarding() {
+        hasCompletedOnboarding = false
+        saveState()
+    }
+
+    public func currentBillingPeriod(now: Date = Date()) -> BillingPeriod {
+        BillingPeriodEngine.period(containing: now, startDay: monthStartDay)
+    }
+
+    public func expenseTotal(in period: BillingPeriod) -> Double {
+        transactions.reduce(0.0) { acc, tx in
+            guard tx.ledgerId == currentLedgerId,
+                  tx.includeInStats,
+                  tx.type == .expense,
+                  period.contains(tx.date) else { return acc }
+            return acc + max(0.0, tx.amount - tx.discountAmount - tx.refundAmount)
+        }
+    }
+
+    public func incomeTotal(in period: BillingPeriod) -> Double {
+        transactions.reduce(0.0) { acc, tx in
+            guard tx.ledgerId == currentLedgerId,
+                  tx.includeInStats,
+                  tx.type == .income,
+                  period.contains(tx.date) else { return acc }
+            return acc + tx.amount
+        }
+    }
+
+    public func budgetRemaining(in period: BillingPeriod) -> Double {
+        max(0.0, monthlyBudgetTotal - expenseTotal(in: period))
+    }
+
+    public func categorySpent(for categoryName: String, in period: BillingPeriod) -> Double {
+        transactions.reduce(0.0) { acc, tx in
+            guard tx.ledgerId == currentLedgerId,
+                  tx.includeInStats,
+                  tx.type == .expense,
+                  period.contains(tx.date) else { return acc }
+            let primaryName = tx.categoryPath.components(separatedBy: "-").first ?? tx.categoryPath
+            guard primaryName == categoryName || tx.primaryCategoryId == categoryName else { return acc }
+            return acc + max(0.0, tx.amount - tx.discountAmount - tx.refundAmount)
+        }
+    }
+
+    public func dailyAvailableBudget(now: Date = Date()) -> Double {
+        let period = currentBillingPeriod(now: now)
+        let spentBefore = BillingPeriodEngine.spentBeforeToday(
+            transactions: transactions,
+            ledgerId: currentLedgerId,
+            period: period,
+            today: now
+        )
+        let remainingDays = BillingPeriodEngine.remainingDaysIncludingToday(in: period, today: now)
+        return DynamicBudgetEngine.calculateDailyBudget(
+            monthlyBudget: monthlyBudgetTotal,
+            spentBeforeToday: spentBefore,
+            remainingDaysIncludingToday: remainingDays
+        )
+    }
+
+    public func todayExpenseTotal(now: Date = Date()) -> Double {
+        let cal = Calendar(identifier: .gregorian)
+        let start = cal.startOfDay(for: now)
+        guard let end = cal.date(byAdding: .day, value: 1, to: start) else { return 0 }
+        return transactions.reduce(0.0) { sum, tx in
+            guard tx.ledgerId == currentLedgerId,
+                  tx.type == .expense,
+                  tx.date >= start, tx.date < end else { return sum }
+            return sum + max(0.0, tx.amount - tx.discountAmount - tx.refundAmount)
+        }
+    }
+
+    /// Normalized 0…1 samples for home「30天趋势」sparkline, ending at current net worth.
+    public func netWorthSparklineSamples(days: Int = 30, now: Date = Date()) -> [CGFloat] {
+        let cal = Calendar(identifier: .gregorian)
+        let today = cal.startOfDay(for: now)
+        var dailyDelta = Array(repeating: 0.0, count: max(days, 2))
+        for tx in transactions {
+            guard tx.includeInStats, tx.type != .transfer else { continue }
+            let dayStart = cal.startOfDay(for: tx.date)
+            guard let diff = cal.dateComponents([.day], from: dayStart, to: today).day,
+                  diff >= 0, diff < dailyDelta.count else { continue }
+            let idx = dailyDelta.count - 1 - diff
+            let net = max(0.0, tx.amount - tx.discountAmount - tx.refundAmount)
+            if tx.type == .income {
+                dailyDelta[idx] += net
+            } else if tx.type == .expense {
+                dailyDelta[idx] -= net
+            }
+        }
+        var series = Array(repeating: 0.0, count: dailyDelta.count)
+        series[series.count - 1] = netWorth
+        for i in stride(from: series.count - 2, through: 0, by: -1) {
+            series[i] = series[i + 1] - dailyDelta[i + 1]
+        }
+        let minV = series.min() ?? 0
+        let maxV = series.max() ?? 1
+        let span = max(0.01, maxV - minV)
+        return series.map { CGFloat(($0 - minV) / span) }
+    }
+
     public var currentLedgerName: String {
         get { currentLedger.name }
         set {
@@ -608,6 +906,11 @@ public final class MimiStore: ObservableObject {
     }
 
     public func categorySpent(for categoryName: String, year: Int, month: Int) -> Double {
+        if monthStartDay != 1 {
+            let cal = Calendar(identifier: .gregorian)
+            let anchor = cal.date(from: DateComponents(year: year, month: month, day: monthStartDay)) ?? Date()
+            return categorySpent(for: categoryName, in: BillingPeriodEngine.period(containing: anchor, startDay: monthStartDay))
+        }
         let cal = Calendar(identifier: .gregorian)
         return transactions.reduce(0.0) { acc, tx in
             guard tx.ledgerId == currentLedgerId,
@@ -666,14 +969,46 @@ public final class MimiStore: ObservableObject {
     public var netWorth: Double { netWorthTotal() }
 
     public var totalAssets: Double {
-        accounts.filter { !$0.isLiability }.reduce(0.0) { $0 + $1.balance }
+        accounts
+            .filter { !$0.isLiability && $0.includeInAssets }
+            .reduce(0.0) { $0 + $1.balance }
+    }
+
+    /// Accounts ordered for the assets list: special-focus first, then original order.
+    public var accountsForDisplay: [AccountItem] {
+        let focused = accounts.filter(\.isSpecialFocus)
+        let rest = accounts.filter { !$0.isSpecialFocus }
+        return focused + rest
+    }
+
+    public var defaultBookkeepingAccount: AccountItem? {
+        accounts.first(where: \.isDefaultAccount) ?? accounts.first
     }
 
     public var totalLiabilities: Double {
         accounts.filter { $0.isLiability }.reduce(0.0) { $0 + $1.balance }
     }
 
-    public var pendingReimbursementAmount: Double { reimbursableAmount }
+    /// Pending reimbursement = sum of expense txs tagged 待报销/报销 (net of discount/refund).
+    public var pendingReimbursementTransactions: [TransactionItem] {
+        transactions.filter { tx in
+            guard tx.type == .expense else { return false }
+            return tx.tags.contains(where: { tag in
+                let t = tag.trimmingCharacters(in: .whitespacesAndNewlines)
+                return t == "待报销" || t == "报销"
+            })
+        }
+    }
+
+    public var pendingReimbursementAmount: Double {
+        let fromTags = pendingReimbursementTransactions.reduce(0.0) { sum, tx in
+            sum + max(0.0, tx.amount - tx.discountAmount - tx.refundAmount)
+        }
+        // Keep legacy manual reimbursableAmount as additive only when no tagged bills exist
+        // (demo seed); otherwise tags are the source of truth.
+        if fromTags > 0.009 { return ((fromTags * 100).rounded()) / 100 }
+        return reimbursableAmount
+    }
 
     public var recordedDaysCount: Int {
         let cal = Calendar(identifier: .gregorian)
@@ -760,6 +1095,12 @@ public final class MimiStore: ObservableObject {
     }
 
     public func monthlyExpenseTotal(year: Int, month: Int) -> Double {
+        // When custom monthStartDay is set, prefer the billing period that starts in this calendar month.
+        if monthStartDay != 1 {
+            let cal = Calendar(identifier: .gregorian)
+            let anchor = cal.date(from: DateComponents(year: year, month: month, day: monthStartDay)) ?? Date()
+            return expenseTotal(in: BillingPeriodEngine.period(containing: anchor, startDay: monthStartDay))
+        }
         let cal = Calendar(identifier: .gregorian)
         return transactions.reduce(0.0) { acc, tx in
             guard tx.ledgerId == currentLedgerId,
@@ -773,6 +1114,11 @@ public final class MimiStore: ObservableObject {
     }
 
     public func monthlyIncomeTotal(year: Int, month: Int) -> Double {
+        if monthStartDay != 1 {
+            let cal = Calendar(identifier: .gregorian)
+            let anchor = cal.date(from: DateComponents(year: year, month: month, day: monthStartDay)) ?? Date()
+            return incomeTotal(in: BillingPeriodEngine.period(containing: anchor, startDay: monthStartDay))
+        }
         let cal = Calendar(identifier: .gregorian)
         return transactions.reduce(0.0) { acc, tx in
             guard tx.ledgerId == currentLedgerId,
@@ -785,7 +1131,10 @@ public final class MimiStore: ObservableObject {
     }
 
     public func netWorthTotal() -> Double {
-        accounts.reduce(0.0) { $0 + ($1.isLiability ? -$1.balance : $1.balance) }
+        accounts.reduce(0.0) { sum, acc in
+            guard acc.includeInAssets else { return sum }
+            return sum + (acc.isLiability ? -acc.balance : acc.balance)
+        }
     }
 
     public func categoryTitle(for tx: TransactionItem) -> String {
@@ -850,6 +1199,8 @@ public final class MimiStore: ObservableObject {
         self.expenseCategories = clean.expenseCategories
         self.incomeCategories = clean.incomeCategories
         self.tags = clean.tags
+        self.monthStartDay = clean.monthStartDay
+        self.hasCompletedOnboarding = clean.hasCompletedOnboarding
         saveState()
     }
 
@@ -873,7 +1224,9 @@ public final class MimiStore: ObservableObject {
             auditLogs: [],
             expenseCategories: DefaultCatalog.standardExpenseCategories(),
             incomeCategories: DefaultCatalog.standardIncomeCategories(),
-            tags: ["报销", "旅行", "固定支出", "家庭"]
+            tags: ["报销", "旅行", "固定支出", "家庭"],
+            monthStartDay: 1,
+            hasCompletedOnboarding: false
         )
     }
 
@@ -902,22 +1255,59 @@ public final class MimiStore: ObservableObject {
     }
 
     private func appendAuditLog(for tx: TransactionItem, action: AuditActionType, loggedAt: Date) {
-        guard let accId = tx.accountId,
-              let acc = accounts.first(where: { $0.id == accId }) else { return }
+        let net = max(0.0, tx.amount - tx.discountAmount - tx.refundAmount)
         let title = categoryTitle(for: tx).components(separatedBy: "-").last ?? categoryTitle(for: tx)
-        let log = AccountAuditLog(
-            accountId: accId,
-            action: action,
-            transactionType: tx.type,
-            categoryTitle: "\(tx.type.rawValue) | \(title)",
-            note: tx.note.isEmpty ? (action == .updated ? "账单编辑" : title) : tx.note,
-            amount: max(0.0, tx.amount - tx.discountAmount - tx.refundAmount),
-            balanceAfter: acc.balance,
-            billDate: tx.date,
-            loggedAt: loggedAt,
-            transactionId: tx.id
-        )
-        auditLogs.insert(log, at: 0)
+        let note = tx.note.isEmpty ? (action == .updated ? "账单编辑" : title) : tx.note
+        let typeLabel = tx.type == .transfer ? "转账" : tx.type.rawValue
+
+        if let accId = tx.accountId, let acc = accounts.first(where: { $0.id == accId }) {
+            let srcNote: String
+            if tx.type == .transfer {
+                let dest = accountName(for: tx.targetAccountId)
+                srcNote = note.isEmpty ? "转出 → \(dest)" : note
+            } else {
+                srcNote = note
+            }
+            auditLogs.insert(
+                AccountAuditLog(
+                    accountId: accId,
+                    action: action,
+                    transactionType: tx.type,
+                    categoryTitle: "\(typeLabel) | \(title)",
+                    note: srcNote,
+                    amount: net,
+                    balanceAfter: acc.balance,
+                    billDate: tx.date,
+                    loggedAt: loggedAt,
+                    transactionId: tx.id,
+                    isInflow: tx.type == .income
+                ),
+                at: 0
+            )
+        }
+
+        // 转账入款账户也写明细，否则对方账户余额变了但记录空白
+        if tx.type == .transfer,
+           let dstId = tx.targetAccountId ?? tx.targetAccountName.flatMap({ DefaultCatalog.resolveAccountId(from: $0) }),
+           let dst = accounts.first(where: { $0.id == dstId }) {
+            let srcName = accountName(for: tx.accountId)
+            auditLogs.insert(
+                AccountAuditLog(
+                    accountId: dstId,
+                    action: action,
+                    transactionType: .transfer,
+                    categoryTitle: "转账 | \(title)",
+                    note: note.isEmpty ? "转入 ← \(srcName)" : note,
+                    amount: net,
+                    balanceAfter: dst.balance,
+                    billDate: tx.date,
+                    loggedAt: loggedAt,
+                    transactionId: tx.id,
+                    isInflow: true
+                ),
+                at: 0
+            )
+        }
     }
 
     public func transaction(forAuditLog log: AccountAuditLog) -> TransactionItem? {
@@ -957,14 +1347,18 @@ public final class MimiStore: ObservableObject {
         expenseCategories = decoded.expenseCategories
         incomeCategories = decoded.incomeCategories
         tags = decoded.tags
+        monthStartDay = decoded.monthStartDay
+        hasCompletedOnboarding = decoded.hasCompletedOnboarding
         if let pendingData = try? Data(contentsOf: pendingScansURL),
            let pendingDecoded = try? JSONDecoder().decode([TransactionItem].self, from: pendingData) {
             pendingScanTransactions = pendingDecoded
         }
+        DefaultCatalog.syncLiveAccounts(accounts)
         recalculateAllAccountBalances()
     }
 
     public func saveState() {
+        DefaultCatalog.syncLiveAccounts(accounts)
         guard !inMemory else { return }
         let state = PersistedAppState(
             ledgers: ledgers,
@@ -974,7 +1368,9 @@ public final class MimiStore: ObservableObject {
             auditLogs: auditLogs,
             expenseCategories: expenseCategories,
             incomeCategories: incomeCategories,
-            tags: tags
+            tags: tags,
+            monthStartDay: monthStartDay,
+            hasCompletedOnboarding: hasCompletedOnboarding
         )
         if let data = try? JSONEncoder().encode(state) {
             try? data.write(to: storageURL, options: .atomic)
@@ -1109,7 +1505,9 @@ public final class MimiStore: ObservableObject {
             auditLogs: logs,
             expenseCategories: DefaultCatalog.standardExpenseCategories(),
             incomeCategories: DefaultCatalog.standardIncomeCategories(),
-            tags: ["报销", "旅行", "固定支出", "家庭"]
+            tags: ["报销", "旅行", "固定支出", "家庭"],
+            monthStartDay: 1,
+            hasCompletedOnboarding: true
         )
     }
 }

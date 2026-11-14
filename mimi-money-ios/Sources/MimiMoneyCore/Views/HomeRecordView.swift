@@ -17,7 +17,6 @@ public struct HomeRecordView: View {
     @State private var isAskPanelExpanded: Bool = false
     @State private var isCategoryBudgetExpanded: Bool = false
     @State private var isNetWorthExpanded: Bool = true
-    @State private var showPageSwitcherMenu: Bool = false
     @State private var showLedgerSwitcherSheet: Bool = false
     @State private var showDeleteToast: Bool = false
     @State private var revealedDeleteID: UUID? = nil
@@ -53,15 +52,16 @@ public struct HomeRecordView: View {
         self.onOpenImportExport = onOpenImportExport
     }
 
-    private var currentYear: Int { 2026 }
-    private var currentMonth: Int { 11 }
+    private var currentPeriod: BillingPeriod {
+        store.currentBillingPeriod()
+    }
 
     private var monthlySpent: Double {
-        store.monthlyExpenseTotal(year: currentYear, month: currentMonth)
+        store.expenseTotal(in: currentPeriod)
     }
 
     private var monthlyRemaining: Double {
-        store.monthlyBudgetRemaining(year: currentYear, month: currentMonth)
+        store.budgetRemaining(in: currentPeriod)
     }
 
     private var spentRatio: Double {
@@ -74,11 +74,7 @@ public struct HomeRecordView: View {
     }
 
     private var dailyAvailable: Double {
-        DynamicBudgetEngine.calculateDailyBudget(
-            monthlyBudget: store.monthlyBudgetTotal,
-            spentBeforeToday: monthlySpent,
-            remainingDaysIncludingToday: 21
-        )
+        store.dailyAvailableBudget()
     }
 
     public var body: some View {
@@ -161,6 +157,7 @@ public struct HomeRecordView: View {
                 } label: {
                     Label("记录", systemImage: "checkmark")
                 }
+                .disabled(true)
                 Button {
                     onSwitchToStats()
                 } label: {
@@ -257,6 +254,11 @@ public struct HomeRecordView: View {
                         Text("月预算剩余")
                             .mimiFont(13, weight: .medium)
                             .foregroundColor(MimiTheme.textSecondary)
+                    }
+                    if store.monthStartDay != 1 {
+                        Text(currentPeriod.displayRangeLabel)
+                            .mimiFont(11)
+                            .foregroundColor(MimiTheme.textMuted)
                     }
 
                     HStack(alignment: .center, spacing: 6) {
@@ -463,37 +465,43 @@ public struct HomeRecordView: View {
                                 ? "剩余 \(MimiTheme.formatRM(rem))"
                                 : "超支 \(MimiTheme.formatRM(abs(rem)))"
                         }()
-                        HStack(spacing: 10) {
-                            MimiStickerIconView(
-                                iconName: item.iconName,
-                                categoryName: item.categoryName,
-                                transactionType: .expense,
-                                useFirstCharIcon: item.useFirstCharIcon,
-                                size: 30
-                            )
-                            VStack(alignment: .leading, spacing: 4) {
-                                HStack {
-                                    Text(item.categoryName)
-                                        .mimiFont(13, weight: .medium)
-                                        .foregroundColor(MimiTheme.textPrimary)
-                                    Spacer()
-                                    Text(remLabel)
-                                        .mimiFont(12, weight: .semibold, design: .rounded)
-                                        .foregroundColor(rem >= 0 ? MimiTheme.textSecondary : MimiTheme.dangerRed)
-                                }
-                                GeometryReader { barGeo in
-                                    ZStack(alignment: .leading) {
-                                        Capsule()
-                                            .fill(MimiTheme.fillSubtle)
-                                            .frame(height: 6)
-                                        Capsule()
-                                            .fill(rem >= 0 ? MimiTheme.expenseBlue : MimiTheme.dangerRed)
-                                            .frame(width: barGeo.size.width * CGFloat(ratio), height: 6)
+                        Button(action: onOpenBudgetManager) {
+                            HStack(spacing: 10) {
+                                MimiStickerIconView(
+                                    iconName: item.iconName,
+                                    categoryName: item.categoryName,
+                                    transactionType: .expense,
+                                    useFirstCharIcon: item.useFirstCharIcon,
+                                    size: 30
+                                )
+                                VStack(alignment: .leading, spacing: 4) {
+                                    HStack {
+                                        Text(item.categoryName)
+                                            .mimiFont(13, weight: .medium)
+                                            .foregroundColor(MimiTheme.textPrimary)
+                                        Spacer()
+                                        Text(remLabel)
+                                            .mimiFont(12, weight: .semibold, design: .rounded)
+                                            .foregroundColor(rem >= 0 ? MimiTheme.textSecondary : MimiTheme.dangerRed)
                                     }
+                                    GeometryReader { barGeo in
+                                        ZStack(alignment: .leading) {
+                                            Capsule()
+                                                .fill(MimiTheme.fillSubtle)
+                                                .frame(height: 6)
+                                            Capsule()
+                                                .fill(rem >= 0 ? MimiTheme.expenseBlue : MimiTheme.dangerRed)
+                                                .frame(width: barGeo.size.width * CGFloat(ratio), height: 6)
+                                        }
+                                    }
+                                    .frame(height: 6)
                                 }
-                                .frame(height: 6)
                             }
+                            .contentShape(Rectangle())
                         }
+                        .mimiPressable()
+                        .accessibilityLabel("\(item.categoryName)预算")
+                        .accessibilityHint("打开预算管理")
                     }
                 }
                 .padding(.top, 4)
@@ -531,7 +539,7 @@ public struct HomeRecordView: View {
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 3)
                                 .background(Capsule().fill(MimiTheme.cardBackground))
-                            HomeNetWorthSparkline()
+                            HomeNetWorthSparkline(samples: store.netWorthSparklineSamples())
                                 .frame(width: 124, height: 32)
                         }
                     }
@@ -1053,12 +1061,9 @@ private struct FeedBillMarkButton: View {
     }
 }
 
-/// Line sparkline shaped like gold A's 30-day net-worth trace.
+/// Line sparkline for home「30天趋势」using live net-worth samples.
 private struct HomeNetWorthSparkline: View {
-    private let samples: [CGFloat] = [
-        0.46, 0.47, 0.48, 0.47, 0.49, 0.48, 0.50, 0.49,
-        0.52, 0.70, 0.96, 0.74, 0.66, 0.72, 0.60, 0.58
-    ]
+    var samples: [CGFloat]
 
     var body: some View {
         GeometryReader { geo in
@@ -1085,12 +1090,14 @@ private struct HomeNetWorthSparkline: View {
                 }
             }
         }
+        .accessibilityLabel("近30天净资产趋势")
     }
 
     private func samplePoints(in size: CGSize) -> [CGPoint] {
-        let count = max(samples.count - 1, 1)
+        let values = samples.isEmpty ? [0.5, 0.5] : samples
+        let count = max(values.count - 1, 1)
         let inset: CGFloat = 5
-        return samples.enumerated().map { index, value in
+        return values.enumerated().map { index, value in
             let x = inset + (size.width - inset * 2) * CGFloat(index) / CGFloat(count)
             let y = size.height - (value * (size.height - 10)) - 5
             return CGPoint(x: x, y: y)

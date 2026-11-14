@@ -29,6 +29,50 @@ final class StoreAndBudgetTests: XCTestCase {
         )
     }
 
+    func testBillingPeriodStartDay25() {
+        let cal = Calendar(identifier: .gregorian)
+        let mid = cal.date(from: DateComponents(year: 2026, month: 11, day: 13))!
+        let period = BillingPeriodEngine.period(containing: mid, startDay: 25)
+        let startComps = cal.dateComponents([.year, .month, .day], from: period.start)
+        let endComps = cal.dateComponents([.year, .month, .day], from: period.end)
+        XCTAssertEqual(startComps.year, 2026)
+        XCTAssertEqual(startComps.month, 10)
+        XCTAssertEqual(startComps.day, 25)
+        XCTAssertEqual(endComps.month, 11)
+        XCTAssertEqual(endComps.day, 24)
+
+        let onStart = cal.date(from: DateComponents(year: 2026, month: 11, day: 25))!
+        let next = BillingPeriodEngine.period(containing: onStart, startDay: 25)
+        XCTAssertEqual(cal.component(.day, from: next.start), 25)
+        XCTAssertEqual(cal.component(.month, from: next.start), 11)
+
+        let store = MimiStore(inMemory: true)
+        store.resetToCleanEmpty()
+        store.setMonthStartDay(25)
+        store.updateMonthlyBudget(1000)
+        let inPeriod = TransactionItem(
+            ledgerId: store.currentLedgerId,
+            type: .expense,
+            amount: 100,
+            primaryCategoryId: "exp_food",
+            accountId: "acc_tng",
+            date: mid
+        )
+        let outPeriod = TransactionItem(
+            ledgerId: store.currentLedgerId,
+            type: .expense,
+            amount: 50,
+            primaryCategoryId: "exp_food",
+            accountId: "acc_tng",
+            date: cal.date(from: DateComponents(year: 2026, month: 10, day: 20))!
+        )
+        store.addTransaction(inPeriod)
+        store.addTransaction(outPeriod)
+        let p = BillingPeriodEngine.period(containing: mid, startDay: 25)
+        XCTAssertEqual(store.expenseTotal(in: p), 100, accuracy: 0.001)
+        XCTAssertFalse(p.contains(outPeriod.date))
+    }
+
     func testAccountBalanceReconciliationAndAuditLogsOnCreateEditDelete() {
         let store = MimiStore(inMemory: true)
         let tngId = "acc_tng"
@@ -63,6 +107,8 @@ final class StoreAndBudgetTests: XCTestCase {
     func testTransferAndExcludeFromStatsDoNotAffectMonthlyExpense() {
         let store = MimiStore(inMemory: true)
         let beforeExpense = store.monthlyExpenseTotal(year: 2026, month: 11)
+        let tngBefore = store.accounts.first(where: { $0.id == "acc_tng" })!.balance
+        let pbbBefore = store.accounts.first(where: { $0.id == "acc_pbb" })!.balance
         let transfer = TransactionItem(
             ledgerId: store.currentLedgerId,
             type: .transfer,
@@ -75,6 +121,36 @@ final class StoreAndBudgetTests: XCTestCase {
         )
         store.addTransaction(transfer)
         XCTAssertEqual(store.monthlyExpenseTotal(year: 2026, month: 11), beforeExpense, accuracy: 0.001)
+        XCTAssertEqual(store.accounts.first(where: { $0.id == "acc_tng" })!.balance, tngBefore - 100, accuracy: 0.001)
+        XCTAssertEqual(store.accounts.first(where: { $0.id == "acc_pbb" })!.balance, pbbBefore + 100, accuracy: 0.001)
+        let srcLogs = store.auditLogs(for: "TNGewallet")
+        let dstLogs = store.auditLogs(for: "PBBank")
+        XCTAssertTrue(srcLogs.contains { $0.transactionId == transfer.id && !$0.isInflow })
+        XCTAssertTrue(dstLogs.contains { $0.transactionId == transfer.id && $0.isInflow })
+        XCTAssertEqual(dstLogs.first(where: { $0.transactionId == transfer.id })?.deltaAmount ?? 0, 100, accuracy: 0.001)
+    }
+
+    func testCustomAccountNameResolvesWithoutFallingBackToTNG() {
+        let store = MimiStore(inMemory: true)
+        store.addAccount(AccountItem(
+            id: "acc_custom_wallet",
+            name: "备用金",
+            subtitle: "自定义账户",
+            iconName: "💳",
+            balance: 50
+        ))
+        let tngBefore = store.accounts.first(where: { $0.id == "acc_tng" })!.balance
+        let tx = TransactionItem(
+            type: .expense,
+            categoryPath: "餐饮-餐厅",
+            amount: 10,
+            accountName: "备用金",
+            note: "自定义账户支出"
+        )
+        store.addTransaction(tx)
+        XCTAssertEqual(tx.accountId, "acc_custom_wallet")
+        XCTAssertEqual(store.accounts.first(where: { $0.id == "acc_custom_wallet" })!.balance, 40, accuracy: 0.001)
+        XCTAssertEqual(store.accounts.first(where: { $0.id == "acc_tng" })!.balance, tngBefore, accuracy: 0.001)
     }
 
     func testCleanEmptyAppStateAndCSVImportExport() {

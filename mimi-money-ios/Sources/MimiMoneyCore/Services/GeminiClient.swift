@@ -178,12 +178,10 @@ case "transfer": txType = .transfer
 default: txType = .expense
 }
 
-let categoryPath: String
 let primaryId: String
 let subId: String?
 let categoryDisplay: String
 if txType == .transfer {
-categoryPath = "转账"
 primaryId = "transfer"
 subId = nil
 categoryDisplay = "转账"
@@ -196,7 +194,6 @@ let resolved = DefaultCatalog.resolveCategoryIds(from: path, type: txType)
 primaryId = resolved.primaryId
 subId = resolved.subId
 let display = DefaultCatalog.resolveCategoryDisplay(primaryId: primaryId, subId: subId, type: txType)
-categoryPath = display.categoryPath
 categoryDisplay = display.categoryPath
 }
 
