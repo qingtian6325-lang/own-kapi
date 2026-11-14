@@ -455,6 +455,9 @@ function verifyTask6() {
     '内容由AI生成',
     'onSwitchToAIOverlay',
     'intendedInitialTab',
+    'presentationID',
+    'applyIntendedTab',
+    'task(id: presentationID)',
     'suppressSheetDismiss',
     'presentationContentInteraction(.scrolls)',
     'BookkeepingSheetSwipePolicy',
@@ -544,9 +547,27 @@ function verifyTask7() {
     'case openEntry',
     'case dismissEntry',
     'presentationID',
-    'struct AccountEntryRoute'
+    'struct AccountEntryRoute',
+    'AccountEntrySheetBootstrap',
+    'tabAfterExpenseDismissThenTransfer',
+    'tabAfterTransferDismissThenExpense'
   ]) {
     assertContains(assetsNav, label, 'AssetsAccountNavigation.swift');
+  }
+
+  const assetsDetail = assertFileExists('Sources/MimiMoneyCore/Views/AssetsAndAccountDetailView.swift');
+  assertContains(assetsDetail, 'AccountEntrySheetBootstrap.intendedTab', 'AssetsAndAccountDetailView.swift');
+  assertContains(assetsDetail, 'presentationID: route.presentationID', 'AssetsAndAccountDetailView.swift');
+  assertContains(assetsDetail, '.id(route.presentationID)', 'AssetsAndAccountDetailView.swift');
+
+  const appVersion = assertFileExists('Sources/MimiMoneyCore/Services/AppVersionInfo.swift');
+  for (const label of [
+    'CFBundleShortVersionString',
+    'CFBundleVersion',
+    'settingsFooterLine',
+    '版本 '
+  ]) {
+    assertContains(appVersion, label, 'AppVersionInfo.swift');
   }
 
   const swipePolicy = assertFileExists('Sources/MimiMoneyCore/Services/BookkeepingSheetSwipePolicy.swift');
@@ -618,7 +639,7 @@ function verifyTask7() {
   assertContains(assetsNavTests, 'testEditAccountSheetRouteIdentityUsesAccountId', 'AssetsAccountNavigationTests.swift');
   assertContains(assetsNavTests, 'testTransferEntryRouteIntendedTabIsTransfer', 'AssetsAccountNavigationTests.swift');
   assertContains(assetsNavTests, 'testEachEntryOpenGetsUniquePresentationIdentity', 'AssetsAccountNavigationTests.swift');
-  assertContains(assets, '.id(route.id)', 'AssetsAndAccountDetailView.swift');
+  assertContains(assets, '.id(route.presentationID)', 'AssetsAndAccountDetailView.swift');
 
   const budget = assertFileExists('Sources/MimiMoneyCore/Views/BudgetManagementView.swift');
   checkBalancedBraces(budget, 'BudgetManagementView.swift');
@@ -650,7 +671,8 @@ function verifyTask7() {
     'public struct SettingsAndShortcutsGuideView: View',
     '自动记账',
     '截屏识别记账',
-    '读取剪贴板截图'
+    '读取剪贴板截图',
+    'AppVersionInfo.settingsFooterLine'
   ]) {
     assertContains(settings, label, 'SettingsAndShortcutsGuideView.swift');
   }

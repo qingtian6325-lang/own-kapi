@@ -36,9 +36,9 @@ public struct AssetsAccountNavigationState: Equatable, Sendable {
         public let accountName: String
         public let transactionType: TransactionType
 
-        public var id: String {
-            "\(transactionType.rawValue):\(accountName):\(presentationID.uuidString)"
-        }
+        /// Identity is the presentation UUID alone — `sheet(item:)` must not reuse
+        /// a previous open even when account/tab match.
+        public var id: UUID { presentationID }
 
         public init(
             transactionType: TransactionType,
@@ -114,5 +114,37 @@ public struct AssetsAccountNavigationState: Equatable, Sendable {
             }
             return Effect()
         }
+    }
+}
+
+/// Pure bootstrap for account-detail → 记账/转账 sheet tab.
+/// Unit tests lock 记账→支出 and 转账→转账 without mounting SwiftUI.
+public enum AccountEntrySheetBootstrap: Sendable {
+    public static func intendedTab(
+        for route: AssetsAccountNavigationState.AccountEntryRoute
+    ) -> TransactionType {
+        route.transactionType
+    }
+
+    /// 记账 → dismiss → 转账 must open transfer with a fresh presentation id.
+    public static func tabAfterExpenseDismissThenTransfer(
+        previousExpense: AssetsAccountNavigationState.AccountEntryRoute,
+        nextTransfer: AssetsAccountNavigationState.AccountEntryRoute
+    ) -> TransactionType {
+        precondition(previousExpense.transactionType == .expense)
+        precondition(nextTransfer.transactionType == .transfer)
+        precondition(previousExpense.presentationID != nextTransfer.presentationID)
+        return intendedTab(for: nextTransfer)
+    }
+
+    /// 转账 → dismiss → 记账 must open expense with a fresh presentation id.
+    public static func tabAfterTransferDismissThenExpense(
+        previousTransfer: AssetsAccountNavigationState.AccountEntryRoute,
+        nextExpense: AssetsAccountNavigationState.AccountEntryRoute
+    ) -> TransactionType {
+        precondition(previousTransfer.transactionType == .transfer)
+        precondition(nextExpense.transactionType == .expense)
+        precondition(previousTransfer.presentationID != nextExpense.presentationID)
+        return intendedTab(for: nextExpense)
     }
 }
