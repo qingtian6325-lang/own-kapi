@@ -444,6 +444,7 @@ public struct MimiRootContainerView: View {
         } message: {
             Text(homeRecognitionFailureText ?? "")
         }
+        #if os(iOS)
         .fullScreenCover(isPresented: Binding(
             get: { !store.hasCompletedOnboarding },
             set: { presented in
@@ -454,6 +455,18 @@ public struct MimiRootContainerView: View {
                 // Flag already set inside the guide
             }
         }
+        #else
+        .sheet(isPresented: Binding(
+            get: { !store.hasCompletedOnboarding },
+            set: { presented in
+                if !presented { store.completeOnboarding() }
+            }
+        )) {
+            OnboardingGuideView(store: store) {
+                // Flag already set inside the guide
+            }
+        }
+        #endif
     }
 
     private var pageHandoffDelay: TimeInterval {

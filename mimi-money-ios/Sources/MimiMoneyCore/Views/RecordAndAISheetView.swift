@@ -564,7 +564,9 @@ public struct RecordAndAISheetView: View {
                         .foregroundColor(MimiTheme.textSecondary)
                     TextField("0.00", text: $discountAmountText)
                         .mimiFont(15, weight: .semibold, design: .rounded)
+                        #if os(iOS)
                         .keyboardType(.decimalPad)
+                        #endif
                         .multilineTextAlignment(.trailing)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 8)
