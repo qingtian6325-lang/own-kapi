@@ -1,6 +1,7 @@
 import XCTest
 @testable import MimiMoneyCore
 
+@MainActor
 final class AccountInitialBalanceRowTests: XCTestCase {
     func testDisplayUsesLiveInitialBalanceNeverPlaceholderZero() {
         let row = AccountInitialBalanceRowBuilder.make(
