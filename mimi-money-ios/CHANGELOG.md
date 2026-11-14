@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.12] - 2026-11-14
+
+### 🎯 Highlights
+- **账户详情「初始余额」**：明细/账单列表底部固定展示开局余额（取自账户当前 `initialBalance`，编辑期初后即时刷新；为 0 时也显示）；有创建日或设定期初记录时附带起始日期。
+- **回归**：`AccountInitialBalanceRowBuilder` 单测覆盖 live 金额与非占位 0。
+- **发版**：`VERSION` / Intent 默认版本升至 1.3.12。
+
 ## [v1.3.11] - 2026-11-14
 
 ### 🎯 Highlights

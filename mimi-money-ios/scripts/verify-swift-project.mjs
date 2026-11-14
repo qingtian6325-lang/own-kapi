@@ -536,10 +536,28 @@ function verifyTask7() {
     '转账',
     '明细',
     '账单',
-    '余额:'
+    '余额:',
+    '初始余额',
+    'accountInitialBalanceFooter',
+    'AccountInitialBalanceRowBuilder'
   ]) {
     assertContains(assets, label, 'AssetsAndAccountDetailView.swift');
   }
+
+  const initialBalanceRow = assertFileExists('Sources/MimiMoneyCore/Services/AccountInitialBalanceRow.swift');
+  checkBalancedBraces(initialBalanceRow, 'AccountInitialBalanceRow.swift');
+  for (const label of [
+    'AccountInitialBalanceRowBuilder',
+    'initialBalance',
+    'resolveStartDate',
+    '初始余额'
+  ]) {
+    assertContains(initialBalanceRow, label, 'AccountInitialBalanceRow.swift');
+  }
+  const initialBalanceTests = assertFileExists('Tests/MimiMoneyTests/AccountInitialBalanceRowTests.swift');
+  checkBalancedBraces(initialBalanceTests, 'AccountInitialBalanceRowTests.swift');
+  assertContains(initialBalanceTests, 'testDisplayUsesLiveInitialBalanceNeverPlaceholderZero', 'AccountInitialBalanceRowTests.swift');
+  assertContains(initialBalanceTests, 'testLiveAccountInitialBalanceUpdatesRowAmount', 'AccountInitialBalanceRowTests.swift');
   // Regression: Bool entry sheet + shared cancellationAction caused stuck-on-记账.
   if (assets.includes('showAccountEntrySheet')) {
     throw new Error('AssetsAndAccountDetailView.swift must not use showAccountEntrySheet Bool sheet (use entryRoute item sheet)');
