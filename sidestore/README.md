@@ -8,5 +8,5 @@ Published via GitHub Pages from this folder.
 | **Fallback (raw)** | `https://raw.githubusercontent.com/qingtian6325-lang/own-mimi/main/sidestore/apps.json` |
 | **Bundle ID** | `com.jinghao.mimimoney` |
 
-CI: after a successful IPA publish on `main`, `scripts/update-sidestore-source.mjs` upserts the new version into `apps.json` and commits `chore(sidestore): …`, which triggers `.github/workflows/sidestore-pages.yml`.
+CI: after a successful IPA publish on `main`, `build-mimi-ios.yml` upserts `apps.json`, commits `chore(sidestore): …` (raw), uploads a Pages artifact from that tree, and the **Deploy SideStore Pages** job publishes it. `GITHUB_TOKEN` pushes do not start other workflows, so release bumps must not rely on `sidestore-pages.yml`. That workflow still covers normal `sidestore/**` push/PR merges.
 
