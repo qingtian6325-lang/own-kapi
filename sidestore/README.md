@@ -9,3 +9,4 @@ Published via GitHub Pages from this folder.
 | **Bundle ID** | `com.jinghao.mimimoney` |
 
 CI: after a successful IPA publish on `main`, `scripts/update-sidestore-source.mjs` upserts the new version into `apps.json` and commits `chore(sidestore): …`, which triggers `.github/workflows/sidestore-pages.yml`.
+
