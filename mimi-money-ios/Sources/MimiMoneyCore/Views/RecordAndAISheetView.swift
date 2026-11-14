@@ -416,7 +416,10 @@ public struct RecordAndAISheetView: View {
                 transferTabPage
                     .tag(TransactionType.transfer)
             }
+            // PageTabViewStyle is iOS-only; macOS host `swift test` rejects `.page`.
+            #if os(iOS)
             .tabViewStyle(.page(indexDisplayMode: .never))
+            #endif
             .simultaneousGesture(horizontalAxisLockGesture)
             .onChange(of: selectedTab) { _, _ in
                 selectedGroupIndex = 0

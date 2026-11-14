@@ -462,6 +462,12 @@ function verifyTask6() {
   ]) {
     assertContains(recordSheet, label, 'RecordAndAISheetView.swift');
   }
+  // Regression: PageTabViewStyle is unavailable on macOS host unit tests.
+  if (!/#if\s+os\(iOS\)[\s\S]{0,240}tabViewStyle\(\.page/.test(recordSheet)) {
+    throw new Error(
+      'RecordAndAISheetView.swift: .tabViewStyle(.page) must be inside #if os(iOS) for macOS swift test'
+    );
+  }
 
   const aiOverlay = assertFileExists('Sources/MimiMoneyCore/Views/MimiAIAskOverlayView.swift');
   checkBalancedBraces(aiOverlay, 'MimiAIAskOverlayView.swift');
