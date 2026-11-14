@@ -491,6 +491,22 @@ function verifyTask6() {
   assertContains(categorySelection, 'resolvedPath', 'BillCategorySelection.swift');
   const categorySelectionTests = assertFileExists('Tests/MimiMoneyTests/BillCategorySelectionTests.swift');
   assertContains(categorySelectionTests, 'testParsesPrimaryAndSecondaryPath', 'BillCategorySelectionTests.swift');
+  // v1.3.17: leave-to-save (no explicit 保存修改); invalid amount keeps previousValidAmount.
+  assertContains(billDetailCategory, 'autoSaveOnLeave', 'BillDetailSheetView.swift');
+  assertContains(billDetailCategory, 'BillDetailEditCommit', 'BillDetailSheetView.swift');
+  assertContains(billDetailCategory, 'previousValidAmount', 'BillDetailSheetView.swift');
+  assertContains(billDetailCategory, '.onDisappear', 'BillDetailSheetView.swift');
+  if (billDetailCategory.includes('保存修改')) {
+    throw new Error(
+      'BillDetailSheetView.swift: remove explicit 保存修改 — persist on leave via autoSaveOnLeave'
+    );
+  }
+  const editCommit = assertFileExists('Sources/MimiMoneyCore/Services/BillDetailEditCommit.swift');
+  assertContains(editCommit, 'resolvedAmount', 'BillDetailEditCommit.swift');
+  assertContains(editCommit, 'previousValidAmount', 'BillDetailEditCommit.swift');
+  const editCommitTests = assertFileExists('Tests/MimiMoneyTests/BillDetailEditCommitTests.swift');
+  assertContains(editCommitTests, 'testEmptyAmountKeepsPreviousValid', 'BillDetailEditCommitTests.swift');
+  assertContains(editCommitTests, 'testZeroAmountKeepsPreviousValid', 'BillDetailEditCommitTests.swift');
   // Regression: PageTabViewStyle is unavailable on macOS host unit tests.
   if (!/#if\s+os\(iOS\)[\s\S]{0,240}tabViewStyle\(\.page/.test(recordSheet)) {
     throw new Error(
