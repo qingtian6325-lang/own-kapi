@@ -43,7 +43,7 @@ public struct CategoryManagementView: View {
                         // Gold: 标准分类 summary card
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
-                                Text("标准分类")
+                                Text("标准分类", bundle: .module)
                                     .mimiFont(16, weight: .bold)
                                     .foregroundColor(MimiTheme.textPrimary)
                                 Spacer()
@@ -54,7 +54,7 @@ public struct CategoryManagementView: View {
                                         selectedStickerEmoji = "🍮"
                                         showAddPrimarySheet = true
                                     } label: {
-                                        Label("添加一级分类", systemImage: "plus")
+                                        Label(MimiL10n.string("添加一级分类"), systemImage: "plus")
                                     }
                                     Button {
                                         isReorderMode.toggle()
@@ -70,7 +70,7 @@ public struct CategoryManagementView: View {
                                         .frame(width: MimiHIG.minTouch, height: MimiHIG.minTouch)
                                         .contentShape(Rectangle())
                                 }
-                                .accessibilityLabel("分类更多操作")
+                                .accessibilityLabel(MimiL10n.string("分类更多操作"))
                             }
                             Text("支出 \(store.expenseCategories.count) 类 | 收入 \(store.incomeCategories.count) 类")
                                 .mimiFont(12)
@@ -83,7 +83,7 @@ public struct CategoryManagementView: View {
                         // Pill tabs: 支出 | 收入
                         HStack(spacing: 0) {
                             Button { selectedTab = .expense } label: {
-                                Text("支出")
+                                Text("支出", bundle: .module)
                                     .mimiFont(13, weight: selectedTab == .expense ? .bold : .medium)
                                     .foregroundColor(selectedTab == .expense ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
                                     .frame(maxWidth: .infinity)
@@ -92,7 +92,7 @@ public struct CategoryManagementView: View {
                             }
                             .mimiPressable()
                             Button { selectedTab = .income } label: {
-                                Text("收入")
+                                Text("收入", bundle: .module)
                                     .mimiFont(13, weight: selectedTab == .income ? .bold : .medium)
                                     .foregroundColor(selectedTab == .income ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
                                     .frame(maxWidth: .infinity)
@@ -176,7 +176,7 @@ public struct CategoryManagementView: View {
                                     }
                                 }
                                 .contextMenu {
-                                    Button("重命名") {
+                                    Button(MimiL10n.string("重命名")) {
                                         renameText = group.name
                                         renameTarget = CategoryRenameTarget(
                                             id: group.id,
@@ -184,7 +184,7 @@ public struct CategoryManagementView: View {
                                             currentName: group.name
                                         )
                                     }
-                                    Button("删除", role: .destructive) {
+                                    Button(MimiL10n.string("删除"), role: .destructive) {
                                         deletePrimaryConfirmId = group.id
                                     }
                                     .disabled(activeGroups.count <= 1)
@@ -206,7 +206,7 @@ public struct CategoryManagementView: View {
                                             .mimiFont(18, weight: .semibold)
                                             .foregroundColor(MimiTheme.textSecondary)
                                     }
-                                    Text("添加")
+                                    Text("添加", bundle: .module)
                                         .mimiFont(11, weight: .medium)
                                         .foregroundColor(MimiTheme.textSecondary)
                                 }
@@ -228,7 +228,7 @@ public struct CategoryManagementView: View {
 
             }
             .background(MimiTheme.background.ignoresSafeArea())
-            .navigationTitle("分类方案管理")
+            .navigationTitle(MimiL10n.string("分类方案管理"))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -263,35 +263,33 @@ public struct CategoryManagementView: View {
                     .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
             }
-            .alert(
-                "重命名分类",
+            .alert(MimiL10n.string("重命名分类"),
                 isPresented: Binding(
                     get: { renameTarget != nil },
                     set: { if !$0 { renameTarget = nil } }
                 )
             ) {
                 TextField("名称", text: $renameText)
-                Button("保存") { commitRename() }
-                Button("取消", role: .cancel) { renameTarget = nil }
+                Button(MimiL10n.string("保存")) { commitRename() }
+                Button(MimiL10n.string("取消"), role: .cancel) { renameTarget = nil }
             } message: {
-                Text("修改后会更新显示名称。")
+                Text("修改后会更新显示名称。", bundle: .module)
             }
-            .alert(
-                "删除一级分类？",
+            .alert(MimiL10n.string("删除一级分类？"),
                 isPresented: Binding(
                     get: { deletePrimaryConfirmId != nil },
                     set: { if !$0 { deletePrimaryConfirmId = nil } }
                 )
             ) {
-                Button("删除", role: .destructive) {
+                Button(MimiL10n.string("删除"), role: .destructive) {
                     if let id = deletePrimaryConfirmId {
                         store.deletePrimaryCategory(id: id, type: selectedTab)
                     }
                     deletePrimaryConfirmId = nil
                 }
-                Button("取消", role: .cancel) { deletePrimaryConfirmId = nil }
+                Button(MimiL10n.string("取消"), role: .cancel) { deletePrimaryConfirmId = nil }
             } message: {
-                Text("已有账单不会被删除，只是不再挂在此分类下展示。")
+                Text("已有账单不会被删除，只是不再挂在此分类下展示。", bundle: .module)
             }
         }
     }
@@ -338,7 +336,7 @@ public struct CategoryManagementView: View {
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
                 Menu {
-                    Button("重命名一级分类") {
+                    Button(MimiL10n.string("重命名一级分类")) {
                         renameText = liveGroup.name
                         renameTarget = CategoryRenameTarget(
                             id: liveGroup.id,
@@ -346,11 +344,11 @@ public struct CategoryManagementView: View {
                             currentName: liveGroup.name
                         )
                     }
-                    Button("添加二级分类") {
+                    Button(MimiL10n.string("添加二级分类")) {
                         isAddingSubcategory = true
                         newSubcategoryName = ""
                     }
-                    Button("删除一级分类", role: .destructive) {
+                    Button(MimiL10n.string("删除一级分类"), role: .destructive) {
                         deletePrimaryConfirmId = liveGroup.id
                         selectedGroupForSubSheet = nil
                     }
@@ -362,7 +360,7 @@ public struct CategoryManagementView: View {
                         .frame(width: MimiHIG.minTouch, height: MimiHIG.minTouch)
                         .contentShape(Rectangle())
                 }
-                .accessibilityLabel("一级分类操作")
+                .accessibilityLabel(MimiL10n.string("一级分类操作"))
             }
             .padding(.horizontal, 20)
 
@@ -414,7 +412,7 @@ public struct CategoryManagementView: View {
                             }
                             .disabled(index == 0)
                             .mimiPressable()
-                            .accessibilityLabel("上移")
+                            .accessibilityLabel(MimiL10n.string("上移"))
 
                             Button {
                                 store.moveSubcategory(
@@ -431,10 +429,10 @@ public struct CategoryManagementView: View {
                             }
                             .disabled(index >= liveGroup.subcategories.count - 1)
                             .mimiPressable()
-                            .accessibilityLabel("下移")
+                            .accessibilityLabel(MimiL10n.string("下移"))
 
                             Menu {
-                                Button("重命名") {
+                                Button(MimiL10n.string("重命名")) {
                                     renameText = sub.name
                                     renameTarget = CategoryRenameTarget(
                                         id: sub.id,
@@ -442,7 +440,7 @@ public struct CategoryManagementView: View {
                                         currentName: sub.name
                                     )
                                 }
-                                Button("删除", role: .destructive) {
+                                Button(MimiL10n.string("删除"), role: .destructive) {
                                     store.deleteSubcategory(
                                         groupId: liveGroup.id,
                                         subId: sub.id,
@@ -456,7 +454,7 @@ public struct CategoryManagementView: View {
                                     .frame(width: MimiHIG.minTouch, height: MimiHIG.minTouch)
                                     .contentShape(Rectangle())
                             }
-                            .accessibilityLabel("二级分类操作")
+                            .accessibilityLabel(MimiL10n.string("二级分类操作"))
                         }
                         .padding(.horizontal, 14)
                         .padding(.vertical, 12)
@@ -467,7 +465,7 @@ public struct CategoryManagementView: View {
                         HStack(spacing: 10) {
                             TextField("输入二级分类名称", text: $newSubcategoryName)
                                 .mimiFont(14)
-                            Button("添加") {
+                            Button(MimiL10n.string("添加")) {
                                 commitNewSubcategory(to: liveGroup)
                             }
                             .mimiFont(14, weight: .semibold)
@@ -490,7 +488,7 @@ public struct CategoryManagementView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "plus")
                                 .mimiFont(14, weight: .semibold)
-                            Text("添加二级分类")
+                            Text("添加二级分类", bundle: .module)
                                 .mimiFont(14, weight: .medium)
                             Spacer(minLength: 0)
                         }
@@ -599,7 +597,7 @@ public struct CategoryManagementView: View {
             .padding(.bottom, 14)
 
             Toggle(isOn: $useFirstCharAsIcon) {
-                Text("首字作为图标")
+                Text("首字作为图标", bundle: .module)
                     .mimiFont(14, weight: .medium)
                     .foregroundColor(MimiTheme.textPrimary)
             }
@@ -611,7 +609,7 @@ public struct CategoryManagementView: View {
             .padding(.bottom, 16)
 
             HStack {
-                Text("分类图标")
+                Text("分类图标", bundle: .module)
                     .mimiFont(12, weight: .medium)
                     .foregroundColor(MimiTheme.textMuted)
                 Spacer()
@@ -668,7 +666,7 @@ public struct CategoryManagementView: View {
                 )
                 showAddPrimarySheet = false
             } label: {
-                Text("确认")
+                Text("确认", bundle: .module)
                     .mimiFont(16, weight: .semibold)
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)

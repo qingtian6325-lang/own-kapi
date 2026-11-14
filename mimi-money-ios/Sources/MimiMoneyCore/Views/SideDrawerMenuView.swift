@@ -51,7 +51,12 @@ public struct SideDrawerMenuView: View {
     }
 
     private var heatmapMonthTitle: String {
-        "\(heatmapYear)年\(heatmapMonth)月"
+        // Keep numeric layout; localize year/month particles via catalog templates when present.
+        String(
+            format: MimiL10n.string("%d年%d月"),
+            heatmapYear,
+            heatmapMonth
+        )
     }
 
     private var heatmapLeadingBlanks: Int {
@@ -181,7 +186,7 @@ public struct SideDrawerMenuView: View {
                     .mimiMinTouchTarget()
             }
             .mimiPressable()
-            .accessibilityLabel("设置")
+            .accessibilityLabel(MimiL10n.string("设置"))
         }
         .padding(.top, 12)
     }
@@ -237,7 +242,7 @@ public struct SideDrawerMenuView: View {
                 .frame(height: MimiTheme.drawerHeatmapCellHeight)
 
             if cell.isToday {
-                Text("今")
+                Text("今", bundle: .module)
                     .mimiFont(9, weight: .bold, design: .rounded)
                     .foregroundColor(MimiTheme.expenseBlue)
             } else {
@@ -256,7 +261,7 @@ public struct SideDrawerMenuView: View {
 
     private var moreFeaturesCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("更多功能")
+            Text("更多功能", bundle: .module)
                 .mimiFont(13, weight: .semibold)
                 .foregroundColor(MimiTheme.textSecondary)
 
@@ -292,7 +297,7 @@ public struct SideDrawerMenuView: View {
 
     private var quickBookkeepingCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("快捷记账")
+            Text("快捷记账", bundle: .module)
                 .mimiFont(13, weight: .semibold)
                 .foregroundColor(MimiTheme.textSecondary)
 
@@ -326,7 +331,7 @@ public struct SideDrawerMenuView: View {
             Text(value)
                 .mimiFont(19, weight: .bold, design: .rounded)
                 .foregroundColor(MimiTheme.textPrimary)
-            Text(label)
+            Text(LocalizedStringKey(label), bundle: .module)
                 .mimiFont(11)
                 .foregroundColor(MimiTheme.textSecondary)
         }
@@ -372,7 +377,7 @@ public struct SideDrawerMenuView: View {
                         .mimiFont(21, weight: .light)
                         .foregroundColor(MimiTheme.textPrimary)
                 }
-                Text(title)
+                Text(LocalizedStringKey(title), bundle: .module)
                     .mimiFont(12, weight: .medium)
                     .foregroundColor(MimiTheme.textPrimary)
                     .lineLimit(1)
@@ -380,6 +385,7 @@ public struct SideDrawerMenuView: View {
             }
         }
         .mimiPressable()
+        .accessibilityLabel(MimiL10n.string(title))
     }
 
 }

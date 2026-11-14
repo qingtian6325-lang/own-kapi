@@ -145,7 +145,7 @@ public struct AllRecordsCalendarView: View {
                     .padding(.horizontal, 16)
                     .padding(.bottom, 12)
             }
-            .navigationTitle("全部记录")
+            .navigationTitle(MimiL10n.string("全部记录"))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -202,7 +202,7 @@ public struct AllRecordsCalendarView: View {
                 selectedMonth = Calendar.current.component(.month, from: now)
                 selectedDay = Calendar.current.component(.day, from: now)
             } label: {
-                Text("回今天")
+                Text("回今天", bundle: .module)
                     .mimiFont(11, weight: .semibold)
                     .foregroundColor(MimiTheme.textSecondary)
                     .padding(.horizontal, 8)
@@ -210,14 +210,14 @@ public struct AllRecordsCalendarView: View {
                     .background(Capsule().fill(MimiTheme.surfaceMuted))
             }
             .mimiPressable()
-            .accessibilityLabel("回今天")
+            .accessibilityLabel(MimiL10n.string("回今天"))
 
             Spacer()
 
             Menu {
-                Button("收支") { filterMode = "收支" }
-                Button("支出") { filterMode = "支出" }
-                Button("收入") { filterMode = "收入" }
+                Button(MimiL10n.string("收支")) { filterMode = "收支" }
+                Button(MimiL10n.string("支出")) { filterMode = "支出" }
+                Button(MimiL10n.string("收入")) { filterMode = "收入" }
             } label: {
                 HStack(spacing: 4) {
                     Image(systemName: "creditcard")
@@ -241,7 +241,7 @@ public struct AllRecordsCalendarView: View {
     private var monthlySummaryBar: some View {
         HStack {
             HStack(spacing: 8) {
-                Text("月支出")
+                Text("月支出", bundle: .module)
                     .mimiFont(11)
                     .foregroundColor(MimiTheme.textSecondary)
                 Text(MimiTheme.formatRM(monthlyExpenseTotal))
@@ -253,14 +253,14 @@ public struct AllRecordsCalendarView: View {
                     .foregroundColor(Color.gray.opacity(0.3))
 
                 if filterMode == "支出" {
-                    Text("日均支出")
+                    Text("日均支出", bundle: .module)
                         .mimiFont(11)
                         .foregroundColor(MimiTheme.textSecondary)
                     Text(MimiTheme.formatRM(dailyAverageExpense))
                         .mimiFont(13, weight: .bold, design: .rounded)
                         .foregroundColor(MimiTheme.expenseBlue)
                 } else {
-                    Text("月收入")
+                    Text("月收入", bundle: .module)
                         .mimiFont(11)
                         .foregroundColor(MimiTheme.textSecondary)
                     Text(MimiTheme.formatRM(monthlyIncomeTotal))
@@ -284,7 +284,7 @@ public struct AllRecordsCalendarView: View {
             }
             .mimiPressable()
             .accessibilityLabel(filterMode == "支出" ? "支出分析" : "收支分析")
-            .accessibilityHint("打开图表统计")
+            .accessibilityHint(MimiL10n.string("打开图表统计"))
         }
         .padding(.vertical, 2)
     }
@@ -326,7 +326,7 @@ public struct AllRecordsCalendarView: View {
 
             // Heatmap Legend: 收入多 🟧 🟨 ⬜ 🟦 🟦 支出多
             HStack(spacing: 6) {
-                Text("收入多")
+                Text("收入多", bundle: .module)
                     .mimiFont(10)
                     .foregroundColor(MimiTheme.textMuted)
 
@@ -336,7 +336,7 @@ public struct AllRecordsCalendarView: View {
                 RoundedRectangle(cornerRadius: 2).fill(MimiTheme.heatmapExpense1).frame(width: 12, height: 10)
                 RoundedRectangle(cornerRadius: 2).fill(MimiTheme.heatmapExpense2).frame(width: 12, height: 10)
 
-                Text("支出多")
+                Text("支出多", bundle: .module)
                     .mimiFont(10)
                     .foregroundColor(MimiTheme.textMuted)
             }
@@ -452,10 +452,10 @@ public struct AllRecordsCalendarView: View {
 
             if selectedDateTransactions.isEmpty {
                 VStack(spacing: 6) {
-                    Text("当日暂无记账记录")
+                    Text("当日暂无记账记录", bundle: .module)
                         .mimiFont(13)
                         .foregroundColor(MimiTheme.textMuted)
-                    Text("点击右下角「+」快速补记一笔")
+                    Text("点击右下角「+」快速补记一笔", bundle: .module)
                         .mimiFont(11)
                         .foregroundColor(MimiTheme.textMuted)
                 }
@@ -538,7 +538,7 @@ public struct AllRecordsCalendarView: View {
             } label: {
                 HStack(spacing: 8) {
                     MimiAskMascotView(size: 32)
-                    Text("任何事都能问我")
+                    Text("任何事都能问我", bundle: .module)
                         .mimiFont(13, weight: .medium)
                         .foregroundColor(MimiTheme.textMuted)
                     Spacer()
@@ -550,8 +550,8 @@ public struct AllRecordsCalendarView: View {
                 .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
             }
             .mimiPressable()
-            .accessibilityLabel("问账")
-            .accessibilityHint("打开 AI 问账")
+            .accessibilityLabel(MimiL10n.string("问账"))
+            .accessibilityHint(MimiL10n.string("打开 AI 问账"))
 
             Button {
                 onOpenRecord()
@@ -564,7 +564,7 @@ public struct AllRecordsCalendarView: View {
                     .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
             }
             .mimiPressable()
-            .accessibilityLabel("记一笔")
+            .accessibilityLabel(MimiL10n.string("记一笔"))
         }
     }
 }

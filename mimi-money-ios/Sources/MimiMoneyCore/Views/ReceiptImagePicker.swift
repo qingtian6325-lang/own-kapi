@@ -196,13 +196,13 @@ public struct FullscreenReceiptViewer: View {
                     Image(systemName: "photo.badge.exclamationmark")
                         .mimiFont(48)
                         .foregroundColor(.white.opacity(0.6))
-                    Text("无法加载小票大图")
+                    Text("无法加载小票大图", bundle: .module)
                         .mimiFont(16, weight: .medium)
                         .foregroundColor(.white.opacity(0.8))
                 }
             }
             #else
-            Text("小票大图查看")
+            Text("小票大图查看", bundle: .module)
                 .foregroundColor(.white)
             #endif
 

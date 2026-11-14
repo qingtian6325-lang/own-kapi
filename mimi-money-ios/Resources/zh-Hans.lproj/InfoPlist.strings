@@ -1,0 +1,8 @@
+/* Home-screen / SpringBoard display name — follows system locale only. */
+"CFBundleDisplayName" = "咪咪记账";
+"CFBundleName" = "咪咪记账";
+
+"NSMicrophoneUsageDescription" = "用于语音一句话记多笔账单";
+"NSSpeechRecognitionUsageDescription" = "用于识别您的记账语音内容";
+"NSCameraUsageDescription" = "用于拍摄小票与收据自动记账";
+"NSPhotoLibraryUsageDescription" = "用于读取付款截图与添加账单图片附件";

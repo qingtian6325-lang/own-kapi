@@ -1,0 +1,8 @@
+/* Home-screen / SpringBoard display name — follows system locale only. */
+"CFBundleDisplayName" = "Mimi Money";
+"CFBundleName" = "Mimi Money";
+
+"NSMicrophoneUsageDescription" = "Used for one-sentence voice bookkeeping of multiple bills";
+"NSSpeechRecognitionUsageDescription" = "Used to recognize your bookkeeping voice input";
+"NSCameraUsageDescription" = "Used to photograph receipts for automatic bookkeeping";
+"NSPhotoLibraryUsageDescription" = "Used to read payment screenshots and attach bill photos";
