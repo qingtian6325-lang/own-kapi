@@ -660,6 +660,42 @@ function verifyTask7() {
   assertContains(root, 'public struct MimiRootContainerView: View', 'MimiRootContainerView.swift');
   assertContains(root, 'onOpenURL', 'MimiRootContainerView.swift');
   assertContains(root, 'ShortcutActionCoordinator.handleIncomingURL', 'MimiRootContainerView.swift');
+  assertContains(root, 'mimiInteractiveSheet()', 'MimiRootContainerView.swift');
+  assertContains(root, 'mimiEdgeSwipeBack', 'MimiRootContainerView.swift');
+
+  // v1.3.14 global gesture polish: sheet swipe-down + edge-pop / overlay edge-swipe.
+  const gesturePolicy = assertFileExists('Sources/MimiMoneyCore/Services/MimiGesturePolicy.swift');
+  checkBalancedBraces(gesturePolicy, 'MimiGesturePolicy.swift');
+  for (const label of [
+    'MimiGesturePolicy',
+    'isHorizontalDominant',
+    'isVerticalDominant',
+    'shouldCommitEdgeBack',
+    'rubberBandOffset'
+  ]) {
+    assertContains(gesturePolicy, label, 'MimiGesturePolicy.swift');
+  }
+  const gestureChrome = assertFileExists('Sources/MimiMoneyCore/Components/MimiGestureChrome.swift');
+  checkBalancedBraces(gestureChrome, 'MimiGestureChrome.swift');
+  assertContains(gestureChrome, 'mimiInteractiveSheet', 'MimiGestureChrome.swift');
+  assertContains(gestureChrome, 'mimiEdgeSwipeBack', 'MimiGestureChrome.swift');
+  assertContains(gestureChrome, 'presentationContentInteraction(.scrolls)', 'MimiGestureChrome.swift');
+  const popGesture = assertFileExists('Sources/MimiMoneyCore/Components/MimiInteractivePopGesture.swift');
+  checkBalancedBraces(popGesture, 'MimiInteractivePopGesture.swift');
+  assertContains(popGesture, 'mimiInteractivePopGestureEnabled', 'MimiInteractivePopGesture.swift');
+  assertContains(popGesture, 'interactivePopGestureRecognizer', 'MimiInteractivePopGesture.swift');
+  assertContains(assets, 'mimiInteractivePopGestureEnabled()', 'AssetsAndAccountDetailView.swift');
+  assertContains(assets, 'mimiEdgeSwipeBack', 'AssetsAndAccountDetailView.swift');
+  assertContains(stats, 'mimiInteractivePopGestureEnabled()', 'MimiStatsView.swift');
+  assertContains(stats, 'mimiEdgeSwipeBack', 'MimiStatsView.swift');
+  assertContains(budget, 'mimiInteractivePopGestureEnabled()', 'BudgetManagementView.swift');
+  assertContains(budget, 'mimiEdgeSwipeBack', 'BudgetManagementView.swift');
+  const categoryBills = assertFileExists('Sources/MimiMoneyCore/Views/CategoryBillsListView.swift');
+  assertContains(categoryBills, 'mimiInteractivePopGestureEnabled()', 'CategoryBillsListView.swift');
+  const gesturePolicyTests = assertFileExists('Tests/MimiMoneyTests/MimiGesturePolicyTests.swift');
+  checkBalancedBraces(gesturePolicyTests, 'MimiGesturePolicyTests.swift');
+  assertContains(gesturePolicyTests, 'testEdgeBackCommitsOnDistanceOrVelocity', 'MimiGesturePolicyTests.swift');
+  assertContains(gesturePolicyTests, 'testRubberBandTracksFingerThenDampsOverflow', 'MimiGesturePolicyTests.swift');
 
   const appMain = assertFileExists('Sources/MimiMoneyApp/MimiMoneyApp.swift');
   checkBalancedBraces(appMain, 'MimiMoneyApp.swift');

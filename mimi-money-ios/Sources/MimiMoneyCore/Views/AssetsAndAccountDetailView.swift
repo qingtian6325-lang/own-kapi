@@ -178,6 +178,7 @@ public struct AssetsAndAccountDetailView: View {
                 BillDetailSheetView(store: store, transaction: tx) {
                     billForDetail = nil
                 }
+                .mimiInteractiveSheet()
             }
             // sheet(item:) + unique presentationID so 转账 always mounts on transfer tab
             // (stale @State selectedTab caused flaky 支出). .id forces remount on swap.
@@ -199,6 +200,8 @@ public struct AssetsAndAccountDetailView: View {
                     }
                 )
                 .id(route.id)
+                // Sheet chrome; axis lock lives inside RecordAndAISheetView (v1.3.13).
+                .mimiInteractiveSheet()
             }
             .sheet(item: $editAccountRoute) { route in
                 EditAccountView(
@@ -216,9 +219,11 @@ public struct AssetsAndAccountDetailView: View {
                         editAccountRoute = nil
                     }
                 )
+                .mimiInteractiveSheet()
             }
             .sheet(isPresented: $showPendingReimbursementSheet) {
                 pendingReimbursementSheet
+                    .mimiInteractiveSheet()
             }
             .sheet(isPresented: $showAddAccountSheet) {
                 NavigationStack {
@@ -284,7 +289,14 @@ public struct AssetsAndAccountDetailView: View {
                         }
                     }
                 }
+                .mimiInteractiveSheet()
             }
+        }
+        // Overlay-level edge swipe only when not drilled into 账户详情 / 记账 sheet.
+        .mimiEdgeSwipeBack(
+            isEnabled: nav.selectedAccountID == nil && nav.entryRoute == nil
+        ) {
+            dispatch(.back)
         }
     }
 
@@ -686,9 +698,11 @@ public struct AssetsAndAccountDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .navigationBarBackButtonHidden(true)
+        .mimiInteractivePopGestureEnabled()
         .toolbar {
             // Same leading placement as assets root, but action goes through nav.back
             // so left→right→left only pops detail — never the 资产 overlay.
+            // Edge-swipe-back restored via mimiInteractivePopGestureEnabled (hidden system back).
             ToolbarItem(placement: backToolbarPlacement) {
                 Button {
                     dispatch(.back)

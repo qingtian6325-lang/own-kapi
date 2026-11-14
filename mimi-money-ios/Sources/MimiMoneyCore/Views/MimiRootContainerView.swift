@@ -344,6 +344,9 @@ public struct MimiRootContainerView: View {
                         }
                     }
                 )
+                .mimiEdgeSwipeBack {
+                    pushClose { activeSettingsTitle = nil }
+                }
                 .transition(MimiMotion.pageTransition(reduceMotion: reduceMotion))
                 .zIndex(45)
             }
@@ -359,6 +362,12 @@ public struct MimiRootContainerView: View {
                         }
                     }
                 )
+                .mimiEdgeSwipeBack {
+                    pushClose {
+                        activeBillForEdit = nil
+                        store.pendingEditTransactionId = nil
+                    }
+                }
                 .transition(MimiMotion.pageTransition(reduceMotion: reduceMotion))
                 .zIndex(50)
             }
@@ -401,6 +410,8 @@ public struct MimiRootContainerView: View {
                     }
                 }
             )
+            // Swipe-down chrome; RecordAndAISheetView owns axis-lock dismiss (v1.3.13).
+            .mimiInteractiveSheet()
         }
         #if canImport(UIKit)
         .sheet(isPresented: $showHomeAlbumPicker) {

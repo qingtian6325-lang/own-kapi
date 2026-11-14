@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.14] - 2026-11-14
+
+### 🎯 Highlights
+- **半屏下滑关闭**：共享 `mimiInteractiveSheet`（`presentationContentInteraction(.scrolls)`）；记账/账单/预算/分类/设置/账本等 sheet 均可下滑关闭；与 v1.3.13 记账横滑分页兼容（不覆盖 `interactiveDismissDisabled(suppressSheetDismiss)`）。
+- **边缘右滑返回**：`navigationBarBackButtonHidden` 的推入页（账户详情、分类账单）恢复 `interactivePopGestureRecognizer`；ZStack 功能页（资产/统计/预算/分类/日历/设置/账单详情）增加跟手 `mimiEdgeSwipeBack` + 橡胶筋回弹。
+- **回归**：`MimiGesturePolicy` 轴判定 / commit / rubber-band 单测；verify 脚本覆盖手势基础设施。
+- **发版**：`VERSION` / Intent 默认版本升至 1.3.14。
+
 ## [v1.3.13] - 2026-11-14
 
 ### 🎯 Highlights

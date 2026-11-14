@@ -499,15 +499,13 @@ public struct BillDetailSheetView: View {
                     onCancel: { showingActionSheet = false }
                 )
                 #if os(iOS)
-                .presentationDetents([.height(300)])
-                .presentationDragIndicator(.hidden)
+                .mimiInteractiveSheet(detents: [.height(300)], showDragIndicator: false)
                 .presentationCornerRadius(24)
                 #endif
             }
             .sheet(isPresented: $showAmountKeypad) {
                 amountKeypadSheet
-                    .presentationDetents([.height(420)])
-                    .presentationDragIndicator(.visible)
+                    .mimiInteractiveSheet(detents: [.height(420)])
             }
             #if canImport(UIKit)
             .sheet(isPresented: $showingImagePicker) {

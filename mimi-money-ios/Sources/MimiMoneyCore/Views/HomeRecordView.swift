@@ -129,7 +129,7 @@ public struct HomeRecordView: View {
         .background(MimiTheme.background.ignoresSafeArea())
         .sheet(isPresented: $showLedgerSwitcherSheet) {
             ledgerPickerSheet
-                .presentationDetents([.height(260)])
+                .mimiInteractiveSheet(detents: [.height(260)])
         }
         .alert("确认删除这笔账单？", isPresented: $showDeleteConfirm) {
             Button("取消", role: .cancel) {

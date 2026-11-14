@@ -255,13 +255,11 @@ public struct CategoryManagementView: View {
             }
             .sheet(item: $selectedGroupForSubSheet) { group in
                 subcategoryManagerSheet(for: group)
-                    .presentationDetents([.medium, .large])
-                    .presentationDragIndicator(.visible)
+                    .mimiInteractiveSheet(detents: [.medium, .large])
             }
             .sheet(isPresented: $showAddPrimarySheet) {
                 addPrimaryCategorySheet
-                    .presentationDetents([.large])
-                    .presentationDragIndicator(.visible)
+                    .mimiInteractiveSheet(detents: [.large])
             }
             .alert(
                 "重命名分类",
@@ -294,6 +292,7 @@ public struct CategoryManagementView: View {
                 Text("已有账单不会被删除，只是不再挂在此分类下展示。")
             }
         }
+        .mimiEdgeSwipeBack(onBack: onDismiss)
     }
 
     private func commitRename() {

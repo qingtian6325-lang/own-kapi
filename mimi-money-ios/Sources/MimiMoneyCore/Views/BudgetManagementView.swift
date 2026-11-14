@@ -128,14 +128,18 @@ public struct BudgetManagementView: View {
             }
             .sheet(isPresented: $showDynamicDailySheet) {
                 dynamicDailyBudgetCalendarSheet
+                    .mimiInteractiveSheet()
             }
             .sheet(item: $activeSheetType) { sheetType in
                 budgetModalSheet(for: sheetType)
+                    .mimiInteractiveSheet(detents: [.height(340)])
             }
             .sheet(item: $historyCategory) { item in
                 categoryBudgetHistorySheet(for: item)
+                    .mimiInteractiveSheet()
             }
         }
+        .mimiEdgeSwipeBack(onBack: onDismiss)
     }
 
     @ViewBuilder
@@ -335,7 +339,6 @@ public struct BudgetManagementView: View {
                 }
             }
         }
-        .presentationDetents([.height(340)])
     }
 
     // MARK: - Top Monthly Overview +Ring Chart (IMG_2263)
@@ -758,11 +761,13 @@ public struct BudgetManagementView: View {
                     }
                 )
                 .navigationBarBackButtonHidden(true)
+                .mimiInteractivePopGestureEnabled()
             }
             .sheet(item: $historyBillForDetail) { tx in
                 BillDetailSheetView(store: store, transaction: tx) {
                     historyBillForDetail = nil
                 }
+                .mimiInteractiveSheet()
             }
         }
     }
@@ -894,6 +899,7 @@ public struct BudgetManagementView: View {
                 BillDetailSheetView(store: store, transaction: tx) {
                     dynamicDayBillForDetail = nil
                 }
+                .mimiInteractiveSheet()
             }
         }
     }

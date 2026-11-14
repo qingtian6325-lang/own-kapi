@@ -182,6 +182,7 @@ public struct EditAccountView: View {
             }
             .sheet(isPresented: $showIconPicker) {
                 iconPickerSheet
+                    .mimiInteractiveSheet(detents: [.medium, .large])
             }
         }
     }
@@ -279,7 +280,5 @@ public struct EditAccountView: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
     }
 }

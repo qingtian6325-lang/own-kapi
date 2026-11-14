@@ -230,13 +230,18 @@ public struct MimiStatsView: View {
                         }
                     )
                     .navigationBarBackButtonHidden(true)
+                    .mimiInteractivePopGestureEnabled()
                 }
             }
             .sheet(item: $billForDetail) { tx in
                 BillDetailSheetView(store: store, transaction: tx) {
                     billForDetail = nil
                 }
+                .mimiInteractiveSheet()
             }
+        }
+        .mimiEdgeSwipeBack(isEnabled: drillCategoryName == nil) {
+            onSwitchToHome()
         }
     }
 

@@ -123,9 +123,11 @@ public struct SettingsAndShortcutsGuideView: View {
             }
             .sheet(isPresented: $showImportModal) {
                 importModalSheet
+                    .mimiInteractiveSheet()
             }
             .sheet(isPresented: $showExportModal) {
                 exportModalSheet
+                    .mimiInteractiveSheet()
             }
             .alert("确认清空全部账单？", isPresented: $showResetCleanAlert) {
                 Button("取消", role: .cancel) {}
@@ -1234,7 +1236,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     }
                 }
             }
-            .presentationDetents([.height(260)])
+            .mimiInteractiveSheet(detents: [.height(260)])
         }
         .sheet(isPresented: $showCreateLedgerSheet) {
             NavigationStack {
@@ -1284,7 +1286,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     }
                 }
             }
-            .presentationDetents([.height(320)])
+            .mimiInteractiveSheet(detents: [.height(320)])
         }
     }
 
@@ -1613,7 +1615,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     }
                 }
             }
-            .presentationDetents([.height(380)])
+            .mimiInteractiveSheet(detents: [.height(380)])
         }
     }
 

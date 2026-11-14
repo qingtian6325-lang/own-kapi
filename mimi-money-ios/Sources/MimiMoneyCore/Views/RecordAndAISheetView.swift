@@ -134,8 +134,7 @@ public struct RecordAndAISheetView: View {
                 onDone: { showDatePickerSheet = false }
             )
             #if os(iOS)
-            .presentationDetents([.height(520)])
-            .presentationDragIndicator(.hidden)
+            .mimiInteractiveSheet(detents: [.height(520)], showDragIndicator: false)
             .presentationCornerRadius(24)
             #endif
         }
@@ -171,8 +170,7 @@ public struct RecordAndAISheetView: View {
                 onCancel: { showImageSourceDialog = false }
             )
             #if os(iOS)
-            .presentationDetents([.height(360)])
-            .presentationDragIndicator(.hidden)
+            .mimiInteractiveSheet(detents: [.height(360)], showDragIndicator: false)
             .presentationCornerRadius(24)
             #endif
         }

@@ -140,9 +140,15 @@ public struct CategoryBillsListView: View {
                     Image(systemName: "chevron.left")
                         .mimiFont(15, weight: .semibold)
                         .foregroundColor(MimiTheme.textPrimary)
+                        .frame(width: MimiHIG.minTouch, height: MimiHIG.minTouch)
+                        .contentShape(Rectangle())
                 }
+                .mimiPressable()
+                .accessibilityLabel("返回")
             }
         }
+        // Parent also applies this when using navigationBarBackButtonHidden; safe to stack.
+        .mimiInteractivePopGestureEnabled()
     }
 
     private var displayTitle: String {

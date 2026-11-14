@@ -168,6 +168,7 @@ public struct AllRecordsCalendarView: View {
                 }
             }
         }
+        .mimiEdgeSwipeBack(onBack: onDismiss)
     }
 
     // MARK: - SubHeader Month Bar (2026年11月 > | 回今天 | 收支 v)

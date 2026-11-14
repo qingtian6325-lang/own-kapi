@@ -354,8 +354,10 @@ public struct MimiDateFieldButton: View {
                 onDone: { showSheet = false }
             )
             #if os(iOS)
-            .presentationDetents([.height(mode == .dateAndTime ? 520 : 460)])
-            .presentationDragIndicator(.hidden)
+            .mimiInteractiveSheet(
+                detents: [.height(mode == .dateAndTime ? 520 : 460)],
+                showDragIndicator: false
+            )
             .presentationCornerRadius(24)
             #endif
         }
