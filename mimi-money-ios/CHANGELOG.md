@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.17] - 2026-11-14
+
+### 🎯 Highlights
+- **账单详情离开即存**：去掉显式「保存修改」；下滑关闭、边缘右滑返回、关闭按钮等任一离开路径经 `onDisappear` → `autoSaveOnLeave` 持久化金额、分类（标准分类图标选择）、备注、账单时间、账户/账本、优惠/退款、交易方、统计/预算开关与标签。
+- **无效金额守卫**：空/0/非数字金额保留进入页面前的有效值（`previousValidAmount`）；金额键盘「完成」为 0 时也不覆盖。
+- **发版**：`VERSION` / Intent 默认版本升至 1.3.17。
+
 ## [v1.3.16] - 2026-11-14
 
 ### 🎯 Highlights

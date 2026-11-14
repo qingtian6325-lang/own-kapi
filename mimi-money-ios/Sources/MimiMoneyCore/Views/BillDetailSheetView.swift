@@ -5,6 +5,9 @@ public struct BillDetailSheetView: View {
     @State private var editableBill: TransactionItem
     public var onDismiss: () -> Void
 
+    /// Amount when the screen opened — used if leave-to-save sees empty/zero/invalid input.
+    private let previousValidAmount: Double
+
     @State private var amountString: String
     @State private var discountString: String
     @State private var refundString: String
@@ -16,6 +19,8 @@ public struct BillDetailSheetView: View {
     @State private var showDeleteConfirm = false
     @State private var showCategoryPicker = false
     @State private var showCategoryEditor = false
+    /// Skip leave-to-save after an explicit delete (transaction already removed).
+    @State private var skipAutoSave = false
     #if canImport(UIKit)
     @State private var pickerSourceType: UIKitImagePicker.SourceType = .photoLibrary
     #endif
@@ -30,6 +35,7 @@ public struct BillDetailSheetView: View {
         self.store = store
         self._editableBill = State(initialValue: transaction)
         self.onDismiss = onDismiss
+        self.previousValidAmount = transaction.amount
         self._amountString = State(initialValue: String(format: "%.2f", transaction.amount))
         self._discountString = State(
             initialValue: transaction.discountAmount > 0 ? String(format: "%.2f", transaction.discountAmount) : ""
@@ -399,26 +405,6 @@ public struct BillDetailSheetView: View {
                         }
                         .background(RoundedRectangle(cornerRadius: 18).fill(MimiTheme.cardBackground))
                     }
-
-                    // Save Changes Button
-                    Button {
-                        if let parsed = Double(amountString), parsed > 0 {
-                            editableBill.amount = parsed
-                        }
-                        editableBill.discountAmount = Double(discountString) ?? 0.0
-                        editableBill.refundOrCashback = Double(refundString)
-                        store.updateTransaction(editableBill)
-                        onDismiss()
-                    } label: {
-                        Text("保存修改", bundle: .mimiModule)
-                            .mimiFont(16, weight: .bold)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(Capsule().fill(MimiTheme.expenseBlue))
-                    }
-                    .mimiPressable()
-                    .padding(.top, 6)
                 }
                 .padding(16)
             }
@@ -451,6 +437,7 @@ public struct BillDetailSheetView: View {
             }
             .confirmationDialog(MimiL10n.string("删除这笔账单？"), isPresented: $showDeleteConfirm, titleVisibility: .visible) {
                 Button(MimiL10n.string("删除"), role: .destructive) {
+                    skipAutoSave = true
                     store.deleteTransaction(id: editableBill.id)
                     onDismiss()
                 }
@@ -548,6 +535,11 @@ public struct BillDetailSheetView: View {
             }
             #endif
         }
+        // Leave-to-save: swipe-down dismiss, edge-swipe back, close button — any path that
+        // removes this screen. Nested sheets (分类 / 金额键盘) do not tear down NavigationStack.
+        .onDisappear {
+            autoSaveOnLeave()
+        }
     }
 
     // MARK: - 实付金额数字键盘（与记账页同风格）
@@ -618,12 +610,32 @@ public struct BillDetailSheetView: View {
             amountExpression = ""
         case "完成":
             let value = max(0.0, KeypadCalculator.evaluate(amountExpression))
-            amountString = String(format: "%.2f", value)
-            editableBill.amount = value
+            if value > 0 {
+                amountString = String(format: "%.2f", value)
+                editableBill.amount = value
+            }
+            // Invalid/zero: keep previous amountString + editableBill.amount (no silent wipe).
             showAmountKeypad = false
         default:
             amountExpression.append(key)
         }
+    }
+
+    /// Persist edits when leaving by any path. Invalid amount keeps `previousValidAmount`.
+    private func autoSaveOnLeave() {
+        guard !skipAutoSave else { return }
+        guard store.transactions.contains(where: { $0.id == editableBill.id }) else { return }
+        let prepared = BillDetailEditCommit.prepared(
+            draft: editableBill,
+            amountString: amountString,
+            discountString: discountString,
+            refundString: refundString,
+            previousValidAmount: previousValidAmount
+        )
+        if let current = store.transactions.first(where: { $0.id == prepared.id }), current == prepared {
+            return
+        }
+        store.updateTransaction(prepared)
     }
 
     private func fallbackDocIcon(label: String) -> some View {
