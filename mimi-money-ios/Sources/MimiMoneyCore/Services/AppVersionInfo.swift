@@ -14,7 +14,7 @@ public enum AppVersionInfo: Sendable {
             ?? "—"
     }
 
-    /// Settings footer, e.g. `版本 1.3.17 (build 42)`.
+    /// Settings footer, e.g. `版本 1.3.18 (build 42)`.
     public static var settingsFooterLine: String {
         formatLine(shortVersion: shortVersion, build: build)
     }

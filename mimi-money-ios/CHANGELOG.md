@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.18] - 2026-11-14
+
+### 🎯 Highlights
+- **日历式日期选择**：共享 `MimiDatePickerSheet` 对齐金标——标题「日期」+「回今天」、月历格子蓝圈选日、「时间」灰胶囊 HH:mm（点开时分滚轮）、底部大蓝「确认」；替换旧 +/- 步进器。
+- **全站接线**：账单详情、手动记账日期胶囊、统计「自定义」起止、导入导出自定义区间、全部记录月标题均走同一组件。
+- **发版**：`VERSION` / Intent 默认版本升至 1.3.18。
+
 ## [v1.3.17] - 2026-11-14
 
 ### 🎯 Highlights

@@ -224,7 +224,7 @@ public struct BillDetailSheetView: View {
                             MimiDateFieldButton(
                                 date: $editableBill.date,
                                 mode: .dateAndTime,
-                                title: "选择账单时间"
+                                title: "日期"
                             )
                         }
 

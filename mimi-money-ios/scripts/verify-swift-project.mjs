@@ -507,6 +507,35 @@ function verifyTask6() {
   const editCommitTests = assertFileExists('Tests/MimiMoneyTests/BillDetailEditCommitTests.swift');
   assertContains(editCommitTests, 'testEmptyAmountKeepsPreviousValid', 'BillDetailEditCommitTests.swift');
   assertContains(editCommitTests, 'testZeroAmountKeepsPreviousValid', 'BillDetailEditCommitTests.swift');
+  // v1.3.18: calendar-style date/time sheet (日期 + 回今天 + 时间胶囊 + 确认).
+  const datePickerSheet = assertFileExists('Sources/MimiMoneyCore/Components/MimiDatePickerSheet.swift');
+  checkBalancedBraces(datePickerSheet, 'MimiDatePickerSheet.swift');
+  for (const label of [
+    'MimiDatePickerLogic',
+    '回今天',
+    '确认',
+    '时间',
+    'showTimeWheel',
+    'datePickerStyle(.wheel)',
+    'expenseBlue'
+  ]) {
+    assertContains(datePickerSheet, label, 'MimiDatePickerSheet.swift');
+  }
+  if (datePickerSheet.includes('timeStepper')) {
+    throw new Error(
+      'MimiDatePickerSheet.swift: remove +/- time steppers — use gray HH:mm capsule + wheel overlay'
+    );
+  }
+  assertContains(billDetailCategory, 'MimiDateFieldButton', 'BillDetailSheetView.swift');
+  assertContains(billDetailCategory, 'title: "日期"', 'BillDetailSheetView.swift');
+  assertContains(recordSheet, 'MimiDatePickerSheet', 'RecordAndAISheetView.swift');
+  assertContains(recordSheet, 'title: "日期"', 'RecordAndAISheetView.swift');
+  const calendarView = assertFileExists('Sources/MimiMoneyCore/Views/AllRecordsCalendarView.swift');
+  assertContains(calendarView, 'showMonthPickerSheet', 'AllRecordsCalendarView.swift');
+  assertContains(calendarView, 'MimiDatePickerSheet', 'AllRecordsCalendarView.swift');
+  const datePickerLogicTests = assertFileExists('Tests/MimiMoneyTests/MimiDatePickerLogicTests.swift');
+  assertContains(datePickerLogicTests, 'testCombiningKeepsTimeFromSource', 'MimiDatePickerLogicTests.swift');
+  assertContains(datePickerLogicTests, 'testDaysInMonthSundayFirstLeadingPads', 'MimiDatePickerLogicTests.swift');
   // Regression: PageTabViewStyle is unavailable on macOS host unit tests.
   if (!/#if\s+os\(iOS\)[\s\S]{0,240}tabViewStyle\(\.page/.test(recordSheet)) {
     throw new Error(
