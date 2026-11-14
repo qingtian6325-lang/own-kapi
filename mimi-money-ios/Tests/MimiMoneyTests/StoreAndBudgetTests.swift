@@ -130,6 +130,22 @@ final class StoreAndBudgetTests: XCTestCase {
         XCTAssertEqual(dstLogs.first(where: { $0.transactionId == transfer.id })?.deltaAmount ?? 0, 100, accuracy: 0.001)
     }
 
+    func testNewAccountEmptyOpeningBalancePersistsZero() {
+        let store = MimiStore(inMemory: true)
+        let opening = AccountBalanceEditPrefill.parseNewAccountOpeningBalance("")
+        store.addAccount(AccountItem(
+            id: "acc_empty_opening",
+            name: "空期初",
+            subtitle: "自定义账户",
+            iconName: "💳",
+            balance: opening,
+            initialBalance: opening
+        ))
+        let created = store.accounts.first(where: { $0.id == "acc_empty_opening" })!
+        XCTAssertEqual(created.balance, 0, accuracy: 0.0001)
+        XCTAssertEqual(created.initialBalance, 0, accuracy: 0.0001)
+    }
+
     func testCustomAccountNameResolvesWithoutFallingBackToTNG() {
         let store = MimiStore(inMemory: true)
         store.addAccount(AccountItem(
