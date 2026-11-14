@@ -14,6 +14,8 @@ public struct AllRecordsCalendarView: View {
     @State private var filterMode: String = "收支" // "收支" | "支出" | "收入"
     @State private var searchQuery: String = ""
     @State private var showSearchField: Bool = false
+    @State private var showMonthPickerSheet: Bool = false
+    @State private var monthPickerDraft: Date = Date()
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -113,6 +115,11 @@ public struct AllRecordsCalendarView: View {
         return (weekday >= 1 && weekday <= 7) ? map[weekday] : "周日"
     }
 
+    private var daysInSelectedMonth: Int {
+        let anchor = calendar.date(from: DateComponents(year: selectedYear, month: selectedMonth, day: 1)) ?? Date()
+        return calendar.range(of: .day, in: .month, for: anchor)?.count ?? 31
+    }
+
     public var body: some View {
         NavigationStack {
             ZStack(alignment: .bottom) {
@@ -167,6 +174,24 @@ public struct AllRecordsCalendarView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showMonthPickerSheet) {
+                MimiDatePickerSheet(
+                    selection: $monthPickerDraft,
+                    title: "日期",
+                    mode: .date,
+                    onDone: {
+                        let comps = calendar.dateComponents([.year, .month, .day], from: monthPickerDraft)
+                        selectedYear = comps.year ?? selectedYear
+                        selectedMonth = comps.month ?? selectedMonth
+                        selectedDay = comps.day ?? selectedDay
+                        showMonthPickerSheet = false
+                    }
+                )
+                #if os(iOS)
+                .mimiInteractiveSheet(detents: [.height(500)], showDragIndicator: false)
+                .presentationCornerRadius(24)
+                #endif
+            }
         }
         .mimiEdgeSwipeBack(onBack: onDismiss)
     }
@@ -175,17 +200,14 @@ public struct AllRecordsCalendarView: View {
 
     private var subHeaderMonthBar: some View {
         HStack(spacing: 8) {
-            Menu {
-                let thisYear = Calendar.current.component(.year, from: Date())
-                ForEach((thisYear - 2)...(thisYear + 1), id: \.self) { y in
-                    Button("\(y)年") { selectedYear = y }
-                }
-                Divider()
-                ForEach(1...12, id: \.self) { m in
-                    Button(String(format: "%d月", m)) {
-                        selectedMonth = m
-                    }
-                }
+            Button {
+                var comps = DateComponents()
+                comps.year = selectedYear
+                comps.month = selectedMonth
+                comps.day = min(selectedDay, daysInSelectedMonth)
+                comps.hour = 12
+                monthPickerDraft = calendar.date(from: comps) ?? Date()
+                showMonthPickerSheet = true
             } label: {
                 HStack(spacing: 4) {
                     Text(String(format: "%d年%d月", selectedYear, selectedMonth))
@@ -195,7 +217,12 @@ public struct AllRecordsCalendarView: View {
                         .mimiFont(11, weight: .bold)
                         .foregroundColor(MimiTheme.textMuted)
                 }
+                .frame(minHeight: MimiHIG.minTouch)
+                .contentShape(Rectangle())
             }
+            .mimiPressable()
+            .accessibilityLabel(String(format: "%d年%d月", selectedYear, selectedMonth))
+            .accessibilityHint(MimiL10n.string("点按选择日期"))
 
             Button {
                 let now = Date()

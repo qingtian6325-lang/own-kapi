@@ -386,13 +386,13 @@ public struct MimiStatsView: View {
                         label: "起",
                         date: $customStartDate,
                         mode: .date,
-                        title: "开始日期"
+                        title: "日期"
                     )
                     MimiDateFieldButton(
                         label: "止",
                         date: $customEndDate,
                         mode: .date,
-                        title: "结束日期"
+                        title: "日期"
                     )
                 }
                 .padding(8)

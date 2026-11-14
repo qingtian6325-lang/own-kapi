@@ -137,12 +137,12 @@ public struct RecordAndAISheetView: View {
         .sheet(isPresented: $showDatePickerSheet) {
             MimiDatePickerSheet(
                 selection: $selectedDate,
-                title: "选择账单时间",
+                title: "日期",
                 mode: .dateAndTime,
                 onDone: { showDatePickerSheet = false }
             )
             #if os(iOS)
-            .mimiInteractiveSheet(detents: [.height(520)], showDragIndicator: false)
+            .mimiInteractiveSheet(detents: [.height(560)], showDragIndicator: false)
             .presentationCornerRadius(24)
             #endif
         }

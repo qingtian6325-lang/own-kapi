@@ -387,7 +387,7 @@ public struct SettingsAndShortcutsGuideView: View {
                             MimiDateFieldButton(
                                 date: $exportStartDate,
                                 mode: .date,
-                                title: "开始日期"
+                                title: "日期"
                             )
                         }
                         HStack {
@@ -398,7 +398,7 @@ public struct SettingsAndShortcutsGuideView: View {
                             MimiDateFieldButton(
                                 date: $exportEndDate,
                                 mode: .date,
-                                title: "结束日期"
+                                title: "日期"
                             )
                         }
                     }
