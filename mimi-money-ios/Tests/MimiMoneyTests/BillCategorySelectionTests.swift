@@ -1,6 +1,7 @@
 import XCTest
 @testable import MimiMoneyCore
 
+@MainActor
 final class BillCategorySelectionTests: XCTestCase {
     private var store: MimiStore!
 
@@ -56,7 +57,6 @@ final class BillCategorySelectionTests: XCTestCase {
             expenseCategories: store.expenseCategories,
             incomeCategories: store.incomeCategories
         )
-        // "转账" is not an expense primary — selection has type only.
         XCTAssertEqual(selection.type, .expense)
         XCTAssertNil(selection.primaryId)
     }
