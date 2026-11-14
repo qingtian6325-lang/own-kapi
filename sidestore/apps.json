@@ -28,6 +28,15 @@
       },
       "versions": [
         {
+          "version": "1.3.17",
+          "date": "2026-11-14T11:43:23Z",
+          "localizedDescription": "账单详情离开即存：去掉显式「保存修改」；下滑关闭、边缘右滑返回、关闭按钮等任一离开路径经 `onDisappear` → `autoSaveOnLeave` 持久化金额、分类（标准分类图标选择）、备注、账单时间、账户/账本、优惠/退款、交易方、统计/预算开关与标签。; 无效金额守卫：空/0/非数字金额保留进入页面前的有效值（`previousValidAmount`）；金额键盘「完成」为 0 时也不覆盖。; 发版：`VERSION` / Intent 默认版本升至 1.3.17。",
+          "downloadURL": "https://github.com/qingtian6325-lang/own-mimi/releases/download/v1.3.17/MimiMoney-iOS-v1.3.17.ipa",
+          "size": 4302264,
+          "minOSVersion": "17.0",
+          "buildVersion": "127"
+        },
+        {
           "version": "1.3.16",
           "date": "2026-11-14T10:41:33Z",
           "localizedDescription": "手动记账全屏：记录页 / 账户详情「记账」「转账」改回 `.presentationDetents([.large])`（不再默认 `.medium` 半盖预算卡）；保留下滑关闭与支出|收入|转账横滑分页。; 账单分类选择：账单详情点「分类」打开「标准分类」半屏——支出/收入胶囊、一级 4 列图标网格（选中蓝圈+披露角标）、展开后二级 5 列卡片、「确认」写入；默认当前账单分类；「分类编辑」进分类管理。沿用现有贴纸图标。; 说明：v1.3.15 启动崩溃热修（补打 `MimiMoney_MimiMoneyCore.bundle`）已在 SideStore。; 发版：`VERSION` / Intent 默认版本升至 1.3.16。",
