@@ -907,9 +907,12 @@ public struct ScanScreenshotIntent: AppIntent {
                 transaction.type == .expense ? "-" : "+",
                 transaction.amount
             )
+            // Pre-macOS-15 / iOS-17 fallback: older overload (confirmationActionName).
+            // The actionName: API needs macOS 15+ and cannot live in this else branch
+            // while Package.swift still targets macOS(.v14) for host unit tests.
             try await requestConfirmation(
-                actionName: .log,
-                dialog: IntentDialog("确认记账：\(transaction.categoryPath) \(amountText)（\(transaction.accountName)）？")
+                result: .result(dialog: "确认记账：\(transaction.categoryPath) \(amountText)（\(transaction.accountName)）？"),
+                confirmationActionName: .log
             )
         }
     }

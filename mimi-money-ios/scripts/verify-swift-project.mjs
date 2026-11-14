@@ -33,6 +33,55 @@ function checkBalancedBraces(content, relPath) {
   }
 }
 
+/** Walk Sources and flag APIs that break macOS host unit-test compilation. */
+function verifyMacOSHostSafeAPIs() {
+  const sourcesRoot = path.join(rootDir, 'Sources');
+  const unsafeBare = [
+    { re: /\.listStyle\(\.insetGrouped\)/, label: '.listStyle(.insetGrouped) (iOS-only)' },
+    { re: /\.keyboardType\(/, label: '.keyboardType (iOS-only)' },
+    { re: /\.fullScreenCover\(/, label: '.fullScreenCover (iOS-only)' },
+    { re: /\.navigationBarTitleDisplayMode\(/, label: '.navigationBarTitleDisplayMode (iOS-only)' }
+  ];
+  const findings = [];
+
+  function walk(dir) {
+    for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, ent.name);
+      if (ent.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!ent.name.endsWith('.swift')) continue;
+      const lines = fs.readFileSync(full, 'utf8').split(/\r?\n/);
+      const rel = path.relative(rootDir, full);
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const window = lines.slice(Math.max(0, i - 5), i + 1).join('\n');
+        const guarded =
+          window.includes('#if os(iOS)') ||
+          window.includes('#if canImport(UIKit)');
+        for (const { re, label } of unsafeBare) {
+          if (re.test(line) && !guarded) {
+            findings.push(`${rel}:${i + 1}: unguarded ${label}`);
+          }
+        }
+        // Package platforms macOS(.v14): iOS-17 fallback must use the older
+        // confirmationActionName API, not actionName: which needs macOS 15+.
+        if (/actionName:\s*\.log/.test(line)) {
+          findings.push(
+            `${rel}:${i + 1}: actionName: .log requires macOS 15+; use confirmationActionName: .log in the pre-macOS-15 fallback`
+          );
+        }
+      }
+    }
+  }
+
+  walk(sourcesRoot);
+  if (findings.length) {
+    throw new Error(`macOS host unsafe APIs:\n- ${findings.join('\n- ')}`);
+  }
+}
+
 function verifyTask1() {
   const pkg = assertFileExists('Package.swift');
   assertContains(pkg, 'name: "MimiMoney"', 'Package.swift');
@@ -534,6 +583,9 @@ function verifyTask7() {
   assertContains(ciContent, 'swift test', '.github/workflows/build-mimi-ios.yml');
   assertContains(ciContent, 'MimiMoney-iOS-v', '.github/workflows/build-mimi-ios.yml');
   assertContains(ciContent, 'NSCameraUsageDescription', '.github/workflows/build-mimi-ios.yml');
+
+  // macOS host (`swift test`) must not see iOS-only / deployment-mismatched APIs unguarded.
+  verifyMacOSHostSafeAPIs();
 
   // Cross-layer API contract verification (Models/Store/Services <-> Views/Intents)
   const theme = assertFileExists('Sources/MimiMoneyCore/Theme/MimiTheme.swift');

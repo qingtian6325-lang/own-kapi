@@ -340,7 +340,11 @@ public struct AssetsAndAccountDetailView: View {
                             }
                         }
                     }
+                    #if os(iOS)
                     .listStyle(.insetGrouped)
+                    #else
+                    .listStyle(.inset)
+                    #endif
                 }
             }
             .background(MimiTheme.background.ignoresSafeArea())
