@@ -453,9 +453,20 @@ function verifyTask6() {
     '任何事情都能问我',
     '咪咪思考中',
     '内容由AI生成',
-    'onSwitchToAIOverlay'
+    'onSwitchToAIOverlay',
+    'intendedInitialTab',
+    'suppressSheetDismiss',
+    'presentationContentInteraction(.scrolls)',
+    'BookkeepingSheetSwipePolicy',
+    'tabViewStyle(.page'
   ]) {
     assertContains(recordSheet, label, 'RecordAndAISheetView.swift');
+  }
+  // Regression: PageTabViewStyle is unavailable on macOS host unit tests.
+  if (!/#if\s+os\(iOS\)[\s\S]{0,240}tabViewStyle\(\.page/.test(recordSheet)) {
+    throw new Error(
+      'RecordAndAISheetView.swift: .tabViewStyle(.page) must be inside #if os(iOS) for macOS swift test'
+    );
   }
 
   const aiOverlay = assertFileExists('Sources/MimiMoneyCore/Views/MimiAIAskOverlayView.swift');
@@ -531,10 +542,26 @@ function verifyTask7() {
     'case back',
     'dismissAssetsOverlay',
     'case openEntry',
-    'case dismissEntry'
+    'case dismissEntry',
+    'presentationID',
+    'struct AccountEntryRoute'
   ]) {
     assertContains(assetsNav, label, 'AssetsAccountNavigation.swift');
   }
+
+  const swipePolicy = assertFileExists('Sources/MimiMoneyCore/Services/BookkeepingSheetSwipePolicy.swift');
+  checkBalancedBraces(swipePolicy, 'BookkeepingSheetSwipePolicy.swift');
+  for (const label of [
+    'BookkeepingSheetSwipePolicy',
+    'isHorizontalDominant',
+    'isVerticalDominant',
+    'neighbor'
+  ]) {
+    assertContains(swipePolicy, label, 'BookkeepingSheetSwipePolicy.swift');
+  }
+  const swipePolicyTests = assertFileExists('Tests/MimiMoneyTests/BookkeepingSheetSwipePolicyTests.swift');
+  checkBalancedBraces(swipePolicyTests, 'BookkeepingSheetSwipePolicyTests.swift');
+  assertContains(swipePolicyTests, 'testHorizontalDominantBlocksDiagonalSheetDismissSteal', 'BookkeepingSheetSwipePolicyTests.swift');
 
   const assets = assertFileExists('Sources/MimiMoneyCore/Views/AssetsAndAccountDetailView.swift');
   checkBalancedBraces(assets, 'AssetsAndAccountDetailView.swift');
@@ -589,6 +616,9 @@ function verifyTask7() {
   assertContains(assetsNavTests, 'testLeftRightLeftAccountDrillDoesNotDismissAssets', 'AssetsAccountNavigationTests.swift');
   assertContains(assetsNavTests, 'testExpenseTransferExpenseEntryRouteNeverClearsAccount', 'AssetsAccountNavigationTests.swift');
   assertContains(assetsNavTests, 'testEditAccountSheetRouteIdentityUsesAccountId', 'AssetsAccountNavigationTests.swift');
+  assertContains(assetsNavTests, 'testTransferEntryRouteIntendedTabIsTransfer', 'AssetsAccountNavigationTests.swift');
+  assertContains(assetsNavTests, 'testEachEntryOpenGetsUniquePresentationIdentity', 'AssetsAccountNavigationTests.swift');
+  assertContains(assets, '.id(route.id)', 'AssetsAndAccountDetailView.swift');
 
   const budget = assertFileExists('Sources/MimiMoneyCore/Views/BudgetManagementView.swift');
   checkBalancedBraces(budget, 'BudgetManagementView.swift');

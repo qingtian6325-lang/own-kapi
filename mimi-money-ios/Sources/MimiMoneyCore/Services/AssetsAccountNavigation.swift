@@ -28,28 +28,34 @@ public struct AssetsAccountNavigationState: Equatable, Sendable {
         self.entryRoute = entryRoute
     }
 
-    public enum AccountEntryRoute: Equatable, Sendable, Identifiable {
-        case expense(accountName: String)
-        case transfer(accountName: String)
+    /// Each open gets a unique `presentationID` so `sheet(item:)` remounts and
+    /// `RecordAndAISheetView` `@State selectedTab` initializes to the intended type
+    /// (fixes flaky 转账 opening on 支出).
+    public struct AccountEntryRoute: Equatable, Sendable, Identifiable {
+        public let presentationID: UUID
+        public let accountName: String
+        public let transactionType: TransactionType
 
         public var id: String {
-            switch self {
-            case .expense(let name): return "expense:\(name)"
-            case .transfer(let name): return "transfer:\(name)"
-            }
+            "\(transactionType.rawValue):\(accountName):\(presentationID.uuidString)"
         }
 
-        public var accountName: String {
-            switch self {
-            case .expense(let name), .transfer(let name): return name
-            }
+        public init(
+            transactionType: TransactionType,
+            accountName: String,
+            presentationID: UUID = UUID()
+        ) {
+            self.presentationID = presentationID
+            self.accountName = accountName
+            self.transactionType = transactionType
         }
 
-        public var transactionType: TransactionType {
-            switch self {
-            case .expense: return .expense
-            case .transfer: return .transfer
-            }
+        public static func expense(accountName: String, presentationID: UUID = UUID()) -> AccountEntryRoute {
+            AccountEntryRoute(transactionType: .expense, accountName: accountName, presentationID: presentationID)
+        }
+
+        public static func transfer(accountName: String, presentationID: UUID = UUID()) -> AccountEntryRoute {
+            AccountEntryRoute(transactionType: .transfer, accountName: accountName, presentationID: presentationID)
         }
     }
 

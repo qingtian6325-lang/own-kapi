@@ -179,7 +179,8 @@ public struct AssetsAndAccountDetailView: View {
                     billForDetail = nil
                 }
             }
-            // sheet(item:) so 记账⇄转账 rapid switches get a fresh identity (Bool sheets desync).
+            // sheet(item:) + unique presentationID so 转账 always mounts on transfer tab
+            // (stale @State selectedTab caused flaky 支出). .id forces remount on swap.
             .sheet(item: entryRouteBinding) { route in
                 RecordAndAISheetView(
                     store: store,
@@ -197,6 +198,7 @@ public struct AssetsAndAccountDetailView: View {
                         billForDetail = tx
                     }
                 )
+                .id(route.id)
             }
             .sheet(item: $editAccountRoute) { route in
                 EditAccountView(
