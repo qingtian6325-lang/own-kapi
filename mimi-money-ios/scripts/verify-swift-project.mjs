@@ -472,6 +472,25 @@ function verifyTask6() {
       'RecordAndAISheetView.swift: do not use [.medium, .large] — opens as half-sheet; use [.large]'
     );
   }
+  // v1.3.16 bill-detail category picker (标准分类 sheet).
+  const billDetailCategory = assertFileExists('Sources/MimiMoneyCore/Views/BillDetailSheetView.swift');
+  assertContains(billDetailCategory, 'showCategoryPicker', 'BillDetailSheetView.swift');
+  assertContains(billDetailCategory, 'BillCategoryPickerSheet', 'BillDetailSheetView.swift');
+  const categoryPicker = assertFileExists('Sources/MimiMoneyCore/Views/BillCategoryPickerSheet.swift');
+  checkBalancedBraces(categoryPicker, 'BillCategoryPickerSheet.swift');
+  for (const label of [
+    '标准分类',
+    '分类编辑',
+    '确认',
+    'BillCategorySelection',
+    'LazyVGrid'
+  ]) {
+    assertContains(categoryPicker, label, 'BillCategoryPickerSheet.swift');
+  }
+  const categorySelection = assertFileExists('Sources/MimiMoneyCore/Services/BillCategorySelection.swift');
+  assertContains(categorySelection, 'resolvedPath', 'BillCategorySelection.swift');
+  const categorySelectionTests = assertFileExists('Tests/MimiMoneyTests/BillCategorySelectionTests.swift');
+  assertContains(categorySelectionTests, 'testParsesPrimaryAndSecondaryPath', 'BillCategorySelectionTests.swift');
   // Regression: PageTabViewStyle is unavailable on macOS host unit tests.
   if (!/#if\s+os\(iOS\)[\s\S]{0,240}tabViewStyle\(\.page/.test(recordSheet)) {
     throw new Error(

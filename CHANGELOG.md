@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v1.3.16] - 2026-11-14
 
 ### 🎯 Highlights
-- **手动记账全屏**：记录页 / 账户详情「记账」「转账」改回 `.presentationDetents([.large])`；保留下滑关闭与横滑分页。
+- **手动记账全屏**：`.presentationDetents([.large])`；保留下滑关闭与横滑分页。
+- **账单分类选择**：账单详情「标准分类」半屏（胶囊切换、一/二级图标网格、确认）；「分类编辑」进分类管理。
+- **说明**：v1.3.15 启动崩溃热修已在 SideStore。
 - **发版**：`VERSION` / Intent 默认版本升至 1.3.16。
 
 ## [v1.3.15] - 2026-11-14

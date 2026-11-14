@@ -14,6 +14,8 @@ public struct BillDetailSheetView: View {
     @State private var showingActionSheet = false
     @State private var showingImagePicker = false
     @State private var showDeleteConfirm = false
+    @State private var showCategoryPicker = false
+    @State private var showCategoryEditor = false
     #if canImport(UIKit)
     @State private var pickerSourceType: UIKitImagePicker.SourceType = .photoLibrary
     #endif
@@ -106,25 +108,8 @@ public struct BillDetailSheetView: View {
                                         .foregroundColor(MimiTheme.textPrimary)
                                 }
                             } else {
-                                Menu {
-                                    let groups = editableBill.type == .income
-                                        ? store.incomeCategories
-                                        : store.expenseCategories
-                                    ForEach(groups) { group in
-                                        if group.subcategories.isEmpty {
-                                            Button(group.name) {
-                                                editableBill.categoryPath = group.name
-                                                editableBill.iconName = group.displayBadgeToken
-                                            }
-                                        } else {
-                                            ForEach(group.subcategories) { sub in
-                                                Button("\(group.name)-\(sub.name)") {
-                                                    editableBill.categoryPath = "\(group.name)-\(sub.name)"
-                                                    editableBill.iconName = sub.iconName
-                                                }
-                                            }
-                                        }
-                                    }
+                                Button {
+                                    showCategoryPicker = true
                                 } label: {
                                     HStack(spacing: 8) {
                                         MimiStickerIconView(
@@ -141,6 +126,9 @@ public struct BillDetailSheetView: View {
                                             .foregroundColor(MimiTheme.textMuted)
                                     }
                                 }
+                                .mimiPressable()
+                                .accessibilityLabel(MimiL10n.string("分类"))
+                                .accessibilityHint(MimiL10n.string("选择标准分类"))
                             }
                         }
 
@@ -506,6 +494,35 @@ public struct BillDetailSheetView: View {
             .sheet(isPresented: $showAmountKeypad) {
                 amountKeypadSheet
                     .mimiInteractiveSheet(detents: [.height(420)])
+            }
+            .sheet(isPresented: $showCategoryPicker) {
+                BillCategoryPickerSheet(
+                    store: store,
+                    initialType: editableBill.type,
+                    initialCategoryPath: editableBill.categoryPath,
+                    onConfirm: { type, path, icon in
+                        editableBill.type = type
+                        editableBill.categoryPath = path
+                        editableBill.iconName = icon
+                        showCategoryPicker = false
+                    },
+                    onDismiss: { showCategoryPicker = false },
+                    onEditCategories: {
+                        showCategoryPicker = false
+                        DispatchQueue.main.asyncAfter(
+                            deadline: .now() + MimiMotion.handoffDelay(.sheet, reduceMotion: reduceMotion)
+                        ) {
+                            showCategoryEditor = true
+                        }
+                    }
+                )
+                .mimiInteractiveSheet(detents: [.large])
+            }
+            .sheet(isPresented: $showCategoryEditor) {
+                CategoryManagementView(store: store) {
+                    showCategoryEditor = false
+                }
+                .mimiInteractiveSheet(detents: [.large])
             }
             #if canImport(UIKit)
             .sheet(isPresented: $showingImagePicker) {
