@@ -112,7 +112,7 @@ public struct MimiAIAskOverlayView: View {
                     inputFocused = false
                     onDismiss()
                 }
-                .accessibilityLabel("关闭问账")
+                .accessibilityLabel(MimiL10n.string("关闭问账"))
                 .accessibilityAddTraits(.isButton)
 
             VStack(spacing: 0) {
@@ -186,7 +186,7 @@ public struct MimiAIAskOverlayView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(MimiTheme.balanceGreen)
-                    Text("回答完毕")
+                    Text("回答完毕", bundle: .module)
                         .mimiFont(13, weight: .semibold)
                         .foregroundColor(MimiTheme.balanceGreen)
                 }
@@ -237,7 +237,7 @@ public struct MimiAIAskOverlayView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "chevron.up")
                         .mimiFont(11, weight: .bold)
-                    Text("展开")
+                    Text("展开", bundle: .module)
                         .mimiFont(12, weight: .semibold)
                 }
                 .foregroundColor(MimiTheme.textSecondary)
@@ -246,8 +246,8 @@ public struct MimiAIAskOverlayView: View {
                 .contentShape(Rectangle())
             }
             .mimiPressable()
-            .accessibilityLabel("展开为全屏问账")
-            .accessibilityHint("也可上滑手柄展开")
+            .accessibilityLabel(MimiL10n.string("展开为全屏问账"))
+            .accessibilityHint(MimiL10n.string("也可上滑手柄展开"))
         }
         .highPriorityGesture(expandDragGesture)
     }
@@ -266,7 +266,7 @@ public struct MimiAIAskOverlayView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "chevron.down")
                         .mimiFont(11, weight: .bold)
-                    Text("关闭")
+                    Text("关闭", bundle: .module)
                         .mimiFont(12, weight: .semibold)
                 }
                 .foregroundColor(MimiTheme.textSecondary)
@@ -275,8 +275,8 @@ public struct MimiAIAskOverlayView: View {
                 .contentShape(Rectangle())
             }
             .mimiPressable()
-            .accessibilityLabel("关闭全屏问账")
-            .accessibilityHint("也可下滑关闭")
+            .accessibilityLabel(MimiL10n.string("关闭全屏问账"))
+            .accessibilityHint(MimiL10n.string("也可下滑关闭"))
         }
         .highPriorityGesture(expandDragGesture)
     }
@@ -309,7 +309,7 @@ public struct MimiAIAskOverlayView: View {
                     .mimiMinTouchTarget()
             }
             .mimiPressable()
-            .accessibilityLabel("关闭问账")
+            .accessibilityLabel(MimiL10n.string("关闭问账"))
         }
     }
 
@@ -386,7 +386,7 @@ public struct MimiAIAskOverlayView: View {
                                 .foregroundStyle(.white, Color.black.opacity(0.55))
                         }
                         .offset(x: 6, y: -6)
-                        .accessibilityLabel("移除附件")
+                        .accessibilityLabel(MimiL10n.string("移除附件"))
                     }
                 }
             }
@@ -460,14 +460,14 @@ public struct MimiAIAskOverlayView: View {
                 }
             }
             MimiAskMascotView(size: 22)
-            Text("咪咪思考中…")
+            Text("咪咪思考中…", bundle: .module)
                 .mimiFont(14, weight: .medium)
                 .foregroundColor(MimiTheme.expenseBlue)
             Spacer()
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("咪咪思考中")
+        .accessibilityLabel(MimiL10n.string("咪咪思考中"))
     }
 
     private var inputRow: some View {
@@ -536,7 +536,7 @@ public struct MimiAIAskOverlayView: View {
             }
             .mimiPressable()
             .disabled(!canSend)
-            .accessibilityLabel("发送")
+            .accessibilityLabel(MimiL10n.string("发送"))
         }
     }
 
@@ -589,7 +589,7 @@ public struct MimiAIAskOverlayView: View {
                                 MimiChatMarkdownText(text, size: 15)
                                     .fixedSize(horizontal: false, vertical: true)
                                 if idx == message.blocks.count - 1 {
-                                    Text("内容由AI生成")
+                                    Text("内容由AI生成", bundle: .module)
                                         .mimiFont(11)
                                         .foregroundColor(MimiTheme.textMuted)
                                 }
@@ -612,7 +612,7 @@ public struct MimiAIAskOverlayView: View {
                                     .foregroundColor(MimiTheme.textMuted)
                             }
                             if !incomeRows.isEmpty {
-                                Text("收入分类已包含在上方说明里")
+                                Text("收入分类已包含在上方说明里", bundle: .module)
                                     .mimiFont(12)
                                     .foregroundColor(MimiTheme.textMuted)
                             }
@@ -662,7 +662,7 @@ public struct MimiAIAskOverlayView: View {
             }
             HStack(spacing: 10) {
                 Button { aiEngine.cancelDrafts(messageId: messageId) } label: {
-                    Text("取消")
+                    Text("取消", bundle: .module)
                         .mimiFont(13, weight: .semibold)
                         .foregroundColor(MimiTheme.textSecondary)
                         .frame(maxWidth: .infinity)
@@ -671,7 +671,7 @@ public struct MimiAIAskOverlayView: View {
                 }
                 .mimiPressable()
                 Button { aiEngine.confirmDrafts(messageId: messageId, in: store) } label: {
-                    Text("确认记账")
+                    Text("确认记账", bundle: .module)
                         .mimiFont(13, weight: .semibold)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)

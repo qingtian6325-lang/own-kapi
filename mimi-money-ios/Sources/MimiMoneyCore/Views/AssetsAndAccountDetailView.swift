@@ -131,7 +131,7 @@ public struct AssetsAndAccountDetailView: View {
                 .padding(16)
             }
             .background(MimiTheme.background.ignoresSafeArea())
-            .navigationTitle("资产")
+            .navigationTitle(MimiL10n.string("资产"))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -148,8 +148,8 @@ public struct AssetsAndAccountDetailView: View {
                             .contentShape(Rectangle())
                     }
                     .mimiPressable()
-                    .accessibilityLabel("返回")
-                    .accessibilityHint("返回记账首页")
+                    .accessibilityLabel(MimiL10n.string("返回"))
+                    .accessibilityHint(MimiL10n.string("返回记账首页"))
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
@@ -158,7 +158,7 @@ public struct AssetsAndAccountDetailView: View {
                         HStack(spacing: 2) {
                             Image(systemName: "plus")
                                 .mimiFont(12, weight: .bold)
-                            Text("添加账户")
+                            Text("添加账户", bundle: .module)
                                 .mimiFont(13, weight: .semibold)
                         }
                         .foregroundColor(MimiTheme.expenseBlue)
@@ -169,7 +169,7 @@ public struct AssetsAndAccountDetailView: View {
                 if let account = store.accounts.first(where: { $0.id == accountID }) {
                     accountDetailSheet(for: account)
                 } else {
-                    Text("账户不存在")
+                    Text("账户不存在", bundle: .module)
                         .foregroundColor(MimiTheme.textMuted)
                 }
             }
@@ -178,15 +178,18 @@ public struct AssetsAndAccountDetailView: View {
                 BillDetailSheetView(store: store, transaction: tx) {
                     billForDetail = nil
                 }
+                .mimiInteractiveSheet()
             }
             // sheet(item:) + unique presentationID so 转账 always mounts on transfer tab
-            // (stale @State selectedTab caused flaky 支出). .id forces remount on swap.
+            // (stale @State selectedTab / UIPageViewController caused 支出 after dismiss).
+            // .id on content + presentationID into the sheet forces a full rebuild each open.
             .sheet(item: entryRouteBinding) { route in
                 RecordAndAISheetView(
                     store: store,
                     aiEngine: aiEngine,
                     initialAIMode: false,
-                    initialTab: route.transactionType,
+                    initialTab: AccountEntrySheetBootstrap.intendedTab(for: route),
+                    presentationID: route.presentationID,
                     initialAccountName: route.accountName,
                     onDismiss: { dispatch(.dismissEntry) },
                     onOpenCategorySettings: {
@@ -198,7 +201,9 @@ public struct AssetsAndAccountDetailView: View {
                         billForDetail = tx
                     }
                 )
-                .id(route.id)
+                .id(route.presentationID)
+                // Sheet chrome; axis lock lives inside RecordAndAISheetView (v1.3.13).
+                .mimiInteractiveSheet()
             }
             .sheet(item: $editAccountRoute) { route in
                 EditAccountView(
@@ -216,19 +221,21 @@ public struct AssetsAndAccountDetailView: View {
                         editAccountRoute = nil
                     }
                 )
+                .mimiInteractiveSheet()
             }
             .sheet(isPresented: $showPendingReimbursementSheet) {
                 pendingReimbursementSheet
+                    .mimiInteractiveSheet()
             }
             .sheet(isPresented: $showAddAccountSheet) {
                 NavigationStack {
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("新增资产账户")
+                        Text("新增资产账户", bundle: .module)
                             .mimiFont(18, weight: .bold)
                             .foregroundColor(MimiTheme.textPrimary)
 
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("账户名称")
+                            Text("账户名称", bundle: .module)
                                 .mimiFont(13, weight: .medium)
                                 .foregroundColor(MimiTheme.textSecondary)
                             TextField("例如: Maybank / GrabPay / 备用金", text: $newAccountName)
@@ -238,7 +245,7 @@ public struct AssetsAndAccountDetailView: View {
                         }
 
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("起始开局余额 (RM)")
+                            Text("起始开局余额 (RM)", bundle: .module)
                                 .mimiFont(13, weight: .medium)
                                 .foregroundColor(MimiTheme.textSecondary)
                             TextField("0.00", text: $newAccountBalance)
@@ -250,19 +257,23 @@ public struct AssetsAndAccountDetailView: View {
                         Button {
                             let trimmed = newAccountName.trimmingCharacters(in: .whitespacesAndNewlines)
                             guard !trimmed.isEmpty else { return }
-                            let balanceVal = Double(newAccountBalance) ?? 0.0
+                            // Empty opening-balance field persists 0 (not leftover / nil fallback to balance).
+                            let opening = AccountBalanceEditPrefill.parseNewAccountOpeningBalance(newAccountBalance)
                             let item = AccountItem(
                                 id: "acc_\(UUID().uuidString.prefix(6))",
                                 name: trimmed,
                                 subtitle: "自定义账户",
                                 iconName: "💳",
-                                balance: balanceVal,
+                                balance: opening,
+                                initialBalance: opening,
                                 createdAt: Date()
                             )
                             store.addAccount(item)
                             showAddAccountSheet = false
+                            newAccountName = ""
+                            newAccountBalance = ""
                         } label: {
-                            Text("保存并创建账户")
+                            Text("保存并创建账户", bundle: .module)
                                 .mimiFont(15, weight: .bold)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -274,17 +285,24 @@ public struct AssetsAndAccountDetailView: View {
                         Spacer()
                     }
                     .padding(20)
-                    .navigationTitle("添加账户")
+                    .navigationTitle(MimiL10n.string("添加账户"))
                     #if os(iOS)
                     .navigationBarTitleDisplayMode(.inline)
                     #endif
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
-                            Button("取消") { showAddAccountSheet = false }
+                            Button(MimiL10n.string("取消")) { showAddAccountSheet = false }
                         }
                     }
                 }
+                .mimiInteractiveSheet()
             }
+        }
+        // Overlay-level edge swipe only when not drilled into 账户详情 / 记账 sheet.
+        .mimiEdgeSwipeBack(
+            isEnabled: nav.selectedAccountID == nil && nav.entryRoute == nil
+        ) {
+            dispatch(.back)
         }
     }
 
@@ -292,7 +310,7 @@ public struct AssetsAndAccountDetailView: View {
 
     private var netWorthTopBanner: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("净资产")
+            Text("净资产", bundle: .module)
                 .mimiFont(13, weight: .medium)
                 .foregroundColor(MimiTheme.textSecondary)
 
@@ -324,7 +342,7 @@ public struct AssetsAndAccountDetailView: View {
             showPendingReimbursementSheet = true
         } label: {
             HStack {
-                Text("待报销")
+                Text("待报销", bundle: .module)
                     .mimiFont(13, weight: .medium)
                     .foregroundColor(MimiTheme.textSecondary)
                 Spacer()
@@ -343,7 +361,7 @@ public struct AssetsAndAccountDetailView: View {
         }
         .mimiPressable()
         .accessibilityLabel("待报销 \(MimiTheme.formatRM(store.pendingReimbursementAmount))")
-        .accessibilityHint("查看并处理待报销账单")
+        .accessibilityHint(MimiL10n.string("查看并处理待报销账单"))
     }
 
     private var pendingReimbursementSheet: some View {
@@ -351,7 +369,7 @@ public struct AssetsAndAccountDetailView: View {
             Group {
                 let items = store.pendingReimbursementTransactions
                 if items.isEmpty && store.pendingReimbursementAmount < 0.009 {
-                    Text("暂无待报销账单。记账时打开「待报销」或打上「报销」标签即可汇总到这里。")
+                    Text("暂无待报销账单。记账时打开「待报销」或打上「报销」标签即可汇总到这里。", bundle: .module)
                         .mimiFont(14)
                         .foregroundColor(MimiTheme.textSecondary)
                         .padding(24)
@@ -360,7 +378,7 @@ public struct AssetsAndAccountDetailView: View {
                     List {
                         Section {
                             HStack {
-                                Text("待报销合计")
+                                Text("待报销合计", bundle: .module)
                                 Spacer()
                                 Text(MimiTheme.formatRM(store.pendingReimbursementAmount))
                                     .foregroundColor(MimiTheme.incomeOrange)
@@ -395,7 +413,7 @@ public struct AssetsAndAccountDetailView: View {
                                 }
                             }
                             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                Button("已报销") {
+                                Button(MimiL10n.string("已报销")) {
                                     store.clearPendingReimbursementTag(on: tx.id)
                                 }
                                 .tint(MimiTheme.balanceGreen)
@@ -410,13 +428,13 @@ public struct AssetsAndAccountDetailView: View {
                 }
             }
             .background(MimiTheme.background.ignoresSafeArea())
-            .navigationTitle("待报销")
+            .navigationTitle(MimiL10n.string("待报销"))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("关闭") { showPendingReimbursementSheet = false }
+                    Button(MimiL10n.string("关闭")) { showPendingReimbursementSheet = false }
                 }
             }
         }
@@ -427,7 +445,7 @@ public struct AssetsAndAccountDetailView: View {
     private var accountGroupCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("资金账户 (资产)")
+                Text("资金账户 (资产)", bundle: .module)
                     .mimiFont(14, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
@@ -437,7 +455,7 @@ public struct AssetsAndAccountDetailView: View {
                     HStack(spacing: 2) {
                         Image(systemName: "plus")
                             .mimiFont(11, weight: .bold)
-                        Text("添加账户")
+                        Text("添加账户", bundle: .module)
                             .mimiFont(12, weight: .semibold)
                     }
                     .foregroundColor(MimiTheme.expenseBlue)
@@ -447,7 +465,12 @@ public struct AssetsAndAccountDetailView: View {
 
             ForEach(store.accountsForDisplay) { account in
                 Button {
-                    newBalanceInput = String(format: "%.2f", account.balance)
+                    balanceEditMode = AccountBalanceEditPrefill.Mode.setOpening.rawValue
+                    newBalanceInput = AccountBalanceEditPrefill.formattedInput(
+                        mode: .setOpening,
+                        balance: account.balance,
+                        initialBalance: account.initialBalance
+                    )
                     detailTabMode = "账单"
                     showBalanceEditSheet = false
                     dispatch(.openAccount(account.id))
@@ -469,10 +492,10 @@ public struct AssetsAndAccountDetailView: View {
                                     Image(systemName: "star.fill")
                                         .mimiFont(10)
                                         .foregroundColor(MimiTheme.incomeOrange)
-                                        .accessibilityLabel("特别关注")
+                                        .accessibilityLabel(MimiL10n.string("特别关注"))
                                 }
                                 if account.isDefaultAccount {
-                                    Text("默认")
+                                    Text("默认", bundle: .module)
                                         .mimiFont(10, weight: .semibold)
                                         .foregroundColor(MimiTheme.expenseBlue)
                                         .padding(.horizontal, 5)
@@ -552,8 +575,8 @@ public struct AssetsAndAccountDetailView: View {
                                     .contentShape(Rectangle())
                             }
                             .mimiPressable()
-                            .accessibilityLabel("编辑账户")
-                            .accessibilityHint("修改名称、图标与账户设置")
+                            .accessibilityLabel(MimiL10n.string("编辑账户"))
+                            .accessibilityHint(MimiL10n.string("修改名称、图标与账户设置"))
                         }
 
                         Path { path in
@@ -567,7 +590,7 @@ public struct AssetsAndAccountDetailView: View {
 
                         HStack(alignment: .firstTextBaseline) {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("余额")
+                                Text("余额", bundle: .module)
                                     .mimiFont(12)
                                     .foregroundColor(MimiTheme.textSecondary)
                                 HStack(spacing: 6) {
@@ -575,6 +598,14 @@ public struct AssetsAndAccountDetailView: View {
                                         .mimiFont(28, weight: .bold, design: .rounded)
                                         .foregroundColor(liveAccount.balance < -0.0001 ? MimiTheme.dangerEmphasis : MimiTheme.textPrimary)
                                     Button {
+                                        if !showBalanceEditSheet {
+                                            let mode = AccountBalanceEditPrefill.Mode(rawValue: balanceEditMode) ?? .setOpening
+                                            newBalanceInput = AccountBalanceEditPrefill.formattedInput(
+                                                mode: mode,
+                                                balance: liveAccount.balance,
+                                                initialBalance: liveAccount.initialBalance
+                                            )
+                                        }
                                         showBalanceEditSheet.toggle()
                                     } label: {
                                         Image(systemName: "pencil")
@@ -582,6 +613,7 @@ public struct AssetsAndAccountDetailView: View {
                                             .foregroundColor(MimiTheme.iconInactive)
                                     }
                                     .mimiPressable()
+                                    .accessibilityLabel("编辑余额")
                                 }
                             }
                             Spacer()
@@ -590,10 +622,18 @@ public struct AssetsAndAccountDetailView: View {
                         if showBalanceEditSheet {
                             VStack(alignment: .leading, spacing: 8) {
                                 Picker("设置类型", selection: $balanceEditMode) {
-                                    Text("设定期初资金(记账前)").tag(0)
-                                    Text("校准当前余额(手机银行)").tag(1)
+                                    Text("设定期初资金(记账前)", bundle: .module).tag(AccountBalanceEditPrefill.Mode.setOpening.rawValue)
+                                    Text("校准当前余额(手机银行)", bundle: .module).tag(AccountBalanceEditPrefill.Mode.calibrateCurrent.rawValue)
                                 }
                                 .pickerStyle(.segmented)
+                                .onChange(of: balanceEditMode) { _, newMode in
+                                    let mode = AccountBalanceEditPrefill.Mode(rawValue: newMode) ?? .setOpening
+                                    newBalanceInput = AccountBalanceEditPrefill.formattedInput(
+                                        mode: mode,
+                                        balance: liveAccount.balance,
+                                        initialBalance: liveAccount.initialBalance
+                                    )
+                                }
 
                                 HStack(spacing: 8) {
                                     Text("RM")
@@ -604,10 +644,11 @@ public struct AssetsAndAccountDetailView: View {
                                         .mimiFont(14)
                                         .padding(8)
                                         .background(RoundedRectangle(cornerRadius: 8).fill(MimiTheme.cardBackground))
+                                        .accessibilityLabel(balanceEditMode == 0 ? "期初资金" : "当前余额")
 
-                                    Button("确定") {
+                                    Button(MimiL10n.string("确定")) {
                                         if let val = Double(newBalanceInput) {
-                                            if balanceEditMode == 0 {
+                                            if balanceEditMode == AccountBalanceEditPrefill.Mode.setOpening.rawValue {
                                                 store.setAccountInitialBalance(accountId: liveAccount.id, initialBalance: val)
                                             } else {
                                                 store.updateAccountBalance(accountId: liveAccount.id, newBalance: val)
@@ -642,7 +683,7 @@ public struct AssetsAndAccountDetailView: View {
                     )
 
                     HStack {
-                        Text("账户明细")
+                        Text("账户明细", bundle: .module)
                             .mimiFont(15, weight: .bold)
                             .foregroundColor(MimiTheme.textPrimary)
                         Spacer()
@@ -681,14 +722,16 @@ public struct AssetsAndAccountDetailView: View {
                 .padding(.bottom, 72)
             }
         .background(MimiTheme.background.ignoresSafeArea())
-        .navigationTitle("账户详情")
+        .navigationTitle(MimiL10n.string("账户详情"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .navigationBarBackButtonHidden(true)
+        .mimiInteractivePopGestureEnabled()
         .toolbar {
             // Same leading placement as assets root, but action goes through nav.back
             // so left→right→left only pops detail — never the 资产 overlay.
+            // Edge-swipe-back restored via mimiInteractivePopGestureEnabled (hidden system back).
             ToolbarItem(placement: backToolbarPlacement) {
                 Button {
                     dispatch(.back)
@@ -700,8 +743,8 @@ public struct AssetsAndAccountDetailView: View {
                         .contentShape(Rectangle())
                 }
                 .mimiPressable()
-                .accessibilityLabel("返回资产")
-                .accessibilityHint("返回账户列表，不会退出到记账首页")
+                .accessibilityLabel(MimiL10n.string("返回资产"))
+                .accessibilityHint(MimiL10n.string("返回账户列表，不会退出到记账首页"))
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -716,7 +759,7 @@ public struct AssetsAndAccountDetailView: View {
             } label: {
                 HStack(spacing: 8) {
                     MimiAskMascotView(size: 32)
-                    Text("任何事情都能问我")
+                    Text("任何事情都能问我", bundle: .module)
                         .mimiFont(13, weight: .medium)
                         .foregroundColor(MimiTheme.textMuted)
                     Spacer(minLength: 0)
@@ -728,7 +771,7 @@ public struct AssetsAndAccountDetailView: View {
                 .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
             }
             .mimiPressable()
-            .accessibilityLabel("记账")
+            .accessibilityLabel(MimiL10n.string("记账"))
 
             Button {
                 dispatch(.openEntry(.expense(accountName: account.name)))
@@ -741,7 +784,7 @@ public struct AssetsAndAccountDetailView: View {
                     .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
             }
             .mimiPressable()
-            .accessibilityLabel("记一笔")
+            .accessibilityLabel(MimiL10n.string("记一笔"))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
@@ -804,7 +847,7 @@ public struct AssetsAndAccountDetailView: View {
                 .background(Circle().fill(MimiTheme.fillSubtle))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
-                Text(row.title)
+                Text(LocalizedStringKey(row.title), bundle: .module)
                     .mimiFont(15, weight: .semibold)
                     .foregroundColor(MimiTheme.textPrimary)
                 if let start = row.startDateText {
@@ -829,8 +872,8 @@ public struct AssetsAndAccountDetailView: View {
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
-            row.startDateText.map { "\(row.title) \($0) \(row.formattedAmount)" }
-                ?? "\(row.title) \(row.formattedAmount)"
+            row.startDateText.map { "\(MimiL10n.string(row.title)) \($0) \(row.formattedAmount)" }
+                ?? "\(MimiL10n.string(row.title)) \(row.formattedAmount)"
         )
     }
 
@@ -855,7 +898,7 @@ public struct AssetsAndAccountDetailView: View {
 
         VStack(alignment: .leading, spacing: 14) {
             if monthGroups.isEmpty {
-                Text("暂无明细")
+                Text("暂无明细", bundle: .module)
                     .mimiFont(13)
                     .foregroundColor(MimiTheme.textMuted)
                     .frame(maxWidth: .infinity)
@@ -992,7 +1035,7 @@ public struct AssetsAndAccountDetailView: View {
 
         VStack(alignment: .leading, spacing: 16) {
             if monthGroups.isEmpty {
-                Text("暂无账单")
+                Text("暂无账单", bundle: .module)
                     .mimiFont(13)
                     .foregroundColor(MimiTheme.textMuted)
                     .frame(maxWidth: .infinity)

@@ -44,7 +44,7 @@ public struct MimiDatePickerSheet: View {
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
                 Button(action: onDone) {
-                    Text("完成")
+                    Text("完成", bundle: .module)
                         .mimiFont(15, weight: .semibold)
                         .foregroundColor(.white)
                         .padding(.horizontal, 14)
@@ -169,7 +169,7 @@ public struct MimiDatePickerSheet: View {
 
     private var timeRow: some View {
         HStack(spacing: 12) {
-            Text("时间")
+            Text("时间", bundle: .module)
                 .mimiFont(14, weight: .semibold)
                 .foregroundColor(MimiTheme.textSecondary)
 
@@ -354,8 +354,10 @@ public struct MimiDateFieldButton: View {
                 onDone: { showSheet = false }
             )
             #if os(iOS)
-            .presentationDetents([.height(mode == .dateAndTime ? 520 : 460)])
-            .presentationDragIndicator(.hidden)
+            .mimiInteractiveSheet(
+                detents: [.height(mode == .dateAndTime ? 520 : 460)],
+                showDragIndicator: false
+            )
             .presentationCornerRadius(24)
             #endif
         }

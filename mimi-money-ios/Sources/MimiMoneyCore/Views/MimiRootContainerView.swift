@@ -3,6 +3,7 @@ import SwiftUI
 public struct MimiRootContainerView: View {
     @ObservedObject public var store: MimiStore
     @StateObject private var aiEngine = MimiAIEngine()
+    @ObservedObject private var languageStore = AppLanguageStore.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var currentMainPage: String = "记录"
@@ -344,6 +345,9 @@ public struct MimiRootContainerView: View {
                         }
                     }
                 )
+                .mimiEdgeSwipeBack {
+                    pushClose { activeSettingsTitle = nil }
+                }
                 .transition(MimiMotion.pageTransition(reduceMotion: reduceMotion))
                 .zIndex(45)
             }
@@ -359,6 +363,12 @@ public struct MimiRootContainerView: View {
                         }
                     }
                 )
+                .mimiEdgeSwipeBack {
+                    pushClose {
+                        activeBillForEdit = nil
+                        store.pendingEditTransactionId = nil
+                    }
+                }
                 .transition(MimiMotion.pageTransition(reduceMotion: reduceMotion))
                 .zIndex(50)
             }
@@ -401,6 +411,8 @@ public struct MimiRootContainerView: View {
                     }
                 }
             )
+            // Swipe-down chrome; RecordAndAISheetView owns axis-lock dismiss (v1.3.13).
+            .mimiInteractiveSheet()
         }
         #if canImport(UIKit)
         .sheet(isPresented: $showHomeAlbumPicker) {
@@ -436,11 +448,13 @@ public struct MimiRootContainerView: View {
                 pushOpen { activeBillForEdit = match }
             }
         }
-        .alert("AI 识别失败", isPresented: Binding(
+        .environmentObject(languageStore)
+        .environment(\.locale, languageStore.effectiveLocale)
+        .alert(MimiL10n.string("AI 识别失败"), isPresented: Binding(
             get: { homeRecognitionFailureText != nil },
             set: { if !$0 { homeRecognitionFailureText = nil } }
         )) {
-            Button("好") { homeRecognitionFailureText = nil }
+            Button(MimiL10n.string("好")) { homeRecognitionFailureText = nil }
         } message: {
             Text(homeRecognitionFailureText ?? "")
         }

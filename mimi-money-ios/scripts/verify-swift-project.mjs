@@ -455,6 +455,9 @@ function verifyTask6() {
     '内容由AI生成',
     'onSwitchToAIOverlay',
     'intendedInitialTab',
+    'presentationID',
+    'applyIntendedTab',
+    'task(id: presentationID)',
     'suppressSheetDismiss',
     'presentationContentInteraction(.scrolls)',
     'BookkeepingSheetSwipePolicy',
@@ -544,9 +547,27 @@ function verifyTask7() {
     'case openEntry',
     'case dismissEntry',
     'presentationID',
-    'struct AccountEntryRoute'
+    'struct AccountEntryRoute',
+    'AccountEntrySheetBootstrap',
+    'tabAfterExpenseDismissThenTransfer',
+    'tabAfterTransferDismissThenExpense'
   ]) {
     assertContains(assetsNav, label, 'AssetsAccountNavigation.swift');
+  }
+
+  const assetsDetail = assertFileExists('Sources/MimiMoneyCore/Views/AssetsAndAccountDetailView.swift');
+  assertContains(assetsDetail, 'AccountEntrySheetBootstrap.intendedTab', 'AssetsAndAccountDetailView.swift');
+  assertContains(assetsDetail, 'presentationID: route.presentationID', 'AssetsAndAccountDetailView.swift');
+  assertContains(assetsDetail, '.id(route.presentationID)', 'AssetsAndAccountDetailView.swift');
+
+  const appVersion = assertFileExists('Sources/MimiMoneyCore/Services/AppVersionInfo.swift');
+  for (const label of [
+    'CFBundleShortVersionString',
+    'CFBundleVersion',
+    'settingsFooterLine',
+    '版本 '
+  ]) {
+    assertContains(appVersion, label, 'AppVersionInfo.swift');
   }
 
   const swipePolicy = assertFileExists('Sources/MimiMoneyCore/Services/BookkeepingSheetSwipePolicy.swift');
@@ -562,6 +583,39 @@ function verifyTask7() {
   const swipePolicyTests = assertFileExists('Tests/MimiMoneyTests/BookkeepingSheetSwipePolicyTests.swift');
   checkBalancedBraces(swipePolicyTests, 'BookkeepingSheetSwipePolicyTests.swift');
   assertContains(swipePolicyTests, 'testHorizontalDominantBlocksDiagonalSheetDismissSteal', 'BookkeepingSheetSwipePolicyTests.swift');
+
+  // v1.3.15 — system InfoPlist display name + in-app language preference / String Catalog
+  const languagePref = assertFileExists('Sources/MimiMoneyCore/Services/AppLanguagePreference.swift');
+  checkBalancedBraces(languagePref, 'AppLanguagePreference.swift');
+  for (const label of [
+    'AppLanguagePreference',
+    'AppLanguageStore',
+    'MimiL10n',
+    'mimi_app_language_preference',
+    'effectiveLocale'
+  ]) {
+    assertContains(languagePref, label, 'AppLanguagePreference.swift');
+  }
+  assertContains(languagePref, 'AppleLanguages', 'AppLanguagePreference.swift'); // mentioned as NOT used
+  const xcstrings = assertFileExists('Sources/MimiMoneyCore/Resources/Localizable.xcstrings');
+  assertContains(xcstrings, '"咪咪记账"', 'Localizable.xcstrings');
+  assertContains(xcstrings, 'Mimi Money', 'Localizable.xcstrings');
+  assertContains(xcstrings, '"语言"', 'Localizable.xcstrings');
+  assertContains(xcstrings, 'Follow System', 'Localizable.xcstrings');
+  assertFileExists('Resources/zh-Hans.lproj/InfoPlist.strings');
+  assertFileExists('Resources/en.lproj/InfoPlist.strings');
+  const infoZh = assertFileExists('Resources/zh-Hans.lproj/InfoPlist.strings');
+  const infoEn = assertFileExists('Resources/en.lproj/InfoPlist.strings');
+  assertContains(infoZh, '咪咪记账', 'zh-Hans InfoPlist.strings');
+  assertContains(infoEn, 'Mimi Money', 'en InfoPlist.strings');
+  const packageSwift = assertFileExists('Package.swift');
+  assertContains(packageSwift, '.process("Resources")', 'Package.swift resources');
+  const settingsView = assertFileExists('Sources/MimiMoneyCore/Views/SettingsAndShortcutsGuideView.swift');
+  assertContains(settingsView, 'languageStore', 'SettingsAndShortcutsGuideView.swift');
+  assertContains(settingsView, 'AppLanguagePreference', 'SettingsAndShortcutsGuideView.swift');
+  const languageTests = assertFileExists('Tests/MimiMoneyTests/AppLanguagePreferenceTests.swift');
+  checkBalancedBraces(languageTests, 'AppLanguagePreferenceTests.swift');
+  assertContains(languageTests, 'testPersistsPreference', 'AppLanguagePreferenceTests.swift');
 
   const assets = assertFileExists('Sources/MimiMoneyCore/Views/AssetsAndAccountDetailView.swift');
   checkBalancedBraces(assets, 'AssetsAndAccountDetailView.swift');
@@ -599,6 +653,32 @@ function verifyTask7() {
   checkBalancedBraces(initialBalanceTests, 'AccountInitialBalanceRowTests.swift');
   assertContains(initialBalanceTests, 'testDisplayUsesLiveInitialBalanceNeverPlaceholderZero', 'AccountInitialBalanceRowTests.swift');
   assertContains(initialBalanceTests, 'testLiveAccountInitialBalanceUpdatesRowAmount', 'AccountInitialBalanceRowTests.swift');
+
+  // Regression: 「设定期初资金」prefilled current balance instead of initialBalance (v1.3.16).
+  const balanceEditPrefill = assertFileExists('Sources/MimiMoneyCore/Services/AccountBalanceEditPrefill.swift');
+  checkBalancedBraces(balanceEditPrefill, 'AccountBalanceEditPrefill.swift');
+  for (const label of [
+    'AccountBalanceEditPrefill',
+    'setOpening',
+    'calibrateCurrent',
+    'formattedInput',
+    'parseNewAccountOpeningBalance'
+  ]) {
+    assertContains(balanceEditPrefill, label, 'AccountBalanceEditPrefill.swift');
+  }
+  const balanceEditPrefillTests = assertFileExists('Tests/MimiMoneyTests/AccountBalanceEditPrefillTests.swift');
+  checkBalancedBraces(balanceEditPrefillTests, 'AccountBalanceEditPrefillTests.swift');
+  assertContains(balanceEditPrefillTests, 'testOpeningModePrefillsInitialBalanceNotCurrentBalance', 'AccountBalanceEditPrefillTests.swift');
+  assertContains(balanceEditPrefillTests, 'testCalibrateModePrefillsCurrentBalance', 'AccountBalanceEditPrefillTests.swift');
+  assertContains(balanceEditPrefillTests, 'testSwitchingModesUpdatesPrefillIndependently', 'AccountBalanceEditPrefillTests.swift');
+  assertContains(balanceEditPrefillTests, 'testNewAccountEmptyOpeningBalancePersistsZero', 'AccountBalanceEditPrefillTests.swift');
+  assertContains(assets, 'AccountBalanceEditPrefill.formattedInput', 'AssetsAndAccountDetailView.swift');
+  assertContains(assets, 'onChange(of: balanceEditMode)', 'AssetsAndAccountDetailView.swift');
+  assertContains(assets, 'parseNewAccountOpeningBalance', 'AssetsAndAccountDetailView.swift');
+  if (assets.includes('newBalanceInput = String(format: "%.2f", account.balance)')) {
+    throw new Error('AssetsAndAccountDetailView.swift must not seed balance edit with account.balance only');
+  }
+
   // Regression: Bool entry sheet + shared cancellationAction caused stuck-on-记账.
   if (assets.includes('showAccountEntrySheet')) {
     throw new Error('AssetsAndAccountDetailView.swift must not use showAccountEntrySheet Bool sheet (use entryRoute item sheet)');
@@ -618,7 +698,7 @@ function verifyTask7() {
   assertContains(assetsNavTests, 'testEditAccountSheetRouteIdentityUsesAccountId', 'AssetsAccountNavigationTests.swift');
   assertContains(assetsNavTests, 'testTransferEntryRouteIntendedTabIsTransfer', 'AssetsAccountNavigationTests.swift');
   assertContains(assetsNavTests, 'testEachEntryOpenGetsUniquePresentationIdentity', 'AssetsAccountNavigationTests.swift');
-  assertContains(assets, '.id(route.id)', 'AssetsAndAccountDetailView.swift');
+  assertContains(assets, '.id(route.presentationID)', 'AssetsAndAccountDetailView.swift');
 
   const budget = assertFileExists('Sources/MimiMoneyCore/Views/BudgetManagementView.swift');
   checkBalancedBraces(budget, 'BudgetManagementView.swift');
@@ -650,7 +730,8 @@ function verifyTask7() {
     'public struct SettingsAndShortcutsGuideView: View',
     '自动记账',
     '截屏识别记账',
-    '读取剪贴板截图'
+    '读取剪贴板截图',
+    'AppVersionInfo.settingsFooterLine'
   ]) {
     assertContains(settings, label, 'SettingsAndShortcutsGuideView.swift');
   }
@@ -660,6 +741,42 @@ function verifyTask7() {
   assertContains(root, 'public struct MimiRootContainerView: View', 'MimiRootContainerView.swift');
   assertContains(root, 'onOpenURL', 'MimiRootContainerView.swift');
   assertContains(root, 'ShortcutActionCoordinator.handleIncomingURL', 'MimiRootContainerView.swift');
+  assertContains(root, 'mimiInteractiveSheet()', 'MimiRootContainerView.swift');
+  assertContains(root, 'mimiEdgeSwipeBack', 'MimiRootContainerView.swift');
+
+  // v1.3.14 global gesture polish: sheet swipe-down + edge-pop / overlay edge-swipe.
+  const gesturePolicy = assertFileExists('Sources/MimiMoneyCore/Services/MimiGesturePolicy.swift');
+  checkBalancedBraces(gesturePolicy, 'MimiGesturePolicy.swift');
+  for (const label of [
+    'MimiGesturePolicy',
+    'isHorizontalDominant',
+    'isVerticalDominant',
+    'shouldCommitEdgeBack',
+    'rubberBandOffset'
+  ]) {
+    assertContains(gesturePolicy, label, 'MimiGesturePolicy.swift');
+  }
+  const gestureChrome = assertFileExists('Sources/MimiMoneyCore/Components/MimiGestureChrome.swift');
+  checkBalancedBraces(gestureChrome, 'MimiGestureChrome.swift');
+  assertContains(gestureChrome, 'mimiInteractiveSheet', 'MimiGestureChrome.swift');
+  assertContains(gestureChrome, 'mimiEdgeSwipeBack', 'MimiGestureChrome.swift');
+  assertContains(gestureChrome, 'presentationContentInteraction(.scrolls)', 'MimiGestureChrome.swift');
+  const popGesture = assertFileExists('Sources/MimiMoneyCore/Components/MimiInteractivePopGesture.swift');
+  checkBalancedBraces(popGesture, 'MimiInteractivePopGesture.swift');
+  assertContains(popGesture, 'mimiInteractivePopGestureEnabled', 'MimiInteractivePopGesture.swift');
+  assertContains(popGesture, 'interactivePopGestureRecognizer', 'MimiInteractivePopGesture.swift');
+  assertContains(assets, 'mimiInteractivePopGestureEnabled()', 'AssetsAndAccountDetailView.swift');
+  assertContains(assets, 'mimiEdgeSwipeBack', 'AssetsAndAccountDetailView.swift');
+  assertContains(stats, 'mimiInteractivePopGestureEnabled()', 'MimiStatsView.swift');
+  assertContains(stats, 'mimiEdgeSwipeBack', 'MimiStatsView.swift');
+  assertContains(budget, 'mimiInteractivePopGestureEnabled()', 'BudgetManagementView.swift');
+  assertContains(budget, 'mimiEdgeSwipeBack', 'BudgetManagementView.swift');
+  const categoryBills = assertFileExists('Sources/MimiMoneyCore/Views/CategoryBillsListView.swift');
+  assertContains(categoryBills, 'mimiInteractivePopGestureEnabled()', 'CategoryBillsListView.swift');
+  const gesturePolicyTests = assertFileExists('Tests/MimiMoneyTests/MimiGesturePolicyTests.swift');
+  checkBalancedBraces(gesturePolicyTests, 'MimiGesturePolicyTests.swift');
+  assertContains(gesturePolicyTests, 'testEdgeBackCommitsOnDistanceOrVelocity', 'MimiGesturePolicyTests.swift');
+  assertContains(gesturePolicyTests, 'testRubberBandTracksFingerThenDampsOverflow', 'MimiGesturePolicyTests.swift');
 
   const appMain = assertFileExists('Sources/MimiMoneyApp/MimiMoneyApp.swift');
   checkBalancedBraces(appMain, 'MimiMoneyApp.swift');

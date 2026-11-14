@@ -29,7 +29,10 @@ let package = Package(
                 .product(name: "CoreXLSX", package: "CoreXLSX"),
                 .product(name: "ZIPFoundation", package: "ZIPFoundation")
             ],
-            path: "Sources/MimiMoneyCore"
+            path: "Sources/MimiMoneyCore",
+            resources: [
+                .process("Resources")
+            ]
         ),
         .executableTarget(
             name: "MimiMoneyApp",

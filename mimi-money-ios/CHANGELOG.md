@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.14] - 2026-11-14
+
+### 🎯 Highlights
+统一 SideStore 发版（合入原 #8/#9/#10/#11；不再单独发 1.3.15/1.3.16）。
+
+#### 本版新增
+- **半屏下滑关闭**：共享 `mimiInteractiveSheet`（`presentationContentInteraction(.scrolls)`）；记账/账单/预算/分类/设置/账本等 sheet 均可下滑关闭；与记账横滑分页兼容（不覆盖 `interactiveDismissDisabled(suppressSheetDismiss)`）。
+- **边缘右滑返回**：`navigationBarBackButtonHidden` 的推入页（账户详情、分类账单）恢复 `interactivePopGestureRecognizer`；ZStack 功能页（资产/统计/预算/分类/日历/设置/账单详情）增加跟手 `mimiEdgeSwipeBack` + 橡胶筋回弹。
+- **应用内语言**：设置 → 语言，可选「跟随系统 / 中文 / English」；偏好持久化，切换后应用内文案立即更新（`.environment(\.locale)` + String Catalog）。
+- **主屏幕名称**：仅随系统语言，经 `InfoPlist.strings` 的 `CFBundleDisplayName`（zh-Hans「咪咪记账」、en「Mimi Money」）；不写入 `AppleLanguages`。
+- **账户详情期初预填**：「设定期初资金(记账前)」预填账户 `initialBalance`（未设则为 0），不再误填当前余额；「校准当前余额」仍预填 `balance`；切换分段即时刷新 RM 输入框。
+- **添加账户**：起始开局余额留空时明确持久化 `initialBalance = 0`（与 `balance` 一致）。
+- **转账/记账半屏加固**：`AccountEntryRoute.id` 仅用 presentation UUID；sheet 内容与分页 `TabView` 均 `.id(presentationID)`，`.task(id:)` 再套一次初始 tab，修 记账→关→转账 仍偶发落在支出。
+- **设置页版本脚注**：底部显示 `版本 x.y.z (build n)`，取自 `CFBundleShortVersionString` / `CFBundleVersion`。
+- **回归**：`MimiGesturePolicy` / `AccountBalanceEditPrefill` / `AppLanguagePreference` / `AppVersionInfo` / 记账→转账 remount 单测。
+
+#### 已在 v1.3.13 修复（本版保留）
+- **转账半屏初始页**：`AccountEntryRoute` + `sheet(item:)` + `intendedInitialTab`，避免「⇆ 转账」偶发打开支出。
+- **支出页左滑**：`TabView` 分页 + 水平轴锁定，左滑切收入不再被半屏下滑关掉。
+- GitHub Release `v1.3.13` / SideStore apps.json 已上线 IPA。
+
+- **发版**：`VERSION` / Intent 默认版本升至 1.3.14。
+
+
 ## [v1.3.13] - 2026-11-14
 
 ### 🎯 Highlights

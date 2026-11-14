@@ -85,8 +85,8 @@ public struct EditAccountView: View {
                             }
                         }
                         .mimiPressable()
-                        .accessibilityLabel("账户图标")
-                        .accessibilityHint("点按选择图标")
+                        .accessibilityLabel(MimiL10n.string("账户图标"))
+                        .accessibilityHint(MimiL10n.string("点按选择图标"))
                         Divider().padding(.leading, 16)
                         editRow(title: "备注") {
                             HStack(spacing: 8) {
@@ -129,7 +129,7 @@ public struct EditAccountView: View {
             .background(MimiTheme.background.ignoresSafeArea())
             .safeAreaInset(edge: .bottom) {
                 Button(action: save) {
-                    Text("保存")
+                    Text("保存", bundle: .module)
                         .mimiFont(16, weight: .bold)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -142,9 +142,9 @@ public struct EditAccountView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
                 .background(MimiTheme.background.ignoresSafeArea(edges: .bottom))
-                .accessibilityLabel("保存")
+                .accessibilityLabel(MimiL10n.string("保存"))
             }
-            .navigationTitle("编辑账户")
+            .navigationTitle(MimiL10n.string("编辑账户"))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -155,7 +155,7 @@ public struct EditAccountView: View {
                             .mimiFont(15, weight: .semibold)
                             .foregroundColor(MimiTheme.textPrimary)
                     }
-                    .accessibilityLabel("返回")
+                    .accessibilityLabel(MimiL10n.string("返回"))
                 }
                 ToolbarItem(placement: .destructiveAction) {
                     Button {
@@ -165,23 +165,24 @@ public struct EditAccountView: View {
                             .mimiFont(15, weight: .semibold)
                             .foregroundColor(MimiTheme.dangerRed)
                     }
-                    .accessibilityLabel("删除账户")
+                    .accessibilityLabel(MimiL10n.string("删除账户"))
                     .disabled(store.accounts.count <= 1)
                 }
             }
             .onAppear(perform: loadFromAccount)
-            .alert("删除账户？", isPresented: $showDeleteConfirm) {
-                Button("删除", role: .destructive) {
+            .alert(MimiL10n.string("删除账户？"), isPresented: $showDeleteConfirm) {
+                Button(MimiL10n.string("删除"), role: .destructive) {
                     store.deleteAccount(accountId: accountId)
                     onDeleted()
                     onDismiss()
                 }
-                Button("取消", role: .cancel) {}
+                Button(MimiL10n.string("取消"), role: .cancel) {}
             } message: {
-                Text("删除后不可恢复。相关账单仍会保留，但不再关联此账户余额。")
+                Text("删除后不可恢复。相关账单仍会保留，但不再关联此账户余额。", bundle: .module)
             }
             .sheet(isPresented: $showIconPicker) {
                 iconPickerSheet
+                    .mimiInteractiveSheet(detents: [.medium, .large])
             }
         }
     }
@@ -269,17 +270,15 @@ public struct EditAccountView: View {
                 .padding(16)
             }
             .background(MimiTheme.background.ignoresSafeArea())
-            .navigationTitle("选择图标")
+            .navigationTitle(MimiL10n.string("选择图标"))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("关闭") { showIconPicker = false }
+                    Button(MimiL10n.string("关闭")) { showIconPicker = false }
                 }
             }
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
     }
 }

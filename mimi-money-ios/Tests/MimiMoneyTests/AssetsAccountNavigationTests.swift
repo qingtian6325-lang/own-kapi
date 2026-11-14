@@ -120,6 +120,9 @@ final class AssetsAccountNavigationTests: XCTestCase {
         XCTAssertEqual(transfer.transactionType, .transfer)
         XCTAssertEqual(expense.transactionType, .expense)
         XCTAssertNotEqual(transfer.id, expense.id)
+        XCTAssertEqual(transfer.id, transfer.presentationID)
+        XCTAssertEqual(AccountEntrySheetBootstrap.intendedTab(for: transfer), .transfer)
+        XCTAssertEqual(AccountEntrySheetBootstrap.intendedTab(for: expense), .expense)
     }
 
     func testEachEntryOpenGetsUniquePresentationIdentity() {
@@ -129,5 +132,61 @@ final class AssetsAccountNavigationTests: XCTestCase {
         XCTAssertNotEqual(a.id, b.id)
         XCTAssertEqual(a.transactionType, b.transactionType)
         XCTAssertEqual(a.accountName, b.accountName)
+    }
+
+    /// 记账 → dismiss → 转账 opens transfer (fresh identity; no stale 支出 tab).
+    func testExpenseDismissThenTransferOpensTransferTab() {
+        var state = AssetsAccountNavigationState(
+            isAssetsPresented: true,
+            selectedAccountID: "acc_tng"
+        )
+        let expense = AssetsAccountNavigationState.AccountEntryRoute.expense(accountName: "TNG")
+        _ = state.apply(.openEntry(expense))
+        XCTAssertEqual(AccountEntrySheetBootstrap.intendedTab(for: state.entryRoute!), .expense)
+
+        _ = state.apply(.dismissEntry)
+        XCTAssertNil(state.entryRoute)
+
+        let transfer = AssetsAccountNavigationState.AccountEntryRoute.transfer(accountName: "TNG")
+        _ = state.apply(.openEntry(transfer))
+        XCTAssertEqual(state.entryRoute?.transactionType, .transfer)
+        XCTAssertNotEqual(state.entryRoute?.presentationID, expense.presentationID)
+        XCTAssertEqual(
+            AccountEntrySheetBootstrap.tabAfterExpenseDismissThenTransfer(
+                previousExpense: expense,
+                nextTransfer: transfer
+            ),
+            .transfer
+        )
+        XCTAssertEqual(AccountEntrySheetBootstrap.intendedTab(for: state.entryRoute!), .transfer)
+        XCTAssertEqual(state.selectedAccountID, "acc_tng")
+    }
+
+    /// 转账 → dismiss → 记账 opens expense (fresh identity; no stale 转账 tab).
+    func testTransferDismissThenExpenseOpensExpenseTab() {
+        var state = AssetsAccountNavigationState(
+            isAssetsPresented: true,
+            selectedAccountID: "acc_cash"
+        )
+        let transfer = AssetsAccountNavigationState.AccountEntryRoute.transfer(accountName: "现金")
+        _ = state.apply(.openEntry(transfer))
+        XCTAssertEqual(AccountEntrySheetBootstrap.intendedTab(for: state.entryRoute!), .transfer)
+
+        _ = state.apply(.dismissEntry)
+        XCTAssertNil(state.entryRoute)
+
+        let expense = AssetsAccountNavigationState.AccountEntryRoute.expense(accountName: "现金")
+        _ = state.apply(.openEntry(expense))
+        XCTAssertEqual(state.entryRoute?.transactionType, .expense)
+        XCTAssertNotEqual(state.entryRoute?.presentationID, transfer.presentationID)
+        XCTAssertEqual(
+            AccountEntrySheetBootstrap.tabAfterTransferDismissThenExpense(
+                previousTransfer: transfer,
+                nextExpense: expense
+            ),
+            .expense
+        )
+        XCTAssertEqual(AccountEntrySheetBootstrap.intendedTab(for: state.entryRoute!), .expense)
+        XCTAssertEqual(state.selectedAccountID, "acc_cash")
     }
 }
