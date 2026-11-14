@@ -15,6 +15,24 @@
 2. 点进最新一条成功的 **Build Mimi Money iOS (.ipa)** 任务，在页面底部 **Artifacts** 区域下载 MimiMoney-iOS-IPA。
 3. 解压得到带版本号的安装包（如 `MimiMoney-iOS-v1.2.3.ipa`，文件名里的版本号与 Release 版本一致），使用 **Sideloadly** 或 **AltStore / SideStore** 输入免费 Apple ID 签名安装到 iPhone。
 
+## SideStore / AltStore 软件源（推荐）
+
+稳定源地址（GitHub Pages）：
+
+```text
+https://qingtian6325-lang.github.io/own-mimi/apps.json
+```
+
+**一次性启用 Pages（仓库 Owner）：** Settings → Pages → Build and deployment → Source 选 **GitHub Actions**，然后跑一次 **Deploy SideStore Pages**（push `sidestore/**` 到 `main` 或手动 `workflow_dispatch`）。在 Pages 生效前可用备用地址：`https://raw.githubusercontent.com/qingtian6325-lang/own-mimi/main/sidestore/apps.json`。
+
+在 **SideStore（nightly）** 中添加：
+
+1. 打开 SideStore → **Sources** → 点 **+**
+2. 粘贴上面的 URL → Add
+3. 在源里安装或更新 **咪咪记账**（`com.jinghao.mimimoney`）
+
+Bundle ID 与 `xtool.yml` / Release IPA 一致（`com.jinghao.mimimoney`）。手机上若已是同一 Bundle ID 的安装，添加源后 SideStore 即可通知并一键更新，**不必为了收更新而整包重装**；未出现更新时先刷新源，或从源里点一次 Update。每次 `main` 成功发版后，CI 会把新版本写入 `sidestore/apps.json` 并刷新 Pages。
+
 ## 截屏自动记账设置（快捷指令 + AppIntents）
 
 > 无需下载任何 `.shortcut` 文件（未签名文件 iOS 本就无法导入）。App 已内置原生动作 **「识别账单」**，并自 v1.1.0 起在安装包内携带 `Metadata.appintents`，系统可直接发现该动作。

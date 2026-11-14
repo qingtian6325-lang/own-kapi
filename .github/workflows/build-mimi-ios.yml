@@ -3,8 +3,15 @@ name: Build Mimi Money iOS (.ipa)
 on:
   push:
     branches: [ main, "feat/**" ]
+    # SideStore JSON bumps are committed by this workflow; don't rebuild IPA for them.
+    paths-ignore:
+      - "sidestore/**"
+      - ".github/workflows/sidestore-pages.yml"
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - "sidestore/**"
+      - ".github/workflows/sidestore-pages.yml"
   workflow_dispatch:
 
 jobs:
@@ -341,7 +348,10 @@ jobs:
           path: mimi-money-ios/build/${{ env.IPA_NAME }}
 
       - name: Publish IPA to GitHub Releases
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        # Skip re-publish when the only change is a SideStore source bump from this workflow.
+        if: >
+          github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+          !startsWith(github.event.head_commit.message, 'chore(sidestore):')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -388,4 +398,65 @@ jobs:
             # 兼容旧行为：v1.0.0 仍以固定名持有一份最新构建
             cp "build/${IPA_FILE}" build/MimiMoney-iOS.ipa
             gh release upload v1.0.0 build/MimiMoney-iOS.ipa --clobber
+          fi
+
+      - name: Update SideStore source JSON
+        # Commits chore(sidestore): … which triggers sidestore-pages.yml to refresh Pages.
+        if: >
+          github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+          !startsWith(github.event.head_commit.message, 'chore(sidestore):')
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          APP_VERSION="$(cat mimi-money-ios/VERSION 2>/dev/null || cat VERSION 2>/dev/null || echo "1.0.1")"
+          IPA_FILE="MimiMoney-iOS-v${APP_VERSION}.ipa"
+          IPA_PATH="mimi-money-ios/build/${IPA_FILE}"
+          if [ ! -f "${IPA_PATH}" ]; then
+            echo "::error::IPA not found at ${IPA_PATH}; cannot update SideStore source"
+            exit 1
+          fi
+          IPA_SIZE="$(wc -c < "${IPA_PATH}" | tr -d ' ')"
+          DOWNLOAD_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/v${APP_VERSION}/${IPA_FILE}"
+          DATE_ISO="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          NOTES="$(APP_VERSION="${APP_VERSION}" node -e '
+            const fs = require("fs");
+            const tag = "v" + process.env.APP_VERSION;
+            let notes = "咪咪记账 iOS " + tag;
+            const p = "mimi-money-ios/CHANGELOG.md";
+            if (fs.existsSync(p)) {
+              const text = fs.readFileSync(p, "utf8").replace(/\r\n/g, "\n");
+              const start = text.indexOf("## [" + tag + "]");
+              if (start !== -1) {
+                const rest = text.slice(start);
+                const nxt = rest.indexOf("\n## [", 4);
+                const chunk = nxt === -1 ? rest : rest.slice(0, nxt);
+                const lines = chunk.split("\n")
+                  .map((ln) => ln.trim())
+                  .filter((ln) => ln.startsWith("- "))
+                  .map((ln) => ln.replace(/^-+\s*/, "").replace(/\*\*/g, ""))
+                  .slice(0, 4);
+                if (lines.length) notes = lines.join("; ");
+              }
+            }
+            process.stdout.write(notes);
+          ')"
+
+          node scripts/update-sidestore-source.mjs \
+            --version "${APP_VERSION}" \
+            --date "${DATE_ISO}" \
+            --download-url "${DOWNLOAD_URL}" \
+            --size "${IPA_SIZE}" \
+            --notes "${NOTES}" \
+            --build-version "${GITHUB_RUN_NUMBER}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add sidestore/apps.json
+          if git diff --cached --quiet; then
+            echo "SideStore source already up to date for v${APP_VERSION}"
+          else
+            git commit -m "chore(sidestore): publish v${APP_VERSION} in apps.json"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
