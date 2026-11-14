@@ -1,0 +1,67 @@
+name: Deploy SideStore Pages
+
+# Deploys sidestore/ (apps.json + icon) to GitHub Pages.
+# Also runs when the build workflow commits a chore(sidestore): bump,
+# or when sidestore/ is edited directly on main.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "sidestore/**"
+      - ".github/workflows/sidestore-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-sidestore
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy sidestore/ to GitHub Pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Validate apps.json
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          src = json.loads(Path("sidestore/apps.json").read_text(encoding="utf-8"))
+          assert src.get("name"), "missing source name"
+          assert src.get("identifier") == "com.jinghao.mimimoney.source"
+          assert src.get("sourceURL", "").endswith("/apps.json")
+          apps = src.get("apps") or []
+          assert apps, "no apps"
+          app = next(a for a in apps if a.get("bundleIdentifier") == "com.jinghao.mimimoney")
+          versions = app.get("versions") or []
+          assert versions, "no versions"
+          latest = versions[0]
+          for key in ("version", "date", "downloadURL", "size"):
+              assert latest.get(key), f"latest version missing {key}"
+          assert latest["downloadURL"].endswith(".ipa")
+          assert int(latest["size"]) > 0
+          print(f"OK: {app['name']} latest=v{latest['version']} versions={len(versions)}")
+          PY
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload SideStore Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: sidestore
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
