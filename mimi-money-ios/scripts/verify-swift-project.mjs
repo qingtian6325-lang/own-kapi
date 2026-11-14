@@ -370,10 +370,24 @@ function verifyTask5() {
     '30天趋势',
     '记录明细',
     '任何事情都能问我',
-    '删除成功'
+    '删除成功',
+    'ForEach(groups, id: \\.date)'
   ]) {
     assertContains(home, label, 'HomeRecordView.swift');
   }
+  // Swipe-delete must animate removal with withAnimation (not delete-then-animate).
+  assertContains(home, 'store.deleteTransaction(id: id)', 'HomeRecordView.swift');
+  if (!home.includes('withAnimation(MimiMotion.quick') || !home.includes('store.deleteTransaction')) {
+    throw new Error('HomeRecordView swipe-delete must withAnimation around deleteTransaction');
+  }
+
+  const motion = assertFileExists('Sources/MimiMoneyCore/Theme/MimiMotion.swift');
+  checkBalancedBraces(motion, 'MimiMotion.swift');
+  assertContains(motion, 'pageDuration: TimeInterval = 0.18', 'MimiMotion.swift');
+  assertContains(motion, 'case .page: return 0.10', 'MimiMotion.swift');
+  const motionTests = assertFileExists('Tests/MimiMoneyTests/MimiMotionTests.swift');
+  assertContains(motionTests, 'testHandoffDelaysAreSnappyNotHalfBeatLate', 'MimiMotionTests.swift');
+  assertContains(motionTests, 'testDeleteRemovesRowImmediatelyBeforePersist', 'MimiMotionTests.swift');
 
   const drawer = assertFileExists('Sources/MimiMoneyCore/Views/SideDrawerMenuView.swift');
   checkBalancedBraces(drawer, 'SideDrawerMenuView.swift');
@@ -536,19 +550,45 @@ function verifyTask7() {
     '转账',
     '明细',
     '账单',
-    '余额:'
+    '余额:',
+    '初始余额',
+    'accountInitialBalanceFooter',
+    'AccountInitialBalanceRowBuilder'
   ]) {
     assertContains(assets, label, 'AssetsAndAccountDetailView.swift');
   }
+
+  const initialBalanceRow = assertFileExists('Sources/MimiMoneyCore/Services/AccountInitialBalanceRow.swift');
+  checkBalancedBraces(initialBalanceRow, 'AccountInitialBalanceRow.swift');
+  for (const label of [
+    'AccountInitialBalanceRowBuilder',
+    'initialBalance',
+    'resolveStartDate',
+    '初始余额'
+  ]) {
+    assertContains(initialBalanceRow, label, 'AccountInitialBalanceRow.swift');
+  }
+  const initialBalanceTests = assertFileExists('Tests/MimiMoneyTests/AccountInitialBalanceRowTests.swift');
+  checkBalancedBraces(initialBalanceTests, 'AccountInitialBalanceRowTests.swift');
+  assertContains(initialBalanceTests, 'testDisplayUsesLiveInitialBalanceNeverPlaceholderZero', 'AccountInitialBalanceRowTests.swift');
+  assertContains(initialBalanceTests, 'testLiveAccountInitialBalanceUpdatesRowAmount', 'AccountInitialBalanceRowTests.swift');
   // Regression: Bool entry sheet + shared cancellationAction caused stuck-on-记账.
   if (assets.includes('showAccountEntrySheet')) {
     throw new Error('AssetsAndAccountDetailView.swift must not use showAccountEntrySheet Bool sheet (use entryRoute item sheet)');
   }
+  // Regression: Bool + if-let edit sheet presented blank white full-screen (v1.3.11 phone).
+  if (assets.includes('showEditAccountSheet') || assets.includes('editingAccountId')) {
+    throw new Error('AssetsAndAccountDetailView.swift must use editAccountRoute sheet(item:) for 「…」编辑账户');
+  }
+  assertContains(assets, 'editAccountRoute', 'AssetsAndAccountDetailView.swift');
+  assertContains(assets, 'EditAccountSheetRoute', 'AssetsAndAccountDetailView.swift');
+  assertContains(assetsNav, 'struct EditAccountSheetRoute', 'AssetsAccountNavigation.swift');
 
   const assetsNavTests = assertFileExists('Tests/MimiMoneyTests/AssetsAccountNavigationTests.swift');
   checkBalancedBraces(assetsNavTests, 'AssetsAccountNavigationTests.swift');
   assertContains(assetsNavTests, 'testLeftRightLeftAccountDrillDoesNotDismissAssets', 'AssetsAccountNavigationTests.swift');
   assertContains(assetsNavTests, 'testExpenseTransferExpenseEntryRouteNeverClearsAccount', 'AssetsAccountNavigationTests.swift');
+  assertContains(assetsNavTests, 'testEditAccountSheetRouteIdentityUsesAccountId', 'AssetsAccountNavigationTests.swift');
 
   const budget = assertFileExists('Sources/MimiMoneyCore/Views/BudgetManagementView.swift');
   checkBalancedBraces(budget, 'BudgetManagementView.swift');

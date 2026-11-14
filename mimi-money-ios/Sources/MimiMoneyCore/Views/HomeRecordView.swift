@@ -623,7 +623,8 @@ public struct HomeRecordView: View {
                 .padding(.vertical, 32)
                 .background(RoundedRectangle(cornerRadius: MimiTheme.cardCornerRadius).fill(MimiTheme.cardBackground))
             } else {
-                ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
+                // Stable day ids — avoid offset-based ForEach rebuild hitch on swipe-delete.
+                ForEach(groups, id: \.date) { group in
                     dayTransactionGroupCard(date: group.date, items: group.items)
                 }
             }
@@ -806,7 +807,7 @@ public struct HomeRecordView: View {
                 if (dx * dx + dy * dy) > 324 {
                     rowSwipeConsumedTap = true
                     Task { @MainActor in
-                        try? await Task.sleep(nanoseconds: 80_000_000)
+                        try? await Task.sleep(nanoseconds: 40_000_000)
                         rowSwipeConsumedTap = false
                     }
                 }
@@ -821,19 +822,20 @@ public struct HomeRecordView: View {
     }
 
     private func deleteTransactionShowingToast(_ id: UUID) {
-        store.deleteTransaction(id: id)
-        let token = UUID()
-        deleteToastToken = token
-        animateFeedChange {
+        // Animate row removal immediately; store defers disk/full reconcile off the tap path.
+        withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
             if revealedDeleteID == id {
                 revealedDeleteID = nil
             }
+            store.deleteTransaction(id: id)
         }
+        let token = UUID()
+        deleteToastToken = token
         withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
             showDeleteToast = true
         }
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
             guard deleteToastToken == token else { return }
             withAnimation(MimiMotion.quick(reduceMotion: reduceMotion)) {
                 showDeleteToast = false

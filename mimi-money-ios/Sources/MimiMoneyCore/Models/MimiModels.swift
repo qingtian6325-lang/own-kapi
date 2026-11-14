@@ -111,6 +111,8 @@ public struct AccountItem: Identifiable, Codable, Equatable, Sendable {
     public var isSpecialFocus: Bool
     /// 默认收支账户（记账未选账户时用）
     public var isDefaultAccount: Bool
+    /// 账户创建/启用记账起始日（旧存档可缺省）
+    public var createdAt: Date?
 
     public init(
         id: String,
@@ -123,7 +125,8 @@ public struct AccountItem: Identifiable, Codable, Equatable, Sendable {
         isLiability: Bool = false,
         includeInAssets: Bool = true,
         isSpecialFocus: Bool = false,
-        isDefaultAccount: Bool = false
+        isDefaultAccount: Bool = false,
+        createdAt: Date? = nil
     ) {
         self.id = id
         self.name = name
@@ -136,11 +139,12 @@ public struct AccountItem: Identifiable, Codable, Equatable, Sendable {
         self.includeInAssets = includeInAssets
         self.isSpecialFocus = isSpecialFocus
         self.isDefaultAccount = isDefaultAccount
+        self.createdAt = createdAt
     }
 
     private enum CodingKeys: String, CodingKey {
         case id, name, subtitle, badgeText, iconName, balance, initialBalance, isLiability
-        case includeInAssets, isSpecialFocus, isDefaultAccount
+        case includeInAssets, isSpecialFocus, isDefaultAccount, createdAt
     }
 
     public init(from decoder: Decoder) throws {
@@ -156,6 +160,7 @@ public struct AccountItem: Identifiable, Codable, Equatable, Sendable {
         includeInAssets = try container.decodeIfPresent(Bool.self, forKey: .includeInAssets) ?? true
         isSpecialFocus = try container.decodeIfPresent(Bool.self, forKey: .isSpecialFocus) ?? false
         isDefaultAccount = try container.decodeIfPresent(Bool.self, forKey: .isDefaultAccount) ?? false
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
     }
 }
 

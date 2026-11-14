@@ -17,8 +17,8 @@ public struct AssetsAndAccountDetailView: View {
     @State private var billForDetail: TransactionItem? = nil
     /// Keys: `"yyyy-M"` — months whose detail/bill lists are collapsed.
     @State private var collapsedMonthKeys: Set<String> = []
-    @State private var showEditAccountSheet: Bool = false
-    @State private var editingAccountId: String? = nil
+    /// Identifiable route for 「…」→ 编辑账户. Bool + `if let` sheets present blank white content.
+    @State private var editAccountRoute: EditAccountSheetRoute? = nil
     @State private var showPendingReimbursementSheet: Bool = false
 
     public init(store: MimiStore, aiEngine: MimiAIEngine, onDismiss: @escaping () -> Void) {
@@ -198,24 +198,22 @@ public struct AssetsAndAccountDetailView: View {
                     }
                 )
             }
-            .sheet(isPresented: $showEditAccountSheet) {
-                if let editingAccountId {
-                    EditAccountView(
-                        store: store,
-                        accountId: editingAccountId,
-                        onDismiss: { showEditAccountSheet = false },
-                        onDeleted: {
-                            // Pop detail only — deleting an account must never dismiss 资产 → 记账.
-                            if nav.selectedAccountID == editingAccountId {
-                                var next = nav
-                                next.selectedAccountID = nil
-                                next.entryRoute = nil
-                                nav = next
-                            }
-                            showEditAccountSheet = false
+            .sheet(item: $editAccountRoute) { route in
+                EditAccountView(
+                    store: store,
+                    accountId: route.id,
+                    onDismiss: { editAccountRoute = nil },
+                    onDeleted: {
+                        // Pop detail only — deleting an account must never dismiss 资产 → 记账.
+                        if nav.selectedAccountID == route.id {
+                            var next = nav
+                            next.selectedAccountID = nil
+                            next.entryRoute = nil
+                            nav = next
                         }
-                    )
-                }
+                        editAccountRoute = nil
+                    }
+                )
             }
             .sheet(isPresented: $showPendingReimbursementSheet) {
                 pendingReimbursementSheet
@@ -256,7 +254,8 @@ public struct AssetsAndAccountDetailView: View {
                                 name: trimmed,
                                 subtitle: "自定义账户",
                                 iconName: "💳",
-                                balance: balanceVal
+                                balance: balanceVal,
+                                createdAt: Date()
                             )
                             store.addAccount(item)
                             showAddAccountSheet = false
@@ -542,8 +541,7 @@ public struct AssetsAndAccountDetailView: View {
                             }
                             Spacer()
                             Button {
-                                editingAccountId = liveAccount.id
-                                showEditAccountSheet = true
+                                editAccountRoute = EditAccountSheetRoute(accountId: liveAccount.id)
                             } label: {
                                 Image(systemName: "ellipsis")
                                     .mimiFont(14, weight: .semibold)
@@ -672,7 +670,7 @@ public struct AssetsAndAccountDetailView: View {
                     }
 
                     if detailTabMode == "明细" {
-                        accountAuditSection(logs: auditLogs)
+                        accountAuditSection(logs: auditLogs, account: liveAccount)
                     } else {
                         accountBillsSection(bills: bills, account: liveAccount)
                     }
@@ -788,8 +786,54 @@ public struct AssetsAndAccountDetailView: View {
         return isSource
     }
 
+    /// Live 「初始余额」footer — reads `account.initialBalance` from store (updates after 设定期初).
     @ViewBuilder
-    private func accountAuditSection(logs: [AccountAuditLog]) -> some View {
+    private func accountInitialBalanceFooter(for account: AccountItem) -> some View {
+        let startDate = AccountInitialBalanceRowBuilder.resolveStartDate(
+            for: account,
+            auditLogs: store.auditLogs(for: account.name)
+        )
+        let row = AccountInitialBalanceRowBuilder.make(from: account, startDate: startDate)
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: "flag")
+                .mimiFont(14, weight: .semibold)
+                .foregroundColor(MimiTheme.textMuted)
+                .frame(width: 36, height: 36)
+                .background(Circle().fill(MimiTheme.fillSubtle))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(row.title)
+                    .mimiFont(15, weight: .semibold)
+                    .foregroundColor(MimiTheme.textPrimary)
+                if let start = row.startDateText {
+                    Text(start)
+                        .mimiFont(12)
+                        .foregroundColor(MimiTheme.textMuted)
+                }
+            }
+            Spacer(minLength: 8)
+            Text(row.formattedAmount)
+                .mimiFont(15, weight: .bold, design: .rounded)
+                .foregroundColor(MimiTheme.textSecondary)
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(minHeight: MimiHIG.minTouch)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(MimiTheme.cardBackground)
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            row.startDateText.map { "\(row.title) \($0) \(row.formattedAmount)" }
+                ?? "\(row.title) \(row.formattedAmount)"
+        )
+    }
+
+    @ViewBuilder
+    private func accountAuditSection(logs: [AccountAuditLog], account: AccountItem) -> some View {
         let monthGroups: [(key: String, title: String, items: [AccountAuditLog])] = {
             let dict = Dictionary(grouping: logs) { monthKey(from: $0.billDate) }
             return dict.keys.sorted {
@@ -807,15 +851,15 @@ public struct AssetsAndAccountDetailView: View {
             }
         }()
 
-        if monthGroups.isEmpty {
-            Text("暂无明细")
-                .mimiFont(13)
-                .foregroundColor(MimiTheme.textMuted)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 24)
-                .background(RoundedRectangle(cornerRadius: 18).fill(MimiTheme.cardBackground))
-        } else {
-            VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 14) {
+            if monthGroups.isEmpty {
+                Text("暂无明细")
+                    .mimiFont(13)
+                    .foregroundColor(MimiTheme.textMuted)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 24)
+                    .background(RoundedRectangle(cornerRadius: 18).fill(MimiTheme.cardBackground))
+            } else {
                 ForEach(monthGroups, id: \.key) { group in
                     let auditKey = "audit-\(group.key)"
                     let expanded = isMonthExpanded(auditKey)
@@ -919,6 +963,8 @@ public struct AssetsAndAccountDetailView: View {
                     }
                 }
             }
+            // Starting marker under oldest entries (list is newest-first).
+            accountInitialBalanceFooter(for: account)
         }
     }
 
@@ -942,15 +988,15 @@ public struct AssetsAndAccountDetailView: View {
             }
         }()
 
-        if monthGroups.isEmpty {
-            Text("暂无账单")
-                .mimiFont(13)
-                .foregroundColor(MimiTheme.textMuted)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 24)
-                .background(RoundedRectangle(cornerRadius: 16).fill(MimiTheme.cardBackground))
-        } else {
-            VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 16) {
+            if monthGroups.isEmpty {
+                Text("暂无账单")
+                    .mimiFont(13)
+                    .foregroundColor(MimiTheme.textMuted)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 24)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(MimiTheme.cardBackground))
+            } else {
                 ForEach(monthGroups, id: \.key) { month in
                     let outflow = month.items.filter { isOutflow($0, for: account) }.reduce(0.0) { $0 + $1.amount }
                     let inflow = month.items.filter { !isOutflow($0, for: account) }.reduce(0.0) { $0 + $1.amount }
@@ -1082,6 +1128,8 @@ public struct AssetsAndAccountDetailView: View {
                     }
                 }
             }
+            // Starting marker under oldest bills (newest-first list → bottom = before first chronological bill).
+            accountInitialBalanceFooter(for: account)
         }
     }
 

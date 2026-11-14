@@ -5,7 +5,7 @@ public enum MimiHIG {
     public static let minTouch: CGFloat = 44
 }
 
-/// Native-feeling press: opacity + slight scale within ~100ms (HIG feedback).
+/// Native-feeling press: opacity + slight scale with immediate spring (HIG feedback).
 public struct MimiPressableButtonStyle: ButtonStyle {
     public var pressedOpacity: Double
     public var pressedScale: CGFloat
@@ -19,7 +19,11 @@ public struct MimiPressableButtonStyle: ButtonStyle {
         configuration.label
             .opacity(configuration.isPressed ? pressedOpacity : 1)
             .scaleEffect(configuration.isPressed ? pressedScale : 1)
-            .animation(.easeOut(duration: 0.08), value: configuration.isPressed)
+            // Spring responds on the press frame — avoid delayed easeOut that feels half-beat late.
+            .animation(
+                .spring(response: 0.14, dampingFraction: 0.78, blendDuration: 0),
+                value: configuration.isPressed
+            )
     }
 }
 
