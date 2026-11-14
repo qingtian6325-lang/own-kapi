@@ -592,11 +592,48 @@ function verifyTask7() {
     'AppLanguageStore',
     'MimiL10n',
     'mimi_app_language_preference',
-    'effectiveLocale'
+    'effectiveLocale',
+    'mimiModule'
   ]) {
     assertContains(languagePref, label, 'AppLanguagePreference.swift');
   }
   assertContains(languagePref, 'AppleLanguages', 'AppLanguagePreference.swift'); // mentioned as NOT used
+  // Launch-crash hotfix: never call generated Bundle.module from app UI paths.
+  if (/\bbundle:\s*\.module\b/.test(languagePref) || /\bBundle\.module\b/.test(languagePref)) {
+    throw new Error('AppLanguagePreference.swift must use Bundle.mimiModule, not Bundle.module');
+  }
+  const resourceBundle = assertFileExists('Sources/MimiMoneyCore/Services/MimiResourceBundle.swift');
+  checkBalancedBraces(resourceBundle, 'MimiResourceBundle.swift');
+  assertContains(resourceBundle, 'MimiMoney_MimiMoneyCore', 'MimiResourceBundle.swift');
+  assertContains(resourceBundle, 'mimiModule', 'MimiResourceBundle.swift');
+  const resourceBundleTests = assertFileExists('Tests/MimiMoneyTests/MimiResourceBundleTests.swift');
+  checkBalancedBraces(resourceBundleTests, 'MimiResourceBundleTests.swift');
+  assertContains(resourceBundleTests, 'testMimiModuleNeverFatals', 'MimiResourceBundleTests.swift');
+  // Sources must not use fatal Bundle.module for localization (except comments in MimiResourceBundle).
+  const sourcesRootForModule = path.join(rootDir, 'Sources');
+  function walkSwift(dir, fn) {
+    for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, ent.name);
+      if (ent.isDirectory()) walkSwift(full, fn);
+      else if (ent.name.endsWith('.swift')) fn(full);
+    }
+  }
+  const moduleHits = [];
+  walkSwift(sourcesRootForModule, (full) => {
+    const rel = path.relative(rootDir, full);
+    if (rel.endsWith('MimiResourceBundle.swift')) return;
+    const text = fs.readFileSync(full, 'utf8');
+    const lines = text.split(/\r?\n/);
+    lines.forEach((line, i) => {
+      if (line.trimStart().startsWith('//')) return;
+      if (/\bbundle:\s*\.module\b/.test(line) || /(?<!mimi)Bundle\.module\b/.test(line)) {
+        moduleHits.push(`${rel}:${i + 1}`);
+      }
+    });
+  });
+  if (moduleHits.length) {
+    throw new Error(`Sources still reference Bundle.module (use .mimiModule):\n${moduleHits.join('\n')}`);
+  }
   const xcstrings = assertFileExists('Sources/MimiMoneyCore/Resources/Localizable.xcstrings');
   assertContains(xcstrings, '"咪咪记账"', 'Localizable.xcstrings');
   assertContains(xcstrings, 'Mimi Money', 'Localizable.xcstrings');
@@ -616,6 +653,16 @@ function verifyTask7() {
   const languageTests = assertFileExists('Tests/MimiMoneyTests/AppLanguagePreferenceTests.swift');
   checkBalancedBraces(languageTests, 'AppLanguagePreferenceTests.swift');
   assertContains(languageTests, 'testPersistsPreference', 'AppLanguagePreferenceTests.swift');
+  // CI must search the correct SPM bundle name (Package_Target).
+  const workflowPath = path.join(rootDir, '..', '.github', 'workflows', 'build-mimi-ios.yml');
+  if (!fs.existsSync(workflowPath)) {
+    throw new Error('Missing .github/workflows/build-mimi-ios.yml');
+  }
+  const workflow = fs.readFileSync(workflowPath, 'utf8');
+  assertContains(workflow, 'MimiMoney_MimiMoneyCore.bundle', 'build-mimi-ios.yml');
+  if (!workflow.includes('SPM resource bundle not found') && !workflow.includes('resource bundle not found')) {
+    throw new Error('build-mimi-ios.yml must fail the build when the SPM resource bundle is missing');
+  }
 
   const assets = assertFileExists('Sources/MimiMoneyCore/Views/AssetsAndAccountDetailView.swift');
   checkBalancedBraces(assets, 'AssetsAndAccountDetailView.swift');

@@ -158,7 +158,7 @@ public struct AssetsAndAccountDetailView: View {
                         HStack(spacing: 2) {
                             Image(systemName: "plus")
                                 .mimiFont(12, weight: .bold)
-                            Text("添加账户", bundle: .module)
+                            Text("添加账户", bundle: .mimiModule)
                                 .mimiFont(13, weight: .semibold)
                         }
                         .foregroundColor(MimiTheme.expenseBlue)
@@ -169,7 +169,7 @@ public struct AssetsAndAccountDetailView: View {
                 if let account = store.accounts.first(where: { $0.id == accountID }) {
                     accountDetailSheet(for: account)
                 } else {
-                    Text("账户不存在", bundle: .module)
+                    Text("账户不存在", bundle: .mimiModule)
                         .foregroundColor(MimiTheme.textMuted)
                 }
             }
@@ -230,12 +230,12 @@ public struct AssetsAndAccountDetailView: View {
             .sheet(isPresented: $showAddAccountSheet) {
                 NavigationStack {
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("新增资产账户", bundle: .module)
+                        Text("新增资产账户", bundle: .mimiModule)
                             .mimiFont(18, weight: .bold)
                             .foregroundColor(MimiTheme.textPrimary)
 
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("账户名称", bundle: .module)
+                            Text("账户名称", bundle: .mimiModule)
                                 .mimiFont(13, weight: .medium)
                                 .foregroundColor(MimiTheme.textSecondary)
                             TextField("例如: Maybank / GrabPay / 备用金", text: $newAccountName)
@@ -245,7 +245,7 @@ public struct AssetsAndAccountDetailView: View {
                         }
 
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("起始开局余额 (RM)", bundle: .module)
+                            Text("起始开局余额 (RM)", bundle: .mimiModule)
                                 .mimiFont(13, weight: .medium)
                                 .foregroundColor(MimiTheme.textSecondary)
                             TextField("0.00", text: $newAccountBalance)
@@ -273,7 +273,7 @@ public struct AssetsAndAccountDetailView: View {
                             newAccountName = ""
                             newAccountBalance = ""
                         } label: {
-                            Text("保存并创建账户", bundle: .module)
+                            Text("保存并创建账户", bundle: .mimiModule)
                                 .mimiFont(15, weight: .bold)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -310,7 +310,7 @@ public struct AssetsAndAccountDetailView: View {
 
     private var netWorthTopBanner: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("净资产", bundle: .module)
+            Text("净资产", bundle: .mimiModule)
                 .mimiFont(13, weight: .medium)
                 .foregroundColor(MimiTheme.textSecondary)
 
@@ -342,7 +342,7 @@ public struct AssetsAndAccountDetailView: View {
             showPendingReimbursementSheet = true
         } label: {
             HStack {
-                Text("待报销", bundle: .module)
+                Text("待报销", bundle: .mimiModule)
                     .mimiFont(13, weight: .medium)
                     .foregroundColor(MimiTheme.textSecondary)
                 Spacer()
@@ -369,7 +369,7 @@ public struct AssetsAndAccountDetailView: View {
             Group {
                 let items = store.pendingReimbursementTransactions
                 if items.isEmpty && store.pendingReimbursementAmount < 0.009 {
-                    Text("暂无待报销账单。记账时打开「待报销」或打上「报销」标签即可汇总到这里。", bundle: .module)
+                    Text("暂无待报销账单。记账时打开「待报销」或打上「报销」标签即可汇总到这里。", bundle: .mimiModule)
                         .mimiFont(14)
                         .foregroundColor(MimiTheme.textSecondary)
                         .padding(24)
@@ -378,7 +378,7 @@ public struct AssetsAndAccountDetailView: View {
                     List {
                         Section {
                             HStack {
-                                Text("待报销合计", bundle: .module)
+                                Text("待报销合计", bundle: .mimiModule)
                                 Spacer()
                                 Text(MimiTheme.formatRM(store.pendingReimbursementAmount))
                                     .foregroundColor(MimiTheme.incomeOrange)
@@ -445,7 +445,7 @@ public struct AssetsAndAccountDetailView: View {
     private var accountGroupCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("资金账户 (资产)", bundle: .module)
+                Text("资金账户 (资产)", bundle: .mimiModule)
                     .mimiFont(14, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
@@ -455,7 +455,7 @@ public struct AssetsAndAccountDetailView: View {
                     HStack(spacing: 2) {
                         Image(systemName: "plus")
                             .mimiFont(11, weight: .bold)
-                        Text("添加账户", bundle: .module)
+                        Text("添加账户", bundle: .mimiModule)
                             .mimiFont(12, weight: .semibold)
                     }
                     .foregroundColor(MimiTheme.expenseBlue)
@@ -495,7 +495,7 @@ public struct AssetsAndAccountDetailView: View {
                                         .accessibilityLabel(MimiL10n.string("特别关注"))
                                 }
                                 if account.isDefaultAccount {
-                                    Text("默认", bundle: .module)
+                                    Text("默认", bundle: .mimiModule)
                                         .mimiFont(10, weight: .semibold)
                                         .foregroundColor(MimiTheme.expenseBlue)
                                         .padding(.horizontal, 5)
@@ -590,7 +590,7 @@ public struct AssetsAndAccountDetailView: View {
 
                         HStack(alignment: .firstTextBaseline) {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("余额", bundle: .module)
+                                Text("余额", bundle: .mimiModule)
                                     .mimiFont(12)
                                     .foregroundColor(MimiTheme.textSecondary)
                                 HStack(spacing: 6) {
@@ -622,8 +622,8 @@ public struct AssetsAndAccountDetailView: View {
                         if showBalanceEditSheet {
                             VStack(alignment: .leading, spacing: 8) {
                                 Picker("设置类型", selection: $balanceEditMode) {
-                                    Text("设定期初资金(记账前)", bundle: .module).tag(AccountBalanceEditPrefill.Mode.setOpening.rawValue)
-                                    Text("校准当前余额(手机银行)", bundle: .module).tag(AccountBalanceEditPrefill.Mode.calibrateCurrent.rawValue)
+                                    Text("设定期初资金(记账前)", bundle: .mimiModule).tag(AccountBalanceEditPrefill.Mode.setOpening.rawValue)
+                                    Text("校准当前余额(手机银行)", bundle: .mimiModule).tag(AccountBalanceEditPrefill.Mode.calibrateCurrent.rawValue)
                                 }
                                 .pickerStyle(.segmented)
                                 .onChange(of: balanceEditMode) { _, newMode in
@@ -683,7 +683,7 @@ public struct AssetsAndAccountDetailView: View {
                     )
 
                     HStack {
-                        Text("账户明细", bundle: .module)
+                        Text("账户明细", bundle: .mimiModule)
                             .mimiFont(15, weight: .bold)
                             .foregroundColor(MimiTheme.textPrimary)
                         Spacer()
@@ -759,7 +759,7 @@ public struct AssetsAndAccountDetailView: View {
             } label: {
                 HStack(spacing: 8) {
                     MimiAskMascotView(size: 32)
-                    Text("任何事情都能问我", bundle: .module)
+                    Text("任何事情都能问我", bundle: .mimiModule)
                         .mimiFont(13, weight: .medium)
                         .foregroundColor(MimiTheme.textMuted)
                     Spacer(minLength: 0)
@@ -847,7 +847,7 @@ public struct AssetsAndAccountDetailView: View {
                 .background(Circle().fill(MimiTheme.fillSubtle))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
-                Text(LocalizedStringKey(row.title), bundle: .module)
+                Text(LocalizedStringKey(row.title), bundle: .mimiModule)
                     .mimiFont(15, weight: .semibold)
                     .foregroundColor(MimiTheme.textPrimary)
                 if let start = row.startDateText {
@@ -898,7 +898,7 @@ public struct AssetsAndAccountDetailView: View {
 
         VStack(alignment: .leading, spacing: 14) {
             if monthGroups.isEmpty {
-                Text("暂无明细", bundle: .module)
+                Text("暂无明细", bundle: .mimiModule)
                     .mimiFont(13)
                     .foregroundColor(MimiTheme.textMuted)
                     .frame(maxWidth: .infinity)
@@ -1035,7 +1035,7 @@ public struct AssetsAndAccountDetailView: View {
 
         VStack(alignment: .leading, spacing: 16) {
             if monthGroups.isEmpty {
-                Text("暂无账单", bundle: .module)
+                Text("暂无账单", bundle: .mimiModule)
                     .mimiFont(13)
                     .foregroundColor(MimiTheme.textMuted)
                     .frame(maxWidth: .infinity)

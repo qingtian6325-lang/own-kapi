@@ -203,7 +203,7 @@ public struct AllRecordsCalendarView: View {
                 selectedMonth = Calendar.current.component(.month, from: now)
                 selectedDay = Calendar.current.component(.day, from: now)
             } label: {
-                Text("回今天", bundle: .module)
+                Text("回今天", bundle: .mimiModule)
                     .mimiFont(11, weight: .semibold)
                     .foregroundColor(MimiTheme.textSecondary)
                     .padding(.horizontal, 8)
@@ -242,7 +242,7 @@ public struct AllRecordsCalendarView: View {
     private var monthlySummaryBar: some View {
         HStack {
             HStack(spacing: 8) {
-                Text("月支出", bundle: .module)
+                Text("月支出", bundle: .mimiModule)
                     .mimiFont(11)
                     .foregroundColor(MimiTheme.textSecondary)
                 Text(MimiTheme.formatRM(monthlyExpenseTotal))
@@ -254,14 +254,14 @@ public struct AllRecordsCalendarView: View {
                     .foregroundColor(Color.gray.opacity(0.3))
 
                 if filterMode == "支出" {
-                    Text("日均支出", bundle: .module)
+                    Text("日均支出", bundle: .mimiModule)
                         .mimiFont(11)
                         .foregroundColor(MimiTheme.textSecondary)
                     Text(MimiTheme.formatRM(dailyAverageExpense))
                         .mimiFont(13, weight: .bold, design: .rounded)
                         .foregroundColor(MimiTheme.expenseBlue)
                 } else {
-                    Text("月收入", bundle: .module)
+                    Text("月收入", bundle: .mimiModule)
                         .mimiFont(11)
                         .foregroundColor(MimiTheme.textSecondary)
                     Text(MimiTheme.formatRM(monthlyIncomeTotal))
@@ -327,7 +327,7 @@ public struct AllRecordsCalendarView: View {
 
             // Heatmap Legend: 收入多 🟧 🟨 ⬜ 🟦 🟦 支出多
             HStack(spacing: 6) {
-                Text("收入多", bundle: .module)
+                Text("收入多", bundle: .mimiModule)
                     .mimiFont(10)
                     .foregroundColor(MimiTheme.textMuted)
 
@@ -337,7 +337,7 @@ public struct AllRecordsCalendarView: View {
                 RoundedRectangle(cornerRadius: 2).fill(MimiTheme.heatmapExpense1).frame(width: 12, height: 10)
                 RoundedRectangle(cornerRadius: 2).fill(MimiTheme.heatmapExpense2).frame(width: 12, height: 10)
 
-                Text("支出多", bundle: .module)
+                Text("支出多", bundle: .mimiModule)
                     .mimiFont(10)
                     .foregroundColor(MimiTheme.textMuted)
             }
@@ -453,10 +453,10 @@ public struct AllRecordsCalendarView: View {
 
             if selectedDateTransactions.isEmpty {
                 VStack(spacing: 6) {
-                    Text("当日暂无记账记录", bundle: .module)
+                    Text("当日暂无记账记录", bundle: .mimiModule)
                         .mimiFont(13)
                         .foregroundColor(MimiTheme.textMuted)
-                    Text("点击右下角「+」快速补记一笔", bundle: .module)
+                    Text("点击右下角「+」快速补记一笔", bundle: .mimiModule)
                         .mimiFont(11)
                         .foregroundColor(MimiTheme.textMuted)
                 }
@@ -539,7 +539,7 @@ public struct AllRecordsCalendarView: View {
             } label: {
                 HStack(spacing: 8) {
                     MimiAskMascotView(size: 32)
-                    Text("任何事都能问我", bundle: .module)
+                    Text("任何事都能问我", bundle: .mimiModule)
                         .mimiFont(13, weight: .medium)
                         .foregroundColor(MimiTheme.textMuted)
                     Spacer()

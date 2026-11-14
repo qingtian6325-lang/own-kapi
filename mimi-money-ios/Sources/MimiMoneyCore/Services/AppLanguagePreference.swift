@@ -95,14 +95,14 @@ public enum MimiL10n {
         let resolvedLocale = locale ?? resolvedLocaleForLookup()
         return String(
             localized: String.LocalizationValue(key),
-            bundle: .module,
+            bundle: .mimiModule,
             locale: resolvedLocale
         )
     }
 
     public static func string(_ key: String.LocalizationValue, locale: Locale? = nil) -> String {
         let resolvedLocale = locale ?? resolvedLocaleForLookup()
-        return String(localized: key, bundle: .module, locale: resolvedLocale)
+        return String(localized: key, bundle: .mimiModule, locale: resolvedLocale)
     }
 
     /// Read preference from UserDefaults so lookups work off the main actor too.
@@ -123,6 +123,6 @@ public enum MimiL10n {
 public extension Text {
     /// Localized `Text` from the MimiMoneyCore String Catalog (respects `.environment(\.locale)`).
     static func mimi(_ key: LocalizedStringKey) -> Text {
-        Text(key, bundle: .module)
+        Text(key, bundle: .mimiModule)
     }
 }

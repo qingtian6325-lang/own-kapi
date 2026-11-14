@@ -44,7 +44,7 @@ public struct MimiDatePickerSheet: View {
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
                 Button(action: onDone) {
-                    Text("完成", bundle: .module)
+                    Text("完成", bundle: .mimiModule)
                         .mimiFont(15, weight: .semibold)
                         .foregroundColor(.white)
                         .padding(.horizontal, 14)
@@ -169,7 +169,7 @@ public struct MimiDatePickerSheet: View {
 
     private var timeRow: some View {
         HStack(spacing: 12) {
-            Text("时间", bundle: .module)
+            Text("时间", bundle: .mimiModule)
                 .mimiFont(14, weight: .semibold)
                 .foregroundColor(MimiTheme.textSecondary)
 

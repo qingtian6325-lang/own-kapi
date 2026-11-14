@@ -137,7 +137,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     statusBannerMessage = "已彻底清空全部账单与账户余额（全新初始状态）"
                 }
             } message: {
-                Text("此操作会将账单、账户余额与审计日志全部重置为 RM0.00。", bundle: .module)
+                Text("此操作会将账单、账户余额与审计日志全部重置为 RM0.00。", bundle: .mimiModule)
             }
         }
     }
@@ -147,13 +147,13 @@ public struct SettingsAndShortcutsGuideView: View {
     private var csvImportExportCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("账单导入与导出", bundle: .module)
+                Text("账单导入与导出", bundle: .mimiModule)
                     .mimiFont(15, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
             }
 
-            Text("支持咔皮同款 Excel（.xlsx：收支账单 + 内部转账），也可粘贴 CSV。导出为同样双 Sheet 的 .xlsx。", bundle: .module)
+            Text("支持咔皮同款 Excel（.xlsx：收支账单 + 内部转账），也可粘贴 CSV。导出为同样双 Sheet 的 .xlsx。", bundle: .mimiModule)
                 .mimiFont(12)
                 .foregroundColor(MimiTheme.textSecondary)
 
@@ -168,7 +168,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "square.and.arrow.down.fill")
                             .mimiFont(15)
-                        Text("导入账单", bundle: .module)
+                        Text("导入账单", bundle: .mimiModule)
                             .mimiFont(14, weight: .bold)
                     }
                     .foregroundColor(.white)
@@ -185,7 +185,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "square.and.arrow.up.fill")
                             .mimiFont(15)
-                        Text("导出账单", bundle: .module)
+                        Text("导出账单", bundle: .mimiModule)
                             .mimiFont(14, weight: .bold)
                     }
                     .foregroundColor(.white)
@@ -208,10 +208,10 @@ public struct SettingsAndShortcutsGuideView: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("推荐：选择咔皮导出的 Excel（.xlsx）", bundle: .module)
+                        Text("推荐：选择咔皮导出的 Excel（.xlsx）", bundle: .mimiModule)
                             .mimiFont(14, weight: .bold)
                             .foregroundColor(MimiTheme.textPrimary)
-                        Text("需含工作表「收支账单」与「内部转账」，列与咔皮导出一致。", bundle: .module)
+                        Text("需含工作表「收支账单」与「内部转账」，列与咔皮导出一致。", bundle: .mimiModule)
                             .mimiFont(12)
                             .foregroundColor(MimiTheme.textSecondary)
 
@@ -220,7 +220,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         } label: {
                             HStack(spacing: 8) {
                                 Image(systemName: "doc.badge.plus")
-                                Text("选择 Excel / CSV 文件", bundle: .module)
+                                Text("选择 Excel / CSV 文件", bundle: .mimiModule)
                                     .mimiFont(15, weight: .bold)
                             }
                             .foregroundColor(.white)
@@ -254,7 +254,7 @@ public struct SettingsAndShortcutsGuideView: View {
                                     statusBannerMessage = "已复制 CSV 模版"
                                     #endif
                                 } label: {
-                                    Text("复制 CSV 模版", bundle: .module)
+                                    Text("复制 CSV 模版", bundle: .mimiModule)
                                         .mimiFont(12, weight: .semibold)
                                         .foregroundColor(MimiTheme.expenseBlue)
                                 }
@@ -286,7 +286,7 @@ public struct SettingsAndShortcutsGuideView: View {
                                 }
                         }
                     } label: {
-                        Text("高级：粘贴 CSV 文本", bundle: .module)
+                        Text("高级：粘贴 CSV 文本", bundle: .mimiModule)
                             .mimiFont(13, weight: .semibold)
                             .foregroundColor(MimiTheme.textSecondary)
                     }
@@ -307,7 +307,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     Button {
                         confirmImport()
                     } label: {
-                        Text("确认导入", bundle: .module)
+                        Text("确认导入", bundle: .mimiModule)
                             .mimiFont(15, weight: .bold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -355,7 +355,7 @@ public struct SettingsAndShortcutsGuideView: View {
     private var exportModalSheet: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {
-                Text("选择要导出的时间段：", bundle: .module)
+                Text("选择要导出的时间段：", bundle: .mimiModule)
                     .mimiFont(14, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
 
@@ -380,7 +380,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 if exportPeriodOption == "自定义" {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
-                            Text("开始日期", bundle: .module)
+                            Text("开始日期", bundle: .mimiModule)
                                 .mimiFont(13, weight: .medium)
                                 .foregroundColor(MimiTheme.textSecondary)
                             Spacer()
@@ -391,7 +391,7 @@ public struct SettingsAndShortcutsGuideView: View {
                             )
                         }
                         HStack {
-                            Text("结束日期", bundle: .module)
+                            Text("结束日期", bundle: .mimiModule)
                                 .mimiFont(13, weight: .medium)
                                 .foregroundColor(MimiTheme.textSecondary)
                             Spacer()
@@ -411,7 +411,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 let inc = filtered.filter { $0.type == .income }.reduce(0.0) { $0 + $1.amount }
 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("当前所选时间段统计：", bundle: .module)
+                    Text("当前所选时间段统计：", bundle: .mimiModule)
                         .mimiFont(12, weight: .medium)
                         .foregroundColor(MimiTheme.textSecondary)
                     HStack(spacing: 12) {
@@ -432,7 +432,7 @@ public struct SettingsAndShortcutsGuideView: View {
 
                 Spacer()
 
-                Text("导出为咔皮同款 Excel：工作表「收支账单」+「内部转账」。", bundle: .module)
+                Text("导出为咔皮同款 Excel：工作表「收支账单」+「内部转账」。", bundle: .mimiModule)
                     .mimiFont(12)
                     .foregroundColor(MimiTheme.textSecondary)
 
@@ -444,7 +444,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         ) {
                             HStack(spacing: 8) {
                                 Image(systemName: "square.and.arrow.up.fill")
-                                Text("导出并分享 Excel 文件", bundle: .module)
+                                Text("导出并分享 Excel 文件", bundle: .mimiModule)
                                     .mimiFont(15, weight: .bold)
                             }
                             .foregroundColor(.white)
@@ -460,7 +460,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         } label: {
                             HStack(spacing: 8) {
                                 Image(systemName: "square.and.arrow.up.fill")
-                                Text("生成 Excel 文件", bundle: .module)
+                                Text("生成 Excel 文件", bundle: .mimiModule)
                                     .mimiFont(15, weight: .bold)
                             }
                             .foregroundColor(.white)
@@ -743,11 +743,11 @@ public struct SettingsAndShortcutsGuideView: View {
 
     private var shortcutsCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("自动记账 · 截屏识别记账", bundle: .module)
+            Text("自动记账 · 截屏识别记账", bundle: .mimiModule)
                 .mimiFont(15, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
 
-            Text("付款完成后触发一次「咪咪记账 · 识别账单」快捷指令：系统自动截屏 → AI 识别金额、商户与扣款账户 → 在当前付款 App 上方弹出卡片。点「修改」跳进 App 编辑；点「确认」原地入账。下方四种触发方式任选一种绑定即可。也可直接用「读取剪贴板截图」。", bundle: .module)
+            Text("付款完成后触发一次「咪咪记账 · 识别账单」快捷指令：系统自动截屏 → AI 识别金额、商户与扣款账户 → 在当前付款 App 上方弹出卡片。点「修改」跳进 App 编辑；点「确认」原地入账。下方四种触发方式任选一种绑定即可。也可直接用「读取剪贴板截图」。", bundle: .mimiModule)
                 .mimiFont(12)
                 .foregroundColor(MimiTheme.textSecondary)
 
@@ -810,7 +810,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "play.circle.fill")
                             .mimiFont(15)
-                        Text("教程", bundle: .module)
+                        Text("教程", bundle: .mimiModule)
                             .mimiFont(14, weight: .bold)
                     }
                     .foregroundColor(MimiTheme.expenseBlue)
@@ -830,7 +830,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         }
                     }
                 } label: {
-                    Text("添加专属指令", bundle: .module)
+                    Text("添加专属指令", bundle: .mimiModule)
                         .mimiFont(14, weight: .bold)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -841,14 +841,14 @@ public struct SettingsAndShortcutsGuideView: View {
             }
 
             if ShortcutActionCoordinator.shortcutInstallURL == nil {
-                Text("首次需按教程手动建一次；建好后在「快捷指令」App 中对该捷徑点「共享 → 拷贝 iCloud 链接」，把链接发给开发者即可开通一键导入。", bundle: .module)
+                Text("首次需按教程手动建一次；建好后在「快捷指令」App 中对该捷徑点「共享 → 拷贝 iCloud 链接」，把链接发给开发者即可开通一键导入。", bundle: .mimiModule)
                     .mimiFont(11)
                     .foregroundColor(MimiTheme.textMuted)
             }
 
             if showShortcutTutorial {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("📖 手动搭建教程（只需一次，约 1 分钟）：", bundle: .module)
+                    Text("📖 手动搭建教程（只需一次，约 1 分钟）：", bundle: .mimiModule)
                         .mimiFont(13, weight: .bold)
                         .foregroundColor(MimiTheme.textPrimary)
                     guideStepRow("1. 打开自带「快捷指令」App → 点右上角「+」新建，命名为「咪咪记账-识别账单」")
@@ -858,7 +858,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     guideStepRow("5. 添加动作「从截屏获取图像 (Get Images from Screenshot)」")
                     guideStepRow("6. 添加动作「识别账单 (咪咪记账)」，将「内容 (Content)」设为上一步的「图像 (Images)」，「类型 (Type)」保持 2")
                     Label {
-                        Text("点开「识别账单」的展开箭头，确认「运行时显示 (Show When Run)」与「运行时打开 (Open When Run)」两个开关都打开，识别卡片才会直接浮在当前付款 App 上方。", bundle: .module)
+                        Text("点开「识别账单」的展开箭头，确认「运行时显示 (Show When Run)」与「运行时打开 (Open When Run)」两个开关都打开，识别卡片才会直接浮在当前付款 App 上方。", bundle: .mimiModule)
                             .mimiFont(12, weight: .bold)
                             .foregroundColor(MimiTheme.expenseBlue)
                     } icon: {
@@ -878,7 +878,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "arrow.up.forward.app.fill")
                         .mimiFont(16)
-                    Text("打开「快捷指令」App 开始搭建", bundle: .module)
+                    Text("打开「快捷指令」App 开始搭建", bundle: .mimiModule)
                         .mimiFont(14, weight: .bold)
                 }
                 .foregroundColor(.white)
@@ -923,7 +923,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "camera.viewfinder")
                         .mimiFont(14)
-                    Text("无需快捷指令 · 读取剪贴板截图（确认后入账）", bundle: .module)
+                    Text("无需快捷指令 · 读取剪贴板截图（确认后入账）", bundle: .mimiModule)
                         .mimiFont(13, weight: .bold)
                 }
                 .foregroundColor(MimiTheme.incomeOrange)
@@ -934,7 +934,7 @@ public struct SettingsAndShortcutsGuideView: View {
             .mimiPressable()
 
             // 识别卡片效果预览
-            Text("效果预览（付款 App 上方弹出的卡片长这样）：", bundle: .module)
+            Text("效果预览（付款 App 上方弹出的卡片长这样）：", bundle: .mimiModule)
                 .mimiFont(12, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
 
@@ -1008,7 +1008,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         GroqSettings.modelName = groqModelInput
                         groqTestStatus = "已保存"
                     } label: {
-                        Text("保存", bundle: .module)
+                        Text("保存", bundle: .mimiModule)
                             .mimiFont(14, weight: .semibold)
                             .foregroundColor(.white)
                             .padding(.horizontal, 16)
@@ -1066,7 +1066,7 @@ public struct SettingsAndShortcutsGuideView: View {
 
     private var dataManagementCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("📦 数据管理与账本工具", bundle: .module)
+            Text("📦 数据管理与账本工具", bundle: .mimiModule)
                 .mimiFont(15, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
 
@@ -1074,7 +1074,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 showResetCleanAlert = true
             } label: {
                 HStack {
-                    Text("清空全部账单与余额（恢复空白初始状态）", bundle: .module)
+                    Text("清空全部账单与余额（恢复空白初始状态）", bundle: .mimiModule)
                         .mimiFont(14, weight: .semibold)
                         .foregroundColor(MimiTheme.dangerRed)
                     Spacer()
@@ -1091,7 +1091,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 statusBannerMessage = "已恢复 2026年11月 官方演示账单与账户余额 (RM368.42)"
             } label: {
                 HStack {
-                    Text("恢复官方演示数据 (用于功能测试)", bundle: .module)
+                    Text("恢复官方演示数据 (用于功能测试)", bundle: .mimiModule)
                         .mimiFont(14, weight: .semibold)
                         .foregroundColor(MimiTheme.expenseBlue)
                     Spacer()
@@ -1121,7 +1121,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "plus.circle.fill")
-                        Text("新建账本", bundle: .module)
+                        Text("新建账本", bundle: .mimiModule)
                     }
                     .mimiFont(13, weight: .bold)
                     .foregroundColor(MimiTheme.expenseBlue)
@@ -1141,7 +1141,7 @@ public struct SettingsAndShortcutsGuideView: View {
                                     .mimiFont(15, weight: .bold)
                                     .foregroundColor(MimiTheme.textPrimary)
                                 if ledger.id == store.currentLedgerId {
-                                    Text("当前使用", bundle: .module)
+                                    Text("当前使用", bundle: .mimiModule)
                                         .mimiFont(10, weight: .semibold)
                                         .foregroundColor(MimiTheme.balanceGreen)
                                         .padding(.horizontal, 6)
@@ -1173,7 +1173,7 @@ public struct SettingsAndShortcutsGuideView: View {
                             editingLedgerForBudget = ledger
                             editBudgetInput = String(format: "%.0f", ledger.monthlyBudget)
                         } label: {
-                            Text("修改月预算", bundle: .module)
+                            Text("修改月预算", bundle: .mimiModule)
                                 .mimiFont(12, weight: .medium)
                                 .foregroundColor(MimiTheme.expenseBlue)
                         }
@@ -1185,7 +1185,7 @@ public struct SettingsAndShortcutsGuideView: View {
                                 store.deleteLedger(id: ledger.id)
                                 statusBannerMessage = "已删除账本: \(ledger.name)"
                             } label: {
-                                Text("删除", bundle: .module)
+                                Text("删除", bundle: .mimiModule)
                                     .mimiFont(12, weight: .medium)
                                     .foregroundColor(MimiTheme.dangerRed)
                             }
@@ -1217,7 +1217,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         }
                         editingLedgerForBudget = nil
                     } label: {
-                        Text("保存预算", bundle: .module)
+                        Text("保存预算", bundle: .mimiModule)
                             .mimiFont(15, weight: .bold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -1242,14 +1242,14 @@ public struct SettingsAndShortcutsGuideView: View {
         .sheet(isPresented: $showCreateLedgerSheet) {
             NavigationStack {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("账本名称", bundle: .module)
+                    Text("账本名称", bundle: .mimiModule)
                         .mimiFont(13, weight: .semibold)
                     TextField("如：生意账本 / 旅行账本 / 装修账本", text: $newLedgerName)
                         .mimiFont(14)
                         .padding(10)
                         .background(RoundedRectangle(cornerRadius: 10).fill(MimiTheme.background))
 
-                    Text("每月预算 (RM)", bundle: .module)
+                    Text("每月预算 (RM)", bundle: .mimiModule)
                         .mimiFont(13, weight: .semibold)
                     TextField("3000", text: $newLedgerBudget)
                         .mimiFont(14)
@@ -1265,7 +1265,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         showCreateLedgerSheet = false
                         statusBannerMessage = "已创建并切换到新账本: \(trimmed)"
                     } label: {
-                        Text("确认创建账本", bundle: .module)
+                        Text("确认创建账本", bundle: .mimiModule)
                             .mimiFont(15, weight: .bold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -1299,7 +1299,7 @@ public struct SettingsAndShortcutsGuideView: View {
                 .mimiFont(16, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
 
-            Text("为账单打上标签（如：报销、旅行、人情），可以在此统一统计与筛选。", bundle: .module)
+            Text("为账单打上标签（如：报销、旅行、人情），可以在此统一统计与筛选。", bundle: .mimiModule)
                 .mimiFont(12)
                 .foregroundColor(MimiTheme.textSecondary)
 
@@ -1325,7 +1325,7 @@ public struct SettingsAndShortcutsGuideView: View {
 
             // Tag chips
             VStack(alignment: .leading, spacing: 10) {
-                Text("现有标签列表（点击标签可筛选关联账单）：", bundle: .module)
+                Text("现有标签列表（点击标签可筛选关联账单）：", bundle: .mimiModule)
                     .mimiFont(12, weight: .medium)
                     .foregroundColor(MimiTheme.textSecondary)
 
@@ -1372,7 +1372,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     }
 
                     if taggedBills.isEmpty {
-                        Text("该标签下暂无账单记录", bundle: .module)
+                        Text("该标签下暂无账单记录", bundle: .mimiModule)
                             .mimiFont(12)
                             .foregroundColor(MimiTheme.textMuted)
                             .padding(.vertical, 12)
@@ -1416,7 +1416,7 @@ public struct SettingsAndShortcutsGuideView: View {
     private var scheduledBookkeepingSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("定时记账与周期固定收支", bundle: .module)
+                Text("定时记账与周期固定收支", bundle: .mimiModule)
                     .mimiFont(16, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
@@ -1425,14 +1425,14 @@ public struct SettingsAndShortcutsGuideView: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "plus.circle.fill")
-                        Text("新增计划", bundle: .module)
+                        Text("新增计划", bundle: .mimiModule)
                     }
                     .mimiFont(13, weight: .bold)
                     .foregroundColor(MimiTheme.expenseBlue)
                 }
             }
 
-            Text("针对房租、宽带、月薪、订阅会员等固定周期收支。启用计划后，可在卡片上点「立即入账」手动执行；到期自动入账将在后续版本接入。", bundle: .module)
+            Text("针对房租、宽带、月薪、订阅会员等固定周期收支。启用计划后，可在卡片上点「立即入账」手动执行；到期自动入账将在后续版本接入。", bundle: .mimiModule)
                 .mimiFont(12)
                 .foregroundColor(MimiTheme.textSecondary)
 
@@ -1441,10 +1441,10 @@ public struct SettingsAndShortcutsGuideView: View {
                     Image(systemName: "calendar.badge.clock")
                         .mimiFont(28)
                         .foregroundColor(MimiTheme.textMuted)
-                    Text("暂无定时记账计划", bundle: .module)
+                    Text("暂无定时记账计划", bundle: .mimiModule)
                         .mimiFont(13, weight: .medium)
                         .foregroundColor(MimiTheme.textSecondary)
-                    Text("点击右上角「+ 新增计划」添加房租、月薪、话费等固定周期账单", bundle: .module)
+                    Text("点击右上角「+ 新增计划」添加房租、月薪、话费等固定周期账单", bundle: .mimiModule)
                         .mimiFont(11)
                         .foregroundColor(MimiTheme.textMuted)
                 }
@@ -1497,7 +1497,7 @@ public struct SettingsAndShortcutsGuideView: View {
                             store.executeScheduledTransactionNow(id: item.id)
                             statusBannerMessage = "已立即执行并记入账本: \(item.title) \(MimiTheme.formatRM(item.amount))"
                         } label: {
-                            Text("立即入账一次", bundle: .module)
+                            Text("立即入账一次", bundle: .mimiModule)
                                 .mimiFont(11, weight: .bold)
                                 .foregroundColor(MimiTheme.expenseBlue)
                                 .padding(.horizontal, 10)
@@ -1522,7 +1522,7 @@ public struct SettingsAndShortcutsGuideView: View {
         .sheet(isPresented: $showCreateScheduledSheet) {
             NavigationStack {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("计划名称", bundle: .module)
+                    Text("计划名称", bundle: .mimiModule)
                         .mimiFont(13, weight: .semibold)
                     TextField("如：每月房贷 / Netflix 会员", text: $newScheduledTitle)
                         .mimiFont(14)
@@ -1531,17 +1531,17 @@ public struct SettingsAndShortcutsGuideView: View {
 
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("类型", bundle: .module)
+                            Text("类型", bundle: .mimiModule)
                                 .mimiFont(13, weight: .semibold)
                             Picker("", selection: $newScheduledType) {
-                                Text("支出", bundle: .module).tag(TransactionType.expense)
-                                Text("收入", bundle: .module).tag(TransactionType.income)
+                                Text("支出", bundle: .mimiModule).tag(TransactionType.expense)
+                                Text("收入", bundle: .mimiModule).tag(TransactionType.income)
                             }
                             .pickerStyle(.segmented)
                         }
 
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("金额 (RM)", bundle: .module)
+                            Text("金额 (RM)", bundle: .mimiModule)
                                 .mimiFont(13, weight: .semibold)
                             TextField("100.00", text: $newScheduledAmount)
                                 .mimiFont(14)
@@ -1552,7 +1552,7 @@ public struct SettingsAndShortcutsGuideView: View {
 
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("扣款/入账账户", bundle: .module)
+                            Text("扣款/入账账户", bundle: .mimiModule)
                                 .mimiFont(13, weight: .semibold)
                             Picker("", selection: $newScheduledAccount) {
                                 ForEach(store.accounts) { acc in
@@ -1563,7 +1563,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         }
 
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("执行周期", bundle: .module)
+                            Text("执行周期", bundle: .mimiModule)
                                 .mimiFont(13, weight: .semibold)
                             Picker("", selection: $newScheduledFreq) {
                                 ForEach(RecurringFrequency.allCases, id: \.self) { freq in
@@ -1594,7 +1594,7 @@ public struct SettingsAndShortcutsGuideView: View {
                         showCreateScheduledSheet = false
                         statusBannerMessage = "已创建定时入账计划: \(trimmed)"
                     } label: {
-                        Text("保存定时计划", bundle: .module)
+                        Text("保存定时计划", bundle: .mimiModule)
                             .mimiFont(15, weight: .bold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -1624,17 +1624,17 @@ public struct SettingsAndShortcutsGuideView: View {
 
     private var widgetsShowcaseSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("iOS 桌面小组件（设计预览）", bundle: .module)
+            Text("iOS 桌面小组件（设计预览）", bundle: .mimiModule)
                 .mimiFont(16, weight: .bold)
                 .foregroundColor(MimiTheme.textPrimary)
 
-            Text("下方为小组件视觉预览，数字取自当前账本实时数据。正式 WidgetKit 扩展上架后，可在桌面长按「+」搜索「咪咪记账」添加。", bundle: .module)
+            Text("下方为小组件视觉预览，数字取自当前账本实时数据。正式 WidgetKit 扩展上架后，可在桌面长按「+」搜索「咪咪记账」添加。", bundle: .mimiModule)
                 .mimiFont(12)
                 .foregroundColor(MimiTheme.textSecondary)
 
             // 1. Small Widget Preview (今日可用)
             VStack(alignment: .leading, spacing: 10) {
-                Text("小号小组件 · 今日动态预算", bundle: .module)
+                Text("小号小组件 · 今日动态预算", bundle: .mimiModule)
                     .mimiFont(13, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
 
@@ -1649,7 +1649,7 @@ public struct SettingsAndShortcutsGuideView: View {
                             .rotationEffect(.degrees(-90))
                             .frame(width: 80, height: 80)
                         VStack(spacing: 2) {
-                            Text("今日可用", bundle: .module)
+                            Text("今日可用", bundle: .mimiModule)
                                 .mimiFont(9)
                                 .foregroundColor(MimiTheme.textSecondary)
                             Text(MimiTheme.formatRM(store.dailyAvailableBudget()))
@@ -1659,13 +1659,13 @@ public struct SettingsAndShortcutsGuideView: View {
                     }
                     Spacer()
                     VStack(alignment: .trailing, spacing: 4) {
-                        Text("动态结余滚入", bundle: .module)
+                        Text("动态结余滚入", bundle: .mimiModule)
                             .mimiFont(11, weight: .semibold)
                             .foregroundColor(MimiTheme.expenseBlue)
                         Text("今日已花费 \(MimiTheme.formatRM(store.todayExpenseTotal()))")
                             .mimiFont(10)
                             .foregroundColor(MimiTheme.textMuted)
-                        Text("实时同步当前账本", bundle: .module)
+                        Text("实时同步当前账本", bundle: .mimiModule)
                             .mimiFont(10)
                             .foregroundColor(MimiTheme.textMuted)
                     }
@@ -1679,13 +1679,13 @@ public struct SettingsAndShortcutsGuideView: View {
 
             // 2. Medium Widget Preview (7日趋势与本周收支)
             VStack(alignment: .leading, spacing: 10) {
-                Text("中号小组件 · 7日收支趋势", bundle: .module)
+                Text("中号小组件 · 7日收支趋势", bundle: .mimiModule)
                     .mimiFont(13, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
 
                 HStack(alignment: .bottom, spacing: 8) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("本周结余", bundle: .module)
+                        Text("本周结余", bundle: .mimiModule)
                             .mimiFont(10)
                             .foregroundColor(MimiTheme.textSecondary)
                         Text(MimiTheme.formatRM(store.netWorth))
@@ -1718,12 +1718,12 @@ public struct SettingsAndShortcutsGuideView: View {
         VStack(alignment: .leading, spacing: 18) {
             // 资料
             VStack(alignment: .leading, spacing: 8) {
-                Text("资料", bundle: .module)
+                Text("资料", bundle: .mimiModule)
                     .mimiFont(13, weight: .semibold)
                     .foregroundColor(MimiTheme.textSecondary)
 
                 HStack {
-                    Text("昵称", bundle: .module)
+                    Text("昵称", bundle: .mimiModule)
                         .mimiFont(14, weight: .medium)
                         .foregroundColor(MimiTheme.textPrimary)
                     TextField("jinghao", text: $editingNickname)
@@ -1754,15 +1754,15 @@ public struct SettingsAndShortcutsGuideView: View {
 
             // 账期
             VStack(alignment: .leading, spacing: 8) {
-                Text("账期", bundle: .module)
+                Text("账期", bundle: .mimiModule)
                     .mimiFont(13, weight: .semibold)
                     .foregroundColor(MimiTheme.textSecondary)
 
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("月统计起始日", bundle: .module)
+                    Text("月统计起始日", bundle: .mimiModule)
                         .mimiFont(14, weight: .medium)
                         .foregroundColor(MimiTheme.textPrimary)
-                    Text("首页预算、分类花费与统计「月」都按此账期计算。", bundle: .module)
+                    Text("首页预算、分类花费与统计「月」都按此账期计算。", bundle: .mimiModule)
                         .mimiFont(12)
                         .foregroundColor(MimiTheme.textSecondary)
                     Picker("起始日", selection: Binding(
@@ -1783,7 +1783,7 @@ public struct SettingsAndShortcutsGuideView: View {
 
             // 语言（仅应用内文案；主屏幕名称仍跟随系统 InfoPlist.strings）
             VStack(alignment: .leading, spacing: 8) {
-                Text("语言", bundle: .module)
+                Text("语言", bundle: .mimiModule)
                     .mimiFont(13, weight: .semibold)
                     .foregroundColor(MimiTheme.textSecondary)
 
@@ -1793,12 +1793,12 @@ public struct SettingsAndShortcutsGuideView: View {
                             Text(pref.settingsLabelLocalized).tag(pref)
                         }
                     } label: {
-                        Text("语言", bundle: .module)
+                        Text("语言", bundle: .mimiModule)
                     }
                     .pickerStyle(.segmented)
-                    .accessibilityLabel(Text("语言", bundle: .module))
+                    .accessibilityLabel(Text("语言", bundle: .mimiModule))
 
-                    Text("切换语言后，应用内文案立即更新。主屏幕名称仍跟随系统语言。", bundle: .module)
+                    Text("切换语言后，应用内文案立即更新。主屏幕名称仍跟随系统语言。", bundle: .mimiModule)
                         .mimiFont(12)
                         .foregroundColor(MimiTheme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -1809,12 +1809,12 @@ public struct SettingsAndShortcutsGuideView: View {
 
             // 其他
             VStack(alignment: .leading, spacing: 8) {
-                Text("其他", bundle: .module)
+                Text("其他", bundle: .mimiModule)
                     .mimiFont(13, weight: .semibold)
                     .foregroundColor(MimiTheme.textSecondary)
 
                 Toggle(isOn: $store.hapticsEnabled) {
-                    Text("触觉反馈", bundle: .module)
+                    Text("触觉反馈", bundle: .mimiModule)
                         .mimiFont(14, weight: .medium)
                 }
                 .padding(14)
@@ -1825,7 +1825,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     onDismiss()
                 } label: {
                     HStack {
-                        Text("重新打开新手指南", bundle: .module)
+                        Text("重新打开新手指南", bundle: .mimiModule)
                             .mimiFont(14, weight: .medium)
                             .foregroundColor(MimiTheme.textPrimary)
                         Spacer()
@@ -1842,7 +1842,7 @@ public struct SettingsAndShortcutsGuideView: View {
                     showResetCleanAlert = true
                 } label: {
                     HStack {
-                        Text("清空全部数据", bundle: .module)
+                        Text("清空全部数据", bundle: .mimiModule)
                             .mimiFont(14, weight: .semibold)
                             .foregroundColor(MimiTheme.dangerRed)
                         Spacer()

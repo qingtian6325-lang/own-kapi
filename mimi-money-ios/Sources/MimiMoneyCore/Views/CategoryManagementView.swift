@@ -43,7 +43,7 @@ public struct CategoryManagementView: View {
                         // Gold: 标准分类 summary card
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
-                                Text("标准分类", bundle: .module)
+                                Text("标准分类", bundle: .mimiModule)
                                     .mimiFont(16, weight: .bold)
                                     .foregroundColor(MimiTheme.textPrimary)
                                 Spacer()
@@ -83,7 +83,7 @@ public struct CategoryManagementView: View {
                         // Pill tabs: 支出 | 收入
                         HStack(spacing: 0) {
                             Button { selectedTab = .expense } label: {
-                                Text("支出", bundle: .module)
+                                Text("支出", bundle: .mimiModule)
                                     .mimiFont(13, weight: selectedTab == .expense ? .bold : .medium)
                                     .foregroundColor(selectedTab == .expense ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
                                     .frame(maxWidth: .infinity)
@@ -92,7 +92,7 @@ public struct CategoryManagementView: View {
                             }
                             .mimiPressable()
                             Button { selectedTab = .income } label: {
-                                Text("收入", bundle: .module)
+                                Text("收入", bundle: .mimiModule)
                                     .mimiFont(13, weight: selectedTab == .income ? .bold : .medium)
                                     .foregroundColor(selectedTab == .income ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
                                     .frame(maxWidth: .infinity)
@@ -206,7 +206,7 @@ public struct CategoryManagementView: View {
                                             .mimiFont(18, weight: .semibold)
                                             .foregroundColor(MimiTheme.textSecondary)
                                     }
-                                    Text("添加", bundle: .module)
+                                    Text("添加", bundle: .mimiModule)
                                         .mimiFont(11, weight: .medium)
                                         .foregroundColor(MimiTheme.textSecondary)
                                 }
@@ -271,7 +271,7 @@ public struct CategoryManagementView: View {
                 Button(MimiL10n.string("保存")) { commitRename() }
                 Button(MimiL10n.string("取消"), role: .cancel) { renameTarget = nil }
             } message: {
-                Text("修改后会更新显示名称。", bundle: .module)
+                Text("修改后会更新显示名称。", bundle: .mimiModule)
             }
             .alert(MimiL10n.string("删除一级分类？"),
                 isPresented: Binding(
@@ -287,7 +287,7 @@ public struct CategoryManagementView: View {
                 }
                 Button(MimiL10n.string("取消"), role: .cancel) { deletePrimaryConfirmId = nil }
             } message: {
-                Text("已有账单不会被删除，只是不再挂在此分类下展示。", bundle: .module)
+                Text("已有账单不会被删除，只是不再挂在此分类下展示。", bundle: .mimiModule)
             }
         }
         .mimiEdgeSwipeBack(onBack: onDismiss)
@@ -487,7 +487,7 @@ public struct CategoryManagementView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "plus")
                                 .mimiFont(14, weight: .semibold)
-                            Text("添加二级分类", bundle: .module)
+                            Text("添加二级分类", bundle: .mimiModule)
                                 .mimiFont(14, weight: .medium)
                             Spacer(minLength: 0)
                         }
@@ -596,7 +596,7 @@ public struct CategoryManagementView: View {
             .padding(.bottom, 14)
 
             Toggle(isOn: $useFirstCharAsIcon) {
-                Text("首字作为图标", bundle: .module)
+                Text("首字作为图标", bundle: .mimiModule)
                     .mimiFont(14, weight: .medium)
                     .foregroundColor(MimiTheme.textPrimary)
             }
@@ -608,7 +608,7 @@ public struct CategoryManagementView: View {
             .padding(.bottom, 16)
 
             HStack {
-                Text("分类图标", bundle: .module)
+                Text("分类图标", bundle: .mimiModule)
                     .mimiFont(12, weight: .medium)
                     .foregroundColor(MimiTheme.textMuted)
                 Spacer()
@@ -665,7 +665,7 @@ public struct CategoryManagementView: View {
                 )
                 showAddPrimarySheet = false
             } label: {
-                Text("确认", bundle: .module)
+                Text("确认", bundle: .mimiModule)
                     .mimiFont(16, weight: .semibold)
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)

@@ -3,7 +3,7 @@ import SwiftUI
 public struct MimiRootContainerView: View {
     @ObservedObject public var store: MimiStore
     @StateObject private var aiEngine = MimiAIEngine()
-    @ObservedObject private var languageStore = AppLanguageStore.shared
+    @EnvironmentObject private var languageStore: AppLanguageStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var currentMainPage: String = "记录"

@@ -129,7 +129,7 @@ public struct EditAccountView: View {
             .background(MimiTheme.background.ignoresSafeArea())
             .safeAreaInset(edge: .bottom) {
                 Button(action: save) {
-                    Text("保存", bundle: .module)
+                    Text("保存", bundle: .mimiModule)
                         .mimiFont(16, weight: .bold)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -178,7 +178,7 @@ public struct EditAccountView: View {
                 }
                 Button(MimiL10n.string("取消"), role: .cancel) {}
             } message: {
-                Text("删除后不可恢复。相关账单仍会保留，但不再关联此账户余额。", bundle: .module)
+                Text("删除后不可恢复。相关账单仍会保留，但不再关联此账户余额。", bundle: .mimiModule)
             }
             .sheet(isPresented: $showIconPicker) {
                 iconPickerSheet

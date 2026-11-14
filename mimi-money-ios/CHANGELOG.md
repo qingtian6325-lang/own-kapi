@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.15] - 2026-11-14
+
+### 🎯 Highlights
+- **启动崩溃热修**：v1.3.14 IPA 未打入 SPM 资源包 `MimiMoney_MimiMoneyCore.bundle`（CI 误搜 `MimiMoneyCore_MimiMoneyCore.bundle`），`Bundle.module` / String Catalog 首屏即 fatal。本版修正 CI 拷贝名并 **缺包即失败**；运行时改用 `Bundle.mimiModule`（缺包回退 `Bundle.main`，不再 fatal）。
+- **发版**：`VERSION` / Intent 默认版本升至 1.3.15。
+
 ## [v1.3.14] - 2026-11-14
 
 ### 🎯 Highlights

@@ -148,7 +148,7 @@ public struct BudgetManagementView: View {
             VStack(alignment: .leading, spacing: 18) {
                 switch sheetType {
                 case .editTotal:
-                    Text("设置月度总预算", bundle: .module)
+                    Text("设置月度总预算", bundle: .mimiModule)
                         .mimiFont(18, weight: .bold)
                         .foregroundColor(MimiTheme.textPrimary)
 
@@ -175,7 +175,7 @@ public struct BudgetManagementView: View {
                         }
                         activeSheetType = nil
                     } label: {
-                        Text("保存总预算", bundle: .module)
+                        Text("保存总预算", bundle: .mimiModule)
                             .mimiFont(15, weight: .bold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -197,7 +197,7 @@ public struct BudgetManagementView: View {
                             Text(item.categoryName)
                                 .mimiFont(17, weight: .bold)
                                 .foregroundColor(MimiTheme.textPrimary)
-                            Text("修改此分类月度支出上限", bundle: .module)
+                            Text("修改此分类月度支出上限", bundle: .mimiModule)
                                 .mimiFont(12)
                                 .foregroundColor(MimiTheme.textSecondary)
                         }
@@ -221,7 +221,7 @@ public struct BudgetManagementView: View {
                             store.removeCategoryBudget(categoryName: item.categoryName)
                             activeSheetType = nil
                         } label: {
-                            Text("删除分类预算", bundle: .module)
+                            Text("删除分类预算", bundle: .mimiModule)
                                 .mimiFont(14, weight: .semibold)
                                 .foregroundColor(MimiTheme.dangerRed)
                                 .frame(maxWidth: .infinity)
@@ -236,7 +236,7 @@ public struct BudgetManagementView: View {
                             }
                             activeSheetType = nil
                         } label: {
-                            Text("保存修改", bundle: .module)
+                            Text("保存修改", bundle: .mimiModule)
                                 .mimiFont(14, weight: .bold)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -259,7 +259,7 @@ public struct BudgetManagementView: View {
                             Text("为「\(grp.name)」添加预算")
                                 .mimiFont(17, weight: .bold)
                                 .foregroundColor(MimiTheme.textPrimary)
-                            Text("设定该分类每月支出上限", bundle: .module)
+                            Text("设定该分类每月支出上限", bundle: .mimiModule)
                                 .mimiFont(12)
                                 .foregroundColor(MimiTheme.textSecondary)
                         }
@@ -284,7 +284,7 @@ public struct BudgetManagementView: View {
                         }
                         activeSheetType = nil
                     } label: {
-                        Text("确定添加分类预算", bundle: .module)
+                        Text("确定添加分类预算", bundle: .mimiModule)
                             .mimiFont(15, weight: .bold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -294,7 +294,7 @@ public struct BudgetManagementView: View {
                     .mimiPressable()
 
                 case .selectNewCategory:
-                    Text("选择要增加预算的分类", bundle: .module)
+                    Text("选择要增加预算的分类", bundle: .mimiModule)
                         .mimiFont(17, weight: .bold)
                         .foregroundColor(MimiTheme.textPrimary)
 
@@ -356,7 +356,7 @@ public struct BudgetManagementView: View {
                         .mimiFont(12, weight: .medium)
                         .foregroundColor(MimiTheme.textSecondary)
 
-                    Text("月预算剩余", bundle: .module)
+                    Text("月预算剩余", bundle: .mimiModule)
                         .mimiFont(13, weight: .medium)
                         .foregroundColor(MimiTheme.textSecondary)
 
@@ -413,7 +413,7 @@ public struct BudgetManagementView: View {
                         .rotationEffect(.degrees(-90))
                         .frame(width: 86, height: 86)
                     VStack(spacing: 2) {
-                        Text("今日可用", bundle: .module)
+                        Text("今日可用", bundle: .mimiModule)
                             .mimiFont(9, weight: .semibold)
                             .foregroundColor(MimiTheme.expenseBlue)
                         Text(String(format: "%.2f", todayRemainingAvailable))
@@ -432,7 +432,7 @@ public struct BudgetManagementView: View {
     private var categorizedBudgetListCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("已分类预算", bundle: .module)
+                Text("已分类预算", bundle: .mimiModule)
                     .mimiFont(15, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
@@ -536,21 +536,21 @@ public struct BudgetManagementView: View {
         )
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("动态日预算", bundle: .module)
+                Text("动态日预算", bundle: .mimiModule)
                     .mimiFont(15, weight: .bold)
                     .foregroundColor(MimiTheme.textPrimary)
                 Spacer()
                 Button {
                     showDynamicDailySheet = true
                 } label: {
-                    Text("全屏", bundle: .module)
+                    Text("全屏", bundle: .mimiModule)
                         .mimiFont(12, weight: .semibold)
                         .foregroundColor(MimiTheme.expenseBlue)
                 }
                 .mimiPressable()
             }
 
-            Text("点击查看当日花费，长按编辑日预算", bundle: .module)
+            Text("点击查看当日花费，长按编辑日预算", bundle: .mimiModule)
                 .mimiFont(12)
                 .foregroundColor(MimiTheme.textMuted)
 
@@ -673,7 +673,7 @@ public struct BudgetManagementView: View {
                     } label: {
                         HStack {
                             Image(systemName: "pencil")
-                            Text("修改分类预算", bundle: .module)
+                            Text("修改分类预算", bundle: .mimiModule)
                             Spacer()
                             Image(systemName: "chevron.right")
                         }
@@ -684,7 +684,7 @@ public struct BudgetManagementView: View {
                     }
                     .mimiPressable()
 
-                    Text("历史月份", bundle: .module)
+                    Text("历史月份", bundle: .mimiModule)
                         .mimiFont(13, weight: .semibold)
                         .foregroundColor(MimiTheme.textSecondary)
                         .padding(.horizontal, 4)
@@ -802,7 +802,7 @@ public struct BudgetManagementView: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 14) {
                     HStack {
-                        Text("动态日预算", bundle: .module)
+                        Text("动态日预算", bundle: .mimiModule)
                             .mimiFont(16, weight: .bold)
                             .foregroundColor(MimiTheme.textPrimary)
                         Spacer()
@@ -815,7 +815,7 @@ public struct BudgetManagementView: View {
                             HStack(spacing: 4) {
                                 Image(systemName: "pencil")
                                     .mimiFont(11, weight: .semibold)
-                                Text("日预算设置", bundle: .module)
+                                Text("日预算设置", bundle: .mimiModule)
                                     .mimiFont(12, weight: .semibold)
                             }
                             .foregroundColor(MimiTheme.expenseBlue)
@@ -823,7 +823,7 @@ public struct BudgetManagementView: View {
                         .mimiPressable()
                     }
 
-                    Text("点击查看当日花费，长按编辑日预算", bundle: .module)
+                    Text("点击查看当日花费，长按编辑日预算", bundle: .mimiModule)
                         .mimiFont(12)
                         .foregroundColor(MimiTheme.textMuted)
 
@@ -1006,7 +1006,7 @@ public struct BudgetManagementView: View {
             .padding(.horizontal, 2)
 
             if txs.isEmpty {
-                Text("当日暂无记账记录", bundle: .module)
+                Text("当日暂无记账记录", bundle: .mimiModule)
                     .mimiFont(13)
                     .foregroundColor(MimiTheme.textMuted)
                     .frame(maxWidth: .infinity)

@@ -4,7 +4,8 @@ import MimiMoneyCore
 @main
 struct MimiMoneyApp: App {
     @StateObject private var store = MimiStore.shared
-    @StateObject private var languageStore = AppLanguageStore.shared
+    /// Own the store — do not wrap `AppLanguageStore.shared` in `@StateObject`.
+    @StateObject private var languageStore = AppLanguageStore()
 
     var body: some Scene {
         WindowGroup {

@@ -214,10 +214,29 @@ jobs:
           echo "Copied InfoPlist.strings (zh-Hans + en)"
 
           # Bundle SPM String Catalog / localization resources next to the binary.
-          while IFS= read -r bundle; do
-            echo "Copying resource bundle: ${bundle}"
-            cp -R "${bundle}" build/Payload/MimiMoneyApp.app/
-          done < <(find .build -type d -name 'MimiMoneyCore_MimiMoneyCore.bundle' 2>/dev/null | head -n 5)
+          # SPM names this `{Package}_{Target}.bundle` → MimiMoney_MimiMoneyCore.bundle
+          # (v1.3.14 crash: CI searched MimiMoneyCore_MimiMoneyCore.bundle and copied nothing).
+          BUNDLE_SRC="$(find .build -type d \( \
+              -name 'MimiMoney_MimiMoneyCore.bundle' -o \
+              -name 'MimiMoneyCore_MimiMoneyCore.bundle' \
+            \) 2>/dev/null | head -n 1 || true)"
+          if [ -z "${BUNDLE_SRC}" ]; then
+            echo "::error::SPM resource bundle not found under .build — IPA would crash on first localized Text"
+            echo "--- .build *.bundle directories ---"
+            find .build -type d -name '*.bundle' 2>/dev/null | sort || true
+            echo "--- Localizable.xcstrings present? ---"
+            find .build Sources -name 'Localizable.xcstrings' 2>/dev/null | head -n 20 || true
+            exit 1
+          fi
+          echo "Copying resource bundle: ${BUNDLE_SRC}"
+          cp -R "${BUNDLE_SRC}" build/Payload/MimiMoneyApp.app/
+          BUNDLE_DST_NAME="$(basename "${BUNDLE_SRC}")"
+          if [ ! -d "build/Payload/MimiMoneyApp.app/${BUNDLE_DST_NAME}" ]; then
+            echo "::error::Failed to copy ${BUNDLE_DST_NAME} into .app"
+            exit 1
+          fi
+          echo "✅ Resource bundle present in .app: ${BUNDLE_DST_NAME}"
+          ls -la "build/Payload/MimiMoneyApp.app/${BUNDLE_DST_NAME}" | head -n 20
 
           cat > build/Payload/MimiMoneyApp.app/Info.plist << EOF
           <?xml version="1.0" encoding="UTF-8"?>
@@ -349,6 +368,16 @@ jobs:
           echo "✅ AppIntents verification passed:"
           ls -la build/Payload/MimiMoneyApp.app/Metadata.appintents/
           grep -a -o "ScanScreenshotIntent" "${ACTIONS_DATA}" | head -n 1
+
+          # HARD GATE: SPM String Catalog bundle must ship (v1.3.14 launch crash).
+          if [ ! -d "build/Payload/MimiMoneyApp.app/MimiMoney_MimiMoneyCore.bundle" ] \
+             && [ ! -d "build/Payload/MimiMoneyApp.app/MimiMoneyCore_MimiMoneyCore.bundle" ]; then
+            echo "::error::MimiMoney_*_MimiMoneyCore.bundle missing from .app — launch would fatal on Bundle.module"
+            find build/Payload/MimiMoneyApp.app -maxdepth 2 | sort || true
+            exit 1
+          fi
+          echo "✅ SPM resource bundle present in .app"
+          find build/Payload/MimiMoneyApp.app -maxdepth 1 -type d -name '*.bundle' | sort
 
       - name: Package IPA (versioned asset name)
         run: |

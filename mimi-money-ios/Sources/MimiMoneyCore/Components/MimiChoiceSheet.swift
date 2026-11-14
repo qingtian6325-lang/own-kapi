@@ -92,7 +92,7 @@ public struct MimiChoiceSheet: View {
             .padding(.horizontal, 16)
 
             Button(action: onCancel) {
-                Text("取消", bundle: .module)
+                Text("取消", bundle: .mimiModule)
                     .mimiFont(15, weight: .semibold)
                     .foregroundColor(MimiTheme.textSecondary)
                     .frame(maxWidth: .infinity)
