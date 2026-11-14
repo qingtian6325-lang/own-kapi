@@ -28,8 +28,11 @@ All surfaces go through `MimiTheme` adaptive tokens (`Color(lightHex:darkHex:)`)
 ## Motion
 
 Use `MimiMotion` only: `page`, `sheet`, `drawer`, `quick`, `interactive`, transitions.
+Keep primary taps snappy: short spring responses, `handoffDelay` ≤ ~0.10s (overlap close→open; don’t wait a full beat).
+Press feedback via `mimiPressable()` spring — visible on the press frame.
 Handoffs (close A → open B) use `MimiMotion.handoffDelay(_:reduceMotion:)`.
 No ad-hoc springs / `easeInOut` on chrome; honor Reduce Motion via `*(reduceMotion:)`.
+List swipe-delete: animate row removal immediately; defer persist / full balance reconcile.
 
 ## AI composer
 

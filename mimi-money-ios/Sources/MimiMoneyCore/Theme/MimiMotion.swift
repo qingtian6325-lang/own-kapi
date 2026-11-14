@@ -4,43 +4,44 @@ import SwiftUI
 /// Prefer these over ad-hoc springs / easeInOut on full-screen trees.
 public enum MimiMotion {
     /// Settled duration used for sequential handoffs (close A → open B).
-    public static let pageDuration: TimeInterval = 0.28
-    public static let sheetDuration: TimeInterval = 0.26
-    public static let drawerDuration: TimeInterval = 0.26
+    /// Kept short so taps don’t feel half-beat late before the next surface moves.
+    public static let pageDuration: TimeInterval = 0.18
+    public static let sheetDuration: TimeInterval = 0.16
+    public static let drawerDuration: TimeInterval = 0.16
 
     /// Snappy push — light bounce, like UINavigationController.
     public static var page: Animation {
-        .spring(response: 0.32, dampingFraction: 0.88, blendDuration: 0.08)
+        .spring(response: 0.22, dampingFraction: 0.90, blendDuration: 0.04)
     }
 
     /// Slightly faster dismiss.
     public static var pageDismiss: Animation {
-        .spring(response: 0.28, dampingFraction: 0.92, blendDuration: 0.06)
+        .spring(response: 0.18, dampingFraction: 0.94, blendDuration: 0.03)
     }
 
     /// Bottom sheet / AI composer.
     public static var sheet: Animation {
-        .spring(response: 0.30, dampingFraction: 0.86, blendDuration: 0.06)
+        .spring(response: 0.22, dampingFraction: 0.88, blendDuration: 0.03)
     }
 
     /// Drawer slide.
     public static var drawer: Animation {
-        .spring(response: 0.30, dampingFraction: 0.90, blendDuration: 0.06)
+        .spring(response: 0.22, dampingFraction: 0.92, blendDuration: 0.03)
     }
 
     /// Chips, panels, delete reveal, toggles, toasts.
     public static var quick: Animation {
-        .spring(response: 0.22, dampingFraction: 0.86, blendDuration: 0.04)
+        .spring(response: 0.14, dampingFraction: 0.88, blendDuration: 0.02)
     }
 
     /// Drag follow / rubber-band settle.
     public static var interactive: Animation {
-        .interactiveSpring(response: 0.28, dampingFraction: 0.86, blendDuration: 0.08)
+        .interactiveSpring(response: 0.18, dampingFraction: 0.88, blendDuration: 0.04)
     }
 
     /// Fade-only fallback when Reduce Motion is on.
     public static var fade: Animation {
-        .easeOut(duration: 0.15)
+        .easeOut(duration: 0.10)
     }
 
     /// Full-screen page: pure horizontal slide (no opacity — avoids muddy/janky fades).
@@ -94,15 +95,17 @@ public enum MimiMotion {
     }
 
     /// Delay before opening the next surface after closing the previous one.
+    /// Intentionally shorter than the settle duration so handoffs overlap slightly
+    /// instead of waiting a full beat after the tap.
     public static func handoffDelay(
         _ kind: HandoffKind = .page,
         reduceMotion: Bool
     ) -> TimeInterval {
-        if reduceMotion { return 0.10 }
+        if reduceMotion { return 0.04 }
         switch kind {
-        case .page: return pageDuration + 0.02
-        case .sheet: return sheetDuration + 0.02
-        case .drawer: return drawerDuration + 0.02
+        case .page: return 0.10
+        case .sheet: return 0.08
+        case .drawer: return 0.08
         }
     }
 

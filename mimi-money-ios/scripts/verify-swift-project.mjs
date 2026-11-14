@@ -370,10 +370,24 @@ function verifyTask5() {
     '30天趋势',
     '记录明细',
     '任何事情都能问我',
-    '删除成功'
+    '删除成功',
+    'ForEach(groups, id: \\.date)'
   ]) {
     assertContains(home, label, 'HomeRecordView.swift');
   }
+  // Swipe-delete must animate removal with withAnimation (not delete-then-animate).
+  assertContains(home, 'store.deleteTransaction(id: id)', 'HomeRecordView.swift');
+  if (!home.includes('withAnimation(MimiMotion.quick') || !home.includes('store.deleteTransaction')) {
+    throw new Error('HomeRecordView swipe-delete must withAnimation around deleteTransaction');
+  }
+
+  const motion = assertFileExists('Sources/MimiMoneyCore/Theme/MimiMotion.swift');
+  checkBalancedBraces(motion, 'MimiMotion.swift');
+  assertContains(motion, 'pageDuration: TimeInterval = 0.18', 'MimiMotion.swift');
+  assertContains(motion, 'case .page: return 0.10', 'MimiMotion.swift');
+  const motionTests = assertFileExists('Tests/MimiMoneyTests/MimiMotionTests.swift');
+  assertContains(motionTests, 'testHandoffDelaysAreSnappyNotHalfBeatLate', 'MimiMotionTests.swift');
+  assertContains(motionTests, 'testDeleteRemovesRowImmediatelyBeforePersist', 'MimiMotionTests.swift');
 
   const drawer = assertFileExists('Sources/MimiMoneyCore/Views/SideDrawerMenuView.swift');
   checkBalancedBraces(drawer, 'SideDrawerMenuView.swift');

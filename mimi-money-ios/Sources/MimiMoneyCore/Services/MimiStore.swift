@@ -373,10 +373,20 @@ public final class MimiStore: ObservableObject {
     public func deleteTransaction(id: UUID, at loggedAt: Date = Date()) {
         guard let idx = transactions.firstIndex(where: { $0.id == id }) else { return }
         let removed = transactions.remove(at: idx)
+        // Incremental balance only — full reconcile + disk write deferred so swipe-delete stays snappy.
         applyBalanceEffect(for: removed, multiplier: -1.0)
-        recalculateAllAccountBalances()
         appendAuditLog(for: removed, action: .deleted, loggedAt: loggedAt)
-        saveState()
+        schedulePersistAfterUI()
+    }
+
+    /// Let SwiftUI commit list removal / press feedback first, then reconcile + persist.
+    private func schedulePersistAfterUI() {
+        Task { @MainActor [weak self] in
+            await Task.yield()
+            guard let self else { return }
+            self.recalculateAllAccountBalances()
+            self.saveState()
+        }
     }
 
     public func recalculateAllAccountBalances() {
