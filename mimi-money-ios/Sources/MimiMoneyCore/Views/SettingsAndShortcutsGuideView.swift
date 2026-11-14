@@ -1854,6 +1854,14 @@ public struct SettingsAndShortcutsGuideView: View {
                 }
                 .mimiPressable()
             }
+
+            Text(AppVersionInfo.settingsFooterLine)
+                .mimiFont(12)
+                .foregroundColor(MimiTheme.textMuted)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 8)
+                .padding(.bottom, 4)
+                .accessibilityLabel(AppVersionInfo.settingsFooterLine)
         }
     }
 }

@@ -14,6 +14,8 @@ public struct RecordAndAISheetView: View {
     /// Intended tab from the presenting `sheet(item:)` route — re-applied on appear
     /// so a reused sheet never keeps a stale `@State selectedTab` (转账 → 支出 flake).
     private let intendedInitialTab: TransactionType
+    /// Fresh per `sheet(item:)` open; drives `.id` / `.task(id:)` so UIPageViewController remounts.
+    private let presentationID: UUID
 
     @State private var isAIMode: Bool
     @State private var selectedTab: TransactionType
@@ -56,6 +58,7 @@ public struct RecordAndAISheetView: View {
         aiEngine: MimiAIEngine,
         initialAIMode: Bool = false,
         initialTab: TransactionType = .expense,
+        presentationID: UUID = UUID(),
         initialAccountName: String? = nil,
         onDismiss: @escaping () -> Void,
         onOpenCategorySettings: @escaping () -> Void,
@@ -67,6 +70,7 @@ public struct RecordAndAISheetView: View {
         self.aiEngine = aiEngine
         self.initialAIMode = initialAIMode
         self.intendedInitialTab = initialTab
+        self.presentationID = presentationID
         self.onDismiss = onDismiss
         self.onOpenCategorySettings = onOpenCategorySettings
         self.onEditRecognizedTransaction = onEditRecognizedTransaction
@@ -77,6 +81,10 @@ public struct RecordAndAISheetView: View {
         let prefills = initialAccountName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let fallback = store.defaultBookkeepingAccount?.name ?? "不选账户"
         _selectedAccountName = State(initialValue: prefills.isEmpty ? fallback : prefills)
+    }
+
+    private func applyIntendedTab() {
+        selectedTab = intendedInitialTab
     }
 
     private var activeCategories: [CategoryGroup] {
@@ -231,7 +239,12 @@ public struct RecordAndAISheetView: View {
         #endif
         .onAppear {
             // Force intended tab even if SwiftUI reused @State across sheet(item:) swaps.
-            selectedTab = intendedInitialTab
+            applyIntendedTab()
+        }
+        // Remount-driven reset: more reliable than onAppear alone when UIPageViewController
+        // keeps a stale page after 记账 → dismiss → 转账.
+        .task(id: presentationID) {
+            applyIntendedTab()
         }
         #if os(iOS)
         .presentationDetents([.medium, .large])
@@ -414,6 +427,9 @@ public struct RecordAndAISheetView: View {
                 transferTabPage
                     .tag(TransactionType.transfer)
             }
+            // Force UIPageViewController rebuild per sheet open — otherwise a prior
+            // 支出 page can stick after dismiss even when selectedTab was re-inited.
+            .id(presentationID)
             // PageTabViewStyle is iOS-only; macOS host `swift test` rejects `.page`.
             #if os(iOS)
             .tabViewStyle(.page(indexDisplayMode: .never))

@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **主屏幕名称**：仅随系统语言，经 `InfoPlist.strings` 的 `CFBundleDisplayName`（zh-Hans「咪咪记账」、en「Mimi Money」）；不写入 `AppleLanguages`。
 - **账户详情期初预填**：「设定期初资金(记账前)」预填账户 `initialBalance`（未设则为 0），不再误填当前余额；「校准当前余额」仍预填 `balance`；切换分段即时刷新 RM 输入框。
 - **添加账户**：起始开局余额留空时明确持久化 `initialBalance = 0`（与 `balance` 一致）。
+- **转账/记账半屏加固**：`AccountEntryRoute.id` 仅用 presentation UUID；sheet 内容与分页 `TabView` 均 `.id(presentationID)`，`.task(id:)` 再套一次初始 tab，修 记账→关→转账 仍偶发落在支出。
+- **设置页版本脚注**：底部显示 `版本 x.y.z (build n)`，取自 `CFBundleShortVersionString` / `CFBundleVersion`。
 - **回归**：`MimiGesturePolicy` / `AccountBalanceEditPrefill` / `AppLanguagePreference` 单测；verify 脚本覆盖手势、期初预填与语言资源。
 - **发版**：`VERSION` / Intent 默认版本升至 1.3.14（统一合入原计划 1.3.14/15/16 改动；v1.3.13 已单独发过转账初始页与支出横滑修复）。
 

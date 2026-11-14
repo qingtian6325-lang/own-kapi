@@ -181,13 +181,15 @@ public struct AssetsAndAccountDetailView: View {
                 .mimiInteractiveSheet()
             }
             // sheet(item:) + unique presentationID so 转账 always mounts on transfer tab
-            // (stale @State selectedTab caused flaky 支出). .id forces remount on swap.
+            // (stale @State selectedTab / UIPageViewController caused 支出 after dismiss).
+            // .id on content + presentationID into the sheet forces a full rebuild each open.
             .sheet(item: entryRouteBinding) { route in
                 RecordAndAISheetView(
                     store: store,
                     aiEngine: aiEngine,
                     initialAIMode: false,
-                    initialTab: route.transactionType,
+                    initialTab: AccountEntrySheetBootstrap.intendedTab(for: route),
+                    presentationID: route.presentationID,
                     initialAccountName: route.accountName,
                     onDismiss: { dispatch(.dismissEntry) },
                     onOpenCategorySettings: {
@@ -199,7 +201,7 @@ public struct AssetsAndAccountDetailView: View {
                         billForDetail = tx
                     }
                 )
-                .id(route.id)
+                .id(route.presentationID)
                 // Sheet chrome; axis lock lives inside RecordAndAISheetView (v1.3.13).
                 .mimiInteractiveSheet()
             }
