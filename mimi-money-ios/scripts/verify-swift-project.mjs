@@ -599,6 +599,32 @@ function verifyTask7() {
   checkBalancedBraces(initialBalanceTests, 'AccountInitialBalanceRowTests.swift');
   assertContains(initialBalanceTests, 'testDisplayUsesLiveInitialBalanceNeverPlaceholderZero', 'AccountInitialBalanceRowTests.swift');
   assertContains(initialBalanceTests, 'testLiveAccountInitialBalanceUpdatesRowAmount', 'AccountInitialBalanceRowTests.swift');
+
+  // Regression: 「设定期初资金」prefilled current balance instead of initialBalance (v1.3.16).
+  const balanceEditPrefill = assertFileExists('Sources/MimiMoneyCore/Services/AccountBalanceEditPrefill.swift');
+  checkBalancedBraces(balanceEditPrefill, 'AccountBalanceEditPrefill.swift');
+  for (const label of [
+    'AccountBalanceEditPrefill',
+    'setOpening',
+    'calibrateCurrent',
+    'formattedInput',
+    'parseNewAccountOpeningBalance'
+  ]) {
+    assertContains(balanceEditPrefill, label, 'AccountBalanceEditPrefill.swift');
+  }
+  const balanceEditPrefillTests = assertFileExists('Tests/MimiMoneyTests/AccountBalanceEditPrefillTests.swift');
+  checkBalancedBraces(balanceEditPrefillTests, 'AccountBalanceEditPrefillTests.swift');
+  assertContains(balanceEditPrefillTests, 'testOpeningModePrefillsInitialBalanceNotCurrentBalance', 'AccountBalanceEditPrefillTests.swift');
+  assertContains(balanceEditPrefillTests, 'testCalibrateModePrefillsCurrentBalance', 'AccountBalanceEditPrefillTests.swift');
+  assertContains(balanceEditPrefillTests, 'testSwitchingModesUpdatesPrefillIndependently', 'AccountBalanceEditPrefillTests.swift');
+  assertContains(balanceEditPrefillTests, 'testNewAccountEmptyOpeningBalancePersistsZero', 'AccountBalanceEditPrefillTests.swift');
+  assertContains(assets, 'AccountBalanceEditPrefill.formattedInput', 'AssetsAndAccountDetailView.swift');
+  assertContains(assets, 'onChange(of: balanceEditMode)', 'AssetsAndAccountDetailView.swift');
+  assertContains(assets, 'parseNewAccountOpeningBalance', 'AssetsAndAccountDetailView.swift');
+  if (assets.includes('newBalanceInput = String(format: "%.2f", account.balance)')) {
+    throw new Error('AssetsAndAccountDetailView.swift must not seed balance edit with account.balance only');
+  }
+
   // Regression: Bool entry sheet + shared cancellationAction caused stuck-on-记账.
   if (assets.includes('showAccountEntrySheet')) {
     throw new Error('AssetsAndAccountDetailView.swift must not use showAccountEntrySheet Bool sheet (use entryRoute item sheet)');

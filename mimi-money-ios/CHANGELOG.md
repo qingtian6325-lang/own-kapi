@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.16] - 2026-11-14
+
+### 🎯 Highlights
+- **账户详情期初预填**：「设定期初资金(记账前)」预填账户 `initialBalance`（未设则为 0），不再误填当前余额；「校准当前余额」仍预填 `balance`；切换分段即时刷新 RM 输入框。
+- **添加账户**：起始开局余额留空时明确持久化 `initialBalance = 0`（与 `balance` 一致）。
+- **回归**：`AccountBalanceEditPrefill` 单测（含 TNG 当前余额≠期初的复现场景）。
+- **发版**：`VERSION` / Intent 默认版本升至 1.3.16。
+
 ## [v1.3.13] - 2026-11-14
 
 ### 🎯 Highlights

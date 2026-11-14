@@ -250,17 +250,21 @@ public struct AssetsAndAccountDetailView: View {
                         Button {
                             let trimmed = newAccountName.trimmingCharacters(in: .whitespacesAndNewlines)
                             guard !trimmed.isEmpty else { return }
-                            let balanceVal = Double(newAccountBalance) ?? 0.0
+                            // Empty opening-balance field persists 0 (not leftover / nil fallback to balance).
+                            let opening = AccountBalanceEditPrefill.parseNewAccountOpeningBalance(newAccountBalance)
                             let item = AccountItem(
                                 id: "acc_\(UUID().uuidString.prefix(6))",
                                 name: trimmed,
                                 subtitle: "自定义账户",
                                 iconName: "💳",
-                                balance: balanceVal,
+                                balance: opening,
+                                initialBalance: opening,
                                 createdAt: Date()
                             )
                             store.addAccount(item)
                             showAddAccountSheet = false
+                            newAccountName = ""
+                            newAccountBalance = ""
                         } label: {
                             Text("保存并创建账户")
                                 .mimiFont(15, weight: .bold)
@@ -447,7 +451,12 @@ public struct AssetsAndAccountDetailView: View {
 
             ForEach(store.accountsForDisplay) { account in
                 Button {
-                    newBalanceInput = String(format: "%.2f", account.balance)
+                    balanceEditMode = AccountBalanceEditPrefill.Mode.setOpening.rawValue
+                    newBalanceInput = AccountBalanceEditPrefill.formattedInput(
+                        mode: .setOpening,
+                        balance: account.balance,
+                        initialBalance: account.initialBalance
+                    )
                     detailTabMode = "账单"
                     showBalanceEditSheet = false
                     dispatch(.openAccount(account.id))
@@ -575,6 +584,14 @@ public struct AssetsAndAccountDetailView: View {
                                         .mimiFont(28, weight: .bold, design: .rounded)
                                         .foregroundColor(liveAccount.balance < -0.0001 ? MimiTheme.dangerEmphasis : MimiTheme.textPrimary)
                                     Button {
+                                        if !showBalanceEditSheet {
+                                            let mode = AccountBalanceEditPrefill.Mode(rawValue: balanceEditMode) ?? .setOpening
+                                            newBalanceInput = AccountBalanceEditPrefill.formattedInput(
+                                                mode: mode,
+                                                balance: liveAccount.balance,
+                                                initialBalance: liveAccount.initialBalance
+                                            )
+                                        }
                                         showBalanceEditSheet.toggle()
                                     } label: {
                                         Image(systemName: "pencil")
@@ -582,6 +599,7 @@ public struct AssetsAndAccountDetailView: View {
                                             .foregroundColor(MimiTheme.iconInactive)
                                     }
                                     .mimiPressable()
+                                    .accessibilityLabel("编辑余额")
                                 }
                             }
                             Spacer()
@@ -590,10 +608,18 @@ public struct AssetsAndAccountDetailView: View {
                         if showBalanceEditSheet {
                             VStack(alignment: .leading, spacing: 8) {
                                 Picker("设置类型", selection: $balanceEditMode) {
-                                    Text("设定期初资金(记账前)").tag(0)
-                                    Text("校准当前余额(手机银行)").tag(1)
+                                    Text("设定期初资金(记账前)").tag(AccountBalanceEditPrefill.Mode.setOpening.rawValue)
+                                    Text("校准当前余额(手机银行)").tag(AccountBalanceEditPrefill.Mode.calibrateCurrent.rawValue)
                                 }
                                 .pickerStyle(.segmented)
+                                .onChange(of: balanceEditMode) { _, newMode in
+                                    let mode = AccountBalanceEditPrefill.Mode(rawValue: newMode) ?? .setOpening
+                                    newBalanceInput = AccountBalanceEditPrefill.formattedInput(
+                                        mode: mode,
+                                        balance: liveAccount.balance,
+                                        initialBalance: liveAccount.initialBalance
+                                    )
+                                }
 
                                 HStack(spacing: 8) {
                                     Text("RM")
@@ -604,10 +630,11 @@ public struct AssetsAndAccountDetailView: View {
                                         .mimiFont(14)
                                         .padding(8)
                                         .background(RoundedRectangle(cornerRadius: 8).fill(MimiTheme.cardBackground))
+                                        .accessibilityLabel(balanceEditMode == 0 ? "期初资金" : "当前余额")
 
                                     Button("确定") {
                                         if let val = Double(newBalanceInput) {
-                                            if balanceEditMode == 0 {
+                                            if balanceEditMode == AccountBalanceEditPrefill.Mode.setOpening.rawValue {
                                                 store.setAccountInitialBalance(accountId: liveAccount.id, initialBalance: val)
                                             } else {
                                                 store.updateAccountBalance(accountId: liveAccount.id, newBalance: val)
