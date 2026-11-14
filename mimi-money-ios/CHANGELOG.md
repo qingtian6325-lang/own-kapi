@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.11] - 2026-11-14
+
+### 🎯 Highlights
+- **账户详情导航**：左/右（返回↔再进账户、记账↔转账）不再把界面卡在上一页「记账」；返回分层（先关 sheet → 再出详情 → 最后才关资产），记账/转账改用 `sheet(item:)` 身份切换。
+- **回归**：`AssetsAccountNavigationState` 纯状态机 + 单测覆盖 left→right→left 与 记账→转账→记账。
+- **发版**：`VERSION` / Intent 默认版本升至 1.3.11。
+
 ## [v1.3.10] - 2026-11-14
 
 ### 🎯 Highlights

@@ -5,7 +5,8 @@ public struct AssetsAndAccountDetailView: View {
     @ObservedObject public var aiEngine: MimiAIEngine
     public var onDismiss: () -> Void
 
-    @State private var selectedAccountID: String?
+    /// Single source of truth for 资产 overlay ↔ 账户详情 ↔ 记账/转账 sheets.
+    @State private var nav = AssetsAccountNavigationState(isAssetsPresented: true)
     @State private var showBalanceEditSheet: Bool = false
     @State private var newBalanceInput: String = ""
     @State private var balanceEditMode: Int = 0 // 0: 设定期初起始资金, 1: 校准当前余额
@@ -14,9 +15,6 @@ public struct AssetsAndAccountDetailView: View {
     @State private var newAccountName: String = ""
     @State private var newAccountBalance: String = ""
     @State private var billForDetail: TransactionItem? = nil
-    @State private var showAccountEntrySheet: Bool = false
-    @State private var accountEntryTab: TransactionType = .expense
-    @State private var accountEntryAccountName: String = ""
     /// Keys: `"yyyy-M"` — months whose detail/bill lists are collapsed.
     @State private var collapsedMonthKeys: Set<String> = []
     @State private var showEditAccountSheet: Bool = false
@@ -27,6 +25,56 @@ public struct AssetsAndAccountDetailView: View {
         self.store = store
         self.aiEngine = aiEngine
         self.onDismiss = onDismiss
+    }
+
+    /// Apply nav actions and only dismiss the root 资产 overlay when the reducer says so.
+    private func dispatch(_ action: AssetsAccountNavigationState.Action) {
+        var next = nav
+        let effect = next.apply(action)
+        nav = next
+        if effect.dismissAssetsOverlay {
+            onDismiss()
+        }
+    }
+
+    private var selectedAccountBinding: Binding<String?> {
+        Binding(
+            get: { nav.selectedAccountID },
+            set: { newValue in
+                if let id = newValue {
+                    dispatch(.openAccount(id))
+                } else {
+                    // Interactive pop / destination clear: pop detail only — never 记账/home.
+                    var next = nav
+                    next.selectedAccountID = nil
+                    next.entryRoute = nil
+                    nav = next
+                }
+            }
+        )
+    }
+
+    private var entryRouteBinding: Binding<AssetsAccountNavigationState.AccountEntryRoute?> {
+        Binding(
+            get: { nav.entryRoute },
+            set: { newValue in
+                if let route = newValue {
+                    dispatch(.openEntry(route))
+                } else {
+                    dispatch(.dismissEntry)
+                }
+            }
+        )
+    }
+
+    /// iOS: topBarLeading avoids cancellationAction conflating detail pop with overlay dismiss.
+    /// macOS host tests: cancellationAction (topBarLeading is unavailable).
+    private var backToolbarPlacement: ToolbarItemPlacement {
+        #if os(iOS)
+        .topBarLeading
+        #else
+        .cancellationAction
+        #endif
     }
 
     private func monthKey(from date: Date) -> String {
@@ -88,12 +136,20 @@ public struct AssetsAndAccountDetailView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(action: onDismiss) {
+                // Prefer topBarLeading on iOS so detail back ≠ overlay dismiss → 记账.
+                ToolbarItem(placement: backToolbarPlacement) {
+                    Button {
+                        dispatch(.back)
+                    } label: {
                         Image(systemName: "chevron.left")
                             .mimiFont(15, weight: .semibold)
                             .foregroundColor(MimiTheme.textPrimary)
+                            .frame(width: MimiHIG.minTouch, height: MimiHIG.minTouch)
+                            .contentShape(Rectangle())
                     }
+                    .mimiPressable()
+                    .accessibilityLabel("返回")
+                    .accessibilityHint("返回记账首页")
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
@@ -109,7 +165,7 @@ public struct AssetsAndAccountDetailView: View {
                     }
                 }
             }
-            .navigationDestination(item: $selectedAccountID) { accountID in
+            .navigationDestination(item: selectedAccountBinding) { accountID in
                 if let account = store.accounts.first(where: { $0.id == accountID }) {
                     accountDetailSheet(for: account)
                 } else {
@@ -123,20 +179,21 @@ public struct AssetsAndAccountDetailView: View {
                     billForDetail = nil
                 }
             }
-            .sheet(isPresented: $showAccountEntrySheet) {
+            // sheet(item:) so 记账⇄转账 rapid switches get a fresh identity (Bool sheets desync).
+            .sheet(item: entryRouteBinding) { route in
                 RecordAndAISheetView(
                     store: store,
                     aiEngine: aiEngine,
                     initialAIMode: false,
-                    initialTab: accountEntryTab,
-                    initialAccountName: accountEntryAccountName,
-                    onDismiss: { showAccountEntrySheet = false },
+                    initialTab: route.transactionType,
+                    initialAccountName: route.accountName,
+                    onDismiss: { dispatch(.dismissEntry) },
                     onOpenCategorySettings: {
-                        showAccountEntrySheet = false
+                        dispatch(.dismissEntry)
                         // Category manager is opened from root drawer; from assets entry just dismiss.
                     },
                     onEditRecognizedTransaction: { tx in
-                        showAccountEntrySheet = false
+                        dispatch(.dismissEntry)
                         billForDetail = tx
                     }
                 )
@@ -148,8 +205,12 @@ public struct AssetsAndAccountDetailView: View {
                         accountId: editingAccountId,
                         onDismiss: { showEditAccountSheet = false },
                         onDeleted: {
-                            if selectedAccountID == editingAccountId {
-                                selectedAccountID = nil
+                            // Pop detail only — deleting an account must never dismiss 资产 → 记账.
+                            if nav.selectedAccountID == editingAccountId {
+                                var next = nav
+                                next.selectedAccountID = nil
+                                next.entryRoute = nil
+                                nav = next
                             }
                             showEditAccountSheet = false
                         }
@@ -388,7 +449,7 @@ public struct AssetsAndAccountDetailView: View {
                     newBalanceInput = String(format: "%.2f", account.balance)
                     detailTabMode = "账单"
                     showBalanceEditSheet = false
-                    selectedAccountID = account.id
+                    dispatch(.openAccount(account.id))
                 } label: {
                     HStack(spacing: 12) {
                         MimiStickerIconView(
@@ -566,15 +627,11 @@ public struct AssetsAndAccountDetailView: View {
                         HStack(spacing: 10) {
                             accountActionPill(title: "记账", systemName: "plus") {
                                 showBalanceEditSheet = false
-                                accountEntryTab = .expense
-                                accountEntryAccountName = liveAccount.name
-                                showAccountEntrySheet = true
+                                dispatch(.openEntry(.expense(accountName: liveAccount.name)))
                             }
                             accountActionPill(title: "转账", systemName: "arrow.left.arrow.right") {
                                 showBalanceEditSheet = false
-                                accountEntryTab = .transfer
-                                accountEntryAccountName = liveAccount.name
-                                showAccountEntrySheet = true
+                                dispatch(.openEntry(.transfer(accountName: liveAccount.name)))
                             }
                         }
                     }
@@ -630,14 +687,21 @@ public struct AssetsAndAccountDetailView: View {
         #endif
         .navigationBarBackButtonHidden(true)
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
+            // Same leading placement as assets root, but action goes through nav.back
+            // so left→right→left only pops detail — never the 资产 overlay.
+            ToolbarItem(placement: backToolbarPlacement) {
                 Button {
-                    selectedAccountID = nil
+                    dispatch(.back)
                 } label: {
                     Image(systemName: "chevron.left")
                         .mimiFont(15, weight: .semibold)
                         .foregroundColor(MimiTheme.textPrimary)
+                        .frame(width: MimiHIG.minTouch, height: MimiHIG.minTouch)
+                        .contentShape(Rectangle())
                 }
+                .mimiPressable()
+                .accessibilityLabel("返回资产")
+                .accessibilityHint("返回账户列表，不会退出到记账首页")
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -648,9 +712,7 @@ public struct AssetsAndAccountDetailView: View {
     private func accountDetailAskBar(for account: AccountItem) -> some View {
         HStack(spacing: 10) {
             Button {
-                accountEntryTab = .expense
-                accountEntryAccountName = account.name
-                showAccountEntrySheet = true
+                dispatch(.openEntry(.expense(accountName: account.name)))
             } label: {
                 HStack(spacing: 8) {
                     MimiAskMascotView(size: 32)
@@ -669,9 +731,7 @@ public struct AssetsAndAccountDetailView: View {
             .accessibilityLabel("记账")
 
             Button {
-                accountEntryTab = .expense
-                accountEntryAccountName = account.name
-                showAccountEntrySheet = true
+                dispatch(.openEntry(.expense(accountName: account.name)))
             } label: {
                 Image(systemName: "plus")
                     .mimiFont(16, weight: .bold)
