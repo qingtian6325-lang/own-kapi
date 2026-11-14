@@ -11,6 +11,10 @@ public struct RecordAndAISheetView: View {
     /// 手动页点「AI 助手」→ 全屏 AI 记账
     public var onSwitchToAIOverlay: () -> Void = {}
 
+    /// Intended tab from the presenting `sheet(item:)` route — re-applied on appear
+    /// so a reused sheet never keeps a stale `@State selectedTab` (转账 → 支出 flake).
+    private let intendedInitialTab: TransactionType
+
     @State private var isAIMode: Bool
     @State private var selectedTab: TransactionType
     @State private var selectedGroupIndex: Int = 0
@@ -32,6 +36,8 @@ public struct RecordAndAISheetView: View {
     @State private var attachedReceiptFilenames: [String] = []
     @State private var showImageSourceDialog: Bool = false
     @State private var showImagePickerSheet: Bool = false
+    /// While true, sheet interactive dismiss is disabled so horizontal tab paging wins.
+    @State private var suppressSheetDismiss: Bool = false
     #if canImport(UIKit)
     @State private var pickerSourceType: UIKitImagePicker.SourceType = .photoLibrary
     #endif
@@ -60,6 +66,7 @@ public struct RecordAndAISheetView: View {
         self.store = store
         self.aiEngine = aiEngine
         self.initialAIMode = initialAIMode
+        self.intendedInitialTab = initialTab
         self.onDismiss = onDismiss
         self.onOpenCategorySettings = onOpenCategorySettings
         self.onEditRecognizedTransaction = onEditRecognizedTransaction
@@ -224,6 +231,29 @@ public struct RecordAndAISheetView: View {
             }
         }
         #endif
+        .onAppear {
+            // Force intended tab even if SwiftUI reused @State across sheet(item:) swaps.
+            selectedTab = intendedInitialTab
+        }
+        #if os(iOS)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .presentationContentInteraction(.scrolls)
+        .interactiveDismissDisabled(suppressSheetDismiss)
+        #endif
+    }
+
+    private var horizontalAxisLockGesture: some Gesture {
+        DragGesture(minimumDistance: 8, coordinateSpace: .local)
+            .onChanged { value in
+                suppressSheetDismiss = BookkeepingSheetSwipePolicy.isHorizontalDominant(
+                    dx: value.translation.width,
+                    dy: value.translation.height
+                )
+            }
+            .onEnded { _ in
+                suppressSheetDismiss = false
+            }
     }
 
     // MARK: - Top Header with ⇄ Mode Switcher (IMG_2245 & IMG_2247)
@@ -376,84 +406,21 @@ public struct RecordAndAISheetView: View {
 
     private var manualBookkeepingBody: some View {
         VStack(spacing: 0) {
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 12) {
-                    if selectedTab == .transfer {
-                        transferAccountPicker
-                            .padding(.top, 10)
-                    } else {
-                        // 5-column Primary Category Grid (gold manual entry)
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5), spacing: 12) {
-                            ForEach(Array(activeCategories.enumerated()), id: \.element.id) { idx, group in
-                                let isSelected = idx == selectedGroupIndex
-                                Button {
-                                    selectedGroupIndex = idx
-                                    selectedSubIndex = group.subcategories.isEmpty ? nil : 0
-                                } label: {
-                                    VStack(spacing: 6) {
-                                        MimiStickerIconView(
-                                            iconName: group.displayBadgeToken,
-                                            categoryName: group.name,
-                                            transactionType: selectedTab,
-                                            useFirstCharIcon: group.useFirstCharIcon,
-                                            size: 58,
-                                            isSelected: isSelected
-                                        )
-                                        Text(group.name)
-                                            .mimiFont(12, weight: isSelected ? .bold : .regular)
-                                            .foregroundColor(isSelected ? MimiTheme.textPrimary : MimiTheme.textSecondary)
-                                            .lineLimit(1)
-                                            .minimumScaleFactor(0.85)
-                                    }
-                                }
-                                .mimiPressable()
-                            }
-                        }
-                        .padding(.top, 6)
-
-                        // Expandable Subcategory Box (IMG_2245)
-                        if let group = currentGroup, !group.subcategories.isEmpty {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("\(group.name) · 二级分类")
-                                    .mimiFont(11, weight: .semibold)
-                                    .foregroundColor(MimiTheme.textMuted)
-
-                                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5), spacing: 10) {
-                                    ForEach(Array(group.subcategories.enumerated()), id: \.element.id) { sIdx, sub in
-                                        let isSubSelected = selectedSubIndex == sIdx
-                                        Button {
-                                            selectedSubIndex = sIdx
-                                        } label: {
-                                            VStack(spacing: 5) {
-                                                MimiStickerIconView(
-                                                    iconName: sub.iconName,
-                                                    categoryName: sub.name,
-                                                    transactionType: selectedTab,
-                                                    useFirstCharIcon: sub.useFirstCharIcon,
-                                                    size: 48,
-                                                    isSelected: isSubSelected
-                                                )
-                                                Text(sub.name)
-                                                    .mimiFont(11, weight: isSubSelected ? .bold : .regular)
-                                                    .foregroundColor(isSubSelected ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
-                                                    .lineLimit(1)
-                                                    .minimumScaleFactor(0.85)
-                                            }
-                                        }
-                                        .mimiPressable()
-                                    }
-                                }
-                            }
-                            .padding(12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .fill(MimiTheme.background)
-                            )
-                        }
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 8)
+            // Page-style tabs so left/right swipe switches 支出|收入|转账;
+            // presentationContentInteraction(.scrolls) + axis lock keep sheet dismiss vertical-only.
+            TabView(selection: $selectedTab) {
+                categoryTabPage(for: .expense)
+                    .tag(TransactionType.expense)
+                categoryTabPage(for: .income)
+                    .tag(TransactionType.income)
+                transferTabPage
+                    .tag(TransactionType.transfer)
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .simultaneousGesture(horizontalAxisLockGesture)
+            .onChange(of: selectedTab) { _, _ in
+                selectedGroupIndex = 0
+                selectedSubIndex = 0
             }
 
             Divider()
@@ -692,6 +659,102 @@ public struct RecordAndAISheetView: View {
 
             // Custom Calculator Keypad (IMG_2245)
             calculatorKeypad
+        }
+    }
+
+    @ViewBuilder
+    private func categoryTabPage(for tab: TransactionType) -> some View {
+        let categories = tab == .income ? store.incomeCategories : store.expenseCategories
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 12) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5), spacing: 12) {
+                    ForEach(Array(categories.enumerated()), id: \.element.id) { idx, group in
+                        let isSelected = selectedTab == tab && idx == selectedGroupIndex
+                        Button {
+                            selectedTab = tab
+                            selectedGroupIndex = idx
+                            selectedSubIndex = group.subcategories.isEmpty ? nil : 0
+                        } label: {
+                            VStack(spacing: 6) {
+                                MimiStickerIconView(
+                                    iconName: group.displayBadgeToken,
+                                    categoryName: group.name,
+                                    transactionType: tab,
+                                    useFirstCharIcon: group.useFirstCharIcon,
+                                    size: 58,
+                                    isSelected: isSelected
+                                )
+                                Text(group.name)
+                                    .mimiFont(12, weight: isSelected ? .bold : .regular)
+                                    .foregroundColor(isSelected ? MimiTheme.textPrimary : MimiTheme.textSecondary)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.85)
+                            }
+                        }
+                        .mimiPressable()
+                    }
+                }
+                .padding(.top, 6)
+
+                if selectedTab == tab,
+                   let group = currentGroupFor(tab: tab),
+                   !group.subcategories.isEmpty {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("\(group.name) · 二级分类")
+                            .mimiFont(11, weight: .semibold)
+                            .foregroundColor(MimiTheme.textMuted)
+
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5), spacing: 10) {
+                            ForEach(Array(group.subcategories.enumerated()), id: \.element.id) { sIdx, sub in
+                                let isSubSelected = selectedSubIndex == sIdx
+                                Button {
+                                    selectedSubIndex = sIdx
+                                } label: {
+                                    VStack(spacing: 5) {
+                                        MimiStickerIconView(
+                                            iconName: sub.iconName,
+                                            categoryName: sub.name,
+                                            transactionType: tab,
+                                            useFirstCharIcon: sub.useFirstCharIcon,
+                                            size: 48,
+                                            isSelected: isSubSelected
+                                        )
+                                        Text(sub.name)
+                                            .mimiFont(11, weight: isSubSelected ? .bold : .regular)
+                                            .foregroundColor(isSubSelected ? MimiTheme.expenseBlue : MimiTheme.textSecondary)
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.85)
+                                    }
+                                }
+                                .mimiPressable()
+                            }
+                        }
+                    }
+                    .padding(12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(MimiTheme.background)
+                    )
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
+        }
+    }
+
+    private func currentGroupFor(tab: TransactionType) -> CategoryGroup? {
+        let categories = tab == .income ? store.incomeCategories : store.expenseCategories
+        guard !categories.isEmpty else { return nil }
+        let clamped = min(max(0, selectedGroupIndex), categories.count - 1)
+        return categories[clamped]
+    }
+
+    private var transferTabPage: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            transferAccountPicker
+                .padding(.top, 10)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
         }
     }
 

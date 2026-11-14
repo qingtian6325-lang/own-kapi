@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.13] - 2026-11-14
+
+### 🎯 Highlights
+- **转账半屏初始页**：`AccountEntryRoute` 每次打开带唯一 `presentationID`，`sheet(item:)` + `.id` + `intendedInitialTab` 保证「⇆ 转账」始终落在转账页、「记账」落在支出页（修了偶发打开支出的竞态）。
+- **支出页左滑**：`TabView` 分页 + `presentationContentInteraction(.scrolls)` + 水平轴锁定禁用 interactive dismiss，左滑切到收入不再被半屏下滑关掉。
+- **回归**：`BookkeepingSheetSwipePolicy` 轴判定/邻页；entry route presentation identity 单测。
+- **发版**：`VERSION` / Intent 默认版本升至 1.3.13。
+
 ## [v1.3.12] - 2026-11-14
 
 ### 🎯 Highlights

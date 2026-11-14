@@ -56,10 +56,11 @@ final class AssetsAccountNavigationTests: XCTestCase {
     }
 
     func testBackWhileEntrySheetOpenDismissesSheetFirstKeepsAccount() {
+        let expenseID = UUID()
         var state = AssetsAccountNavigationState(
             isAssetsPresented: true,
             selectedAccountID: "acc_tng",
-            entryRoute: .expense(accountName: "TNG")
+            entryRoute: .expense(accountName: "TNG", presentationID: expenseID)
         )
 
         let effect = state.apply(.back)
@@ -78,7 +79,8 @@ final class AssetsAccountNavigationTests: XCTestCase {
         )
 
         _ = state.apply(.openEntry(.expense(accountName: "TNG")))
-        XCTAssertEqual(state.entryRoute, .expense(accountName: "TNG"))
+        XCTAssertEqual(state.entryRoute?.transactionType, .expense)
+        XCTAssertEqual(state.entryRoute?.accountName, "TNG")
         XCTAssertEqual(state.selectedAccountID, "acc_tng")
 
         _ = state.apply(.dismissEntry)
@@ -86,12 +88,13 @@ final class AssetsAccountNavigationTests: XCTestCase {
         XCTAssertEqual(state.selectedAccountID, "acc_tng")
 
         _ = state.apply(.openEntry(.transfer(accountName: "TNG")))
-        XCTAssertEqual(state.entryRoute, .transfer(accountName: "TNG"))
+        XCTAssertEqual(state.entryRoute?.transactionType, .transfer)
+        XCTAssertEqual(state.entryRoute?.accountName, "TNG")
         XCTAssertEqual(state.selectedAccountID, "acc_tng")
 
         _ = state.apply(.dismissEntry)
         _ = state.apply(.openEntry(.expense(accountName: "TNG")))
-        XCTAssertEqual(state.entryRoute, .expense(accountName: "TNG"))
+        XCTAssertEqual(state.entryRoute?.transactionType, .expense)
         XCTAssertEqual(state.selectedAccountID, "acc_tng")
         XCTAssertTrue(state.isAssetsPresented)
     }
@@ -100,12 +103,31 @@ final class AssetsAccountNavigationTests: XCTestCase {
         var state = AssetsAccountNavigationState(
             isAssetsPresented: true,
             selectedAccountID: "acc_cimb",
-            entryRoute: .expense(accountName: "CIMB")
+            entryRoute: .expense(accountName: "CIMB", presentationID: UUID())
         )
 
         _ = state.apply(.openEntry(.transfer(accountName: "CIMB")))
 
-        XCTAssertEqual(state.entryRoute, .transfer(accountName: "CIMB"))
+        XCTAssertEqual(state.entryRoute?.transactionType, .transfer)
+        XCTAssertEqual(state.entryRoute?.accountName, "CIMB")
         XCTAssertEqual(state.selectedAccountID, "acc_cimb")
+    }
+
+    /// 转账 button must open transfer tab; 记账 → expense. Fresh presentationID every open.
+    func testTransferEntryRouteIntendedTabIsTransfer() {
+        let transfer = AssetsAccountNavigationState.AccountEntryRoute.transfer(accountName: "现金")
+        let expense = AssetsAccountNavigationState.AccountEntryRoute.expense(accountName: "现金")
+        XCTAssertEqual(transfer.transactionType, .transfer)
+        XCTAssertEqual(expense.transactionType, .expense)
+        XCTAssertNotEqual(transfer.id, expense.id)
+    }
+
+    func testEachEntryOpenGetsUniquePresentationIdentity() {
+        let a = AssetsAccountNavigationState.AccountEntryRoute.transfer(accountName: "TNG")
+        let b = AssetsAccountNavigationState.AccountEntryRoute.transfer(accountName: "TNG")
+        XCTAssertNotEqual(a.presentationID, b.presentationID)
+        XCTAssertNotEqual(a.id, b.id)
+        XCTAssertEqual(a.transactionType, b.transactionType)
+        XCTAssertEqual(a.accountName, b.accountName)
     }
 }
