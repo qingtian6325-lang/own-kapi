@@ -17,8 +17,8 @@ public struct AssetsAndAccountDetailView: View {
     @State private var billForDetail: TransactionItem? = nil
     /// Keys: `"yyyy-M"` — months whose detail/bill lists are collapsed.
     @State private var collapsedMonthKeys: Set<String> = []
-    @State private var showEditAccountSheet: Bool = false
-    @State private var editingAccountId: String? = nil
+    /// Identifiable route for 「…」→ 编辑账户. Bool + `if let` sheets present blank white content.
+    @State private var editAccountRoute: EditAccountSheetRoute? = nil
     @State private var showPendingReimbursementSheet: Bool = false
 
     public init(store: MimiStore, aiEngine: MimiAIEngine, onDismiss: @escaping () -> Void) {
@@ -198,24 +198,22 @@ public struct AssetsAndAccountDetailView: View {
                     }
                 )
             }
-            .sheet(isPresented: $showEditAccountSheet) {
-                if let editingAccountId {
-                    EditAccountView(
-                        store: store,
-                        accountId: editingAccountId,
-                        onDismiss: { showEditAccountSheet = false },
-                        onDeleted: {
-                            // Pop detail only — deleting an account must never dismiss 资产 → 记账.
-                            if nav.selectedAccountID == editingAccountId {
-                                var next = nav
-                                next.selectedAccountID = nil
-                                next.entryRoute = nil
-                                nav = next
-                            }
-                            showEditAccountSheet = false
+            .sheet(item: $editAccountRoute) { route in
+                EditAccountView(
+                    store: store,
+                    accountId: route.id,
+                    onDismiss: { editAccountRoute = nil },
+                    onDeleted: {
+                        // Pop detail only — deleting an account must never dismiss 资产 → 记账.
+                        if nav.selectedAccountID == route.id {
+                            var next = nav
+                            next.selectedAccountID = nil
+                            next.entryRoute = nil
+                            nav = next
                         }
-                    )
-                }
+                        editAccountRoute = nil
+                    }
+                )
             }
             .sheet(isPresented: $showPendingReimbursementSheet) {
                 pendingReimbursementSheet
@@ -543,8 +541,7 @@ public struct AssetsAndAccountDetailView: View {
                             }
                             Spacer()
                             Button {
-                                editingAccountId = liveAccount.id
-                                showEditAccountSheet = true
+                                editAccountRoute = EditAccountSheetRoute(accountId: liveAccount.id)
                             } label: {
                                 Image(systemName: "ellipsis")
                                     .mimiFont(14, weight: .semibold)

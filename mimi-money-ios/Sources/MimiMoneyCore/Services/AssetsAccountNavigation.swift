@@ -1,5 +1,15 @@
 import Foundation
 
+/// Identifiable sheet route for 账户详情 「…」 → 编辑账户.
+/// Prefer `sheet(item:)` over Bool + `if let` (blank white full-screen sheet).
+public struct EditAccountSheetRoute: Identifiable, Equatable, Sendable {
+    public let id: String
+
+    public init(accountId: String) {
+        self.id = accountId
+    }
+}
+
 /// Pure navigation state for 资产 → 账户详情 → 记账/转账 sheets.
 /// Keeps overlay dismiss, detail pop, and entry sheets from desyncing
 /// (v1.3.10 symptom: left/right/left left the user stuck on 记账/home).

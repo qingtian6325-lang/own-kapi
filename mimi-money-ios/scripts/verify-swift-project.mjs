@@ -562,6 +562,14 @@ function verifyTask7() {
   if (assets.includes('showAccountEntrySheet')) {
     throw new Error('AssetsAndAccountDetailView.swift must not use showAccountEntrySheet Bool sheet (use entryRoute item sheet)');
   }
+  // Regression: Bool + if-let edit sheet presented blank white full-screen (v1.3.11 phone).
+  if (assets.includes('showEditAccountSheet') || assets.includes('editingAccountId')) {
+    throw new Error('AssetsAndAccountDetailView.swift must use editAccountRoute sheet(item:) for 「…」编辑账户');
+  }
+  assertContains(assets, 'editAccountRoute', 'AssetsAndAccountDetailView.swift');
+  assertContains(assets, 'EditAccountSheetRoute', 'AssetsAndAccountDetailView.swift');
+  assertContains(assetsNav, 'struct EditAccountSheetRoute', 'AssetsAccountNavigation.swift');
+  assertContains(assetsNavTests, 'testEditAccountSheetRouteIdentityUsesAccountId', 'AssetsAccountNavigationTests.swift');
 
   const assetsNavTests = assertFileExists('Tests/MimiMoneyTests/AssetsAccountNavigationTests.swift');
   checkBalancedBraces(assetsNavTests, 'AssetsAccountNavigationTests.swift');

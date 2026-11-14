@@ -3,6 +3,16 @@ import XCTest
 
 /// Regression: account detail left/right/left must not dump the user onto 记账 (home).
 final class AssetsAccountNavigationTests: XCTestCase {
+    func testEditAccountSheetRouteIdentityUsesAccountId() {
+        let route = EditAccountSheetRoute(accountId: "acc_cash")
+        XCTAssertEqual(route.id, "acc_cash")
+        // sheet(item:) requires stable Identifiable id — never present via Bool + optional unwrap.
+        XCTAssertEqual(
+            EditAccountSheetRoute(accountId: "acc_tng"),
+            EditAccountSheetRoute(accountId: "acc_tng")
+        )
+    }
+
     func testBackFromAccountDetailPopsOnlyDetailNotAssetsOverlay() {
         var state = AssetsAccountNavigationState(
             isAssetsPresented: true,

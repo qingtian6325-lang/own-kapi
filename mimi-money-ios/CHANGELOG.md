@@ -8,7 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🎯 Highlights
 - **账户详情「初始余额」**：明细/账单列表底部固定展示开局余额（取自账户当前 `initialBalance`，编辑期初后即时刷新；为 0 时也显示）；有创建日或设定期初记录时附带起始日期。
-- **回归**：`AccountInitialBalanceRowBuilder` 单测覆盖 live 金额与非占位 0。
+- **「…」编辑账户空白页**：根因是 `sheet(isPresented:)` + `if let` 在详情页弹出时内容为空；改用 `sheet(item: EditAccountSheetRoute)`，打开真正的编辑账户（名称/图标/删除等）。
+- **回归**：`AccountInitialBalanceRowBuilder` 单测；编辑账户 sheet(item) 结构校验。
 - **发版**：`VERSION` / Intent 默认版本升至 1.3.12。
 
 ## [v1.3.11] - 2026-11-14
